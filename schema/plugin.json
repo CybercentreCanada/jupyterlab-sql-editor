@@ -1,0 +1,32 @@
+{
+  "jupyter.lab.shortcuts": [
+    {
+      "command": "jupyterlab_sql_editor:format_cell",
+      "keys": ["Ctrl Q"],
+      "selector": ".jp-CodeCell"
+    },
+    {
+      "command": "jupyterlab_sql_editor:format_document",
+      "keys": ["Ctrl Q"],
+      "selector": ".jp-FileEditor"
+    }
+  ],
+  "title": "SQL Editor Support",
+  "description": "SQL editor support for formatting, syntax highlighing and code completion of SQL in cell magic, line magic, python string and file editor.",
+  "type": "object",
+  "properties": {
+    "formatIndent": {
+      "type": "string",
+      "title": "Indent",
+      "description": "Indent using this string, can be one, two, four spaces or a tab.",
+      "default": "    "
+    },
+    "formatUppercase": {
+      "type": "boolean",
+      "title": "Upper case all keywords",
+      "description": "Upper case all keywords",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}
