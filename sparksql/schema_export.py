@@ -57,12 +57,20 @@ def getColumns(spark, name):
 def getTablesInDatabase(spark, catalog, database):
     spark.sql(f'USE {catalog}')
     rows = spark.sql(f'SHOW TABLES IN {database}').collect()
-    return list(map(lambda r: {
-        "tableName": r.tableName,
-        "columns": getColumns(spark, catalog + '.' + database + '.' + r.tableName),
-        "database": database,
-        "catalog": catalog
-    }, rows))
+    if catalog == 'default':
+        return list(map(lambda r: {
+            "tableName": r.tableName,
+            "columns": getColumns(spark, database + '.' + r.tableName),
+            "database": database,
+            "catalog": None
+        }, rows))
+    else:
+        return list(map(lambda r: {
+            "tableName": r.tableName,
+            "columns": getColumns(spark, catalog + '.' + database + '.' + r.tableName),
+            "database": database,
+            "catalog": catalog
+        }, rows))
 
 def getTablesInCatalogs(spark, catalogs):
     tables = []
