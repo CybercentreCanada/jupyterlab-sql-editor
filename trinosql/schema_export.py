@@ -19,6 +19,10 @@ def getColumns(cur, tableName):
 
 
 def getTables(cur, catalog, database):
+    # prevent retrieving tables from information_schema
+    if database == 'information_schema':
+        return []
+    
     path = f'{catalog}.{database}'
     sql = f'SHOW TABLES IN {path}'
     #print(sql)
@@ -49,16 +53,10 @@ def getSchemas(cur, catalog):
         tables += getTables(cur, catalog, database)
     return tables
 
-def getCatalogs(cur):
-    sql = f'SHOW CATALOGS'
-    #print(sql)
-    cur.execute(sql)
-    rows = cur.fetchmany(MAX_RET)
+def getCatalogs(cur, catalogs):
     tables = []
-    for r in rows:
-        catalog = r[0]
-        if not catalog == 'system':
-            tables += getSchemas(cur, catalog)
+    for catalog in catalogs:
+        tables += getSchemas(cur, catalog)
     return tables
 
 def getFunctions(cur):
@@ -77,13 +75,13 @@ def getFunctions(cur):
         "description": ''
     }, functions))
 
-def getDatabaseSchema(cur):
+def getDatabaseSchema(cur, catalogs):
     return {
-        "tables": getCatalogs(cur),
+        "tables": getCatalogs(cur, catalogs),
         "functions": getFunctions(cur)
     }
 
-def checkAndUpdateSchema(cur, schemaFileName, refresh_threshold):
+def checkAndUpdateSchema(cur, schemaFileName, refresh_threshold, catalogs):
     file_exists = path.isfile(schemaFileName)
     ttl_expired = False
     if file_exists:
@@ -96,7 +94,7 @@ def checkAndUpdateSchema(cur, schemaFileName, refresh_threshold):
         print(f'Generating schema file: {schemaFileName}')
         
     if (not file_exists) or ttl_expired:
-        db_schema = getDatabaseSchema(cur)
+        db_schema = getDatabaseSchema(cur, catalogs)
         # Save schema to disk. sql-language-server will pickup any changes to this file.
         with open(schemaFileName, 'w') as fout:
             json.dump(db_schema, fout, sort_keys=True, indent=2)

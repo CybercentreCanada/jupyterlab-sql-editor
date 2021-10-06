@@ -5,18 +5,26 @@ import trino
 from IPython.core.display import HTML
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from traitlets import Int, Unicode
+from traitlets import Int, Unicode, Instance
 from .schema_export import checkAndUpdateSchema
 
 BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/trinodb.schema.json'
 DEFAULT_SCHEMA_TTL = 3600
+DEFAULT_CATALOGS = 'default'
+
 @magics_class
 class TrinoSql(Magics):
     limit = Int(20, config=True, help='The maximum number of rows to display')
     outputFile = Unicode(DEFAULT_SCHEMA_OUTFILE, config=True, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
+    catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
+
+    host = Unicode('localhost', config=True, help='The trino server hostname)')
+    port = Int(443, config=True, help='Trino server port number)')
+    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
+    auth = Instance(klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')    
 
     @needs_local_scope
     @line_cell_magic
@@ -25,6 +33,7 @@ class TrinoSql(Magics):
     @argument('-l', '--limit', type=int, help='The maximum number of rows to display')
     @argument('-f', '--outputFile', type=str, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
     @argument('-t', '--cacheTTL', type=int, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
+    @argument('-a', '--catalogs', type=str, help='Retrive schema from the specified list of catalogs')
     def trinosql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trinosql and as %%trinosql"
 
@@ -37,15 +46,16 @@ class TrinoSql(Magics):
         args = parse_argstring(self.trinosql, line)
 
         conn = trino.dbapi.connect(
-            host='localhost',
-            port=8080,
-            user='the-user',
-            http_scheme='http')
+            host=self.host,
+            port=self.port,
+            auth=self.auth,
+            http_scheme=self.httpScheme)
         cur = conn.cursor()
 
         outputFile = args.outputFile or self.outputFile
         cacheTTL = args.cacheTTL or self.cacheTTL
-        checkAndUpdateSchema(cur, outputFile, cacheTTL)
+        catalogs = args.catalogs or self.catalogs
+        checkAndUpdateSchema(cur, outputFile, cacheTTL, catalogs.split(','))
 
         sql = cell
         if cell is None:
