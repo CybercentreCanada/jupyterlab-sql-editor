@@ -6,7 +6,7 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from pyspark.sql import SparkSession
 from traitlets import Int, Unicode, Bool
-from .schema_export import checkAndUpdateSchema
+from .schema_export import checkAndUpdateSchema, updateLocalDatabase
 
 BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
 
@@ -20,6 +20,7 @@ class SparkSql(Magics):
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
     catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
     qgrid = Bool(False, config=True, help=f'Display results in qgrid')
+    qgridRowHeight = Int(20, config=True, help=f'The qgrid row heigth')
 
     @needs_local_scope
     @line_cell_magic
@@ -73,6 +74,7 @@ class SparkSql(Magics):
         if args.view:
             print('create temporary view `%s`' % args.view)
             df.createOrReplaceTempView(args.view)
+            updateLocalDatabase(spark, outputFile)
         if args.dataframe:
             print('capture dataframe to local variable `%s`' % args.dataframe)
             self.shell.user_ns.update({args.dataframe: df})
@@ -89,7 +91,7 @@ class SparkSql(Magics):
                     print('only showing top %d row(s)' % limit)
                     # Delete last row
                     pdf = pdf.head(num_rows -1) 
-                return qgrid.show_grid(pdf, show_toolbar=False, grid_options={'forceFitColumns': False})
+                return qgrid.show_grid(pdf, show_toolbar=False, grid_options={'forceFitColumns': False, 'rowHeight': self.qgridRowHeight})
             else:
                 print('No results')
                 return 

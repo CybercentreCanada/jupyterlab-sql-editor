@@ -92,8 +92,18 @@ def getFunctions(spark):
 def getSparkDatabaseSchema(spark, catalogs):
     return {
         "functions": getFunctions(spark),
-        "tables": getTablesInCatalogs(spark, catalogs)
+        "tables": getTablesInCatalogs(spark, catalogs) + getTablesInLocalDatabase(spark)
     }
+
+def getTablesInLocalDatabase(spark):
+    spark.sql(f'USE default')
+    rows = spark.sql(f'SHOW TABLES IN default').collect()
+    return list(map(lambda r: {
+        "tableName": r.tableName,
+        "columns": getColumns(spark, r.tableName),
+        "database": None,
+        "catalog": None
+    }, rows))
 
 
 def checkAndUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
@@ -114,3 +124,23 @@ def checkAndUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
         with open(schemaFileName, 'w') as fout:
             json.dump(sparkdb_schema, fout, sort_keys=True, indent=2)
         print('Schema file updated: ' + schemaFileName)
+
+
+def updateLocalDatabase(spark, schemaFileName):
+    updated_tables = getTablesInLocalDatabase(spark)
+    current_schema = {}
+    with open(schemaFileName) as f:
+        current_schema = json.load(f)
+
+    for table in current_schema['tables']:
+        if table['catalog']:
+            updated_tables.append(table)
+
+    updated_schema = {
+        "tables": updated_tables,
+        "functions": current_schema['functions']
+    }
+
+    with open(schemaFileName, 'w') as fout:
+      json.dump(updated_schema, fout, indent=2, sort_keys=True)
+
