@@ -28,8 +28,8 @@ stages:
         versionSpec: '$(python.version)'
       displayName: 'Use Python $(python.version)'
     - script: |
-        pip install wheel
-      displayName: 'Install wheel'
+        pip install wheel build
+      displayName: 'Install wheel and bulid'
     - script: |
         pip install -ve .
       displayName: 'Install jupyter deps'
