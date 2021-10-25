@@ -1,3 +1,4 @@
+import os
 import re
 from html import escape
 
@@ -11,7 +12,7 @@ from .schema_export import checkAndUpdateSchema
 BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/trinodb.schema.json'
-DEFAULT_SCHEMA_TTL = 3600
+DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = 'default'
 
 @magics_class
@@ -25,6 +26,18 @@ class TrinoSql(Magics):
     port = Int(443, config=True, help='Trino server port number)')
     httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
     auth = Instance(klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')    
+
+    @needs_local_scope
+    @line_cell_magic
+    @magic_arguments()
+    @argument('sql', nargs='*', type=str, help='SQL statement')
+    @argument('-l', '--limit', type=int, help='The maximum number of rows to display')
+    @argument('-f', '--outputFile', type=str, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
+    @argument('-t', '--cacheTTL', type=int, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
+    @argument('-a', '--catalogs', type=str, help='Retrive schema from the specified list of catalogs')
+    def trino(self, line=None, cell=None, local_ns=None):
+        "Magic that works both as %trino and as %%trino"
+        self.trinosql(line, cell, local_ns)
 
     @needs_local_scope
     @line_cell_magic
@@ -55,7 +68,8 @@ class TrinoSql(Magics):
         outputFile = args.outputFile or self.outputFile
         cacheTTL = args.cacheTTL or self.cacheTTL
         catalogs = args.catalogs or self.catalogs
-        checkAndUpdateSchema(cur, outputFile, cacheTTL, catalogs.split(','))
+        if cacheTTL > 0:
+            checkAndUpdateSchema(cur, outputFile, cacheTTL, catalogs.split(','))
 
         sql = cell
         if cell is None:

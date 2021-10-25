@@ -1,3 +1,4 @@
+import os
 import re
 from html import escape
 
@@ -11,8 +12,9 @@ from .schema_export import checkAndUpdateSchema, updateLocalDatabase
 BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/sparkdb.schema.json'
-DEFAULT_SCHEMA_TTL = 3600
+DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = 'default'
+
 @magics_class
 class SparkSql(Magics):
     limit = Int(20, config=True, help='The maximum number of rows to display')
@@ -55,7 +57,8 @@ class SparkSql(Magics):
         outputFile = args.outputFile or self.outputFile
         cacheTTL = args.cacheTTL or self.cacheTTL
         catalogs = args.catalogs or self.catalogs
-        checkAndUpdateSchema(spark, outputFile, cacheTTL, catalogs.split(','))
+        if cacheTTL > 0:
+            checkAndUpdateSchema(spark, outputFile, cacheTTL, catalogs.split(','))
 
         sql = cell
         if cell is None:

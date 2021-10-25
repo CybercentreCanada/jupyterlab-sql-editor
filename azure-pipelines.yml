@@ -1,0 +1,65 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build_and_Publish_Python_Artifact
+  displayName: Build, package and publish python artifacts.
+  jobs:
+  - job: BuildPublishPythonArtifact
+    displayName: Build, package and publish python artifacts.
+    strategy:
+      matrix:
+        Python38:
+          python.version: '3.8'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '12.x'
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: 'Use Python $(python.version)'
+    - script: |
+        pip install wheel
+      displayName: 'Install wheel'
+    - script: |
+        pip install -ve .
+      displayName: 'Install jupyter deps'
+    - script: |
+        echo '.$(tag)' >> version.txt
+        python -m build
+      displayName: 'Build artifact'
+    - task: CopyFiles@2
+      inputs:
+        targetFolder: $(Build.ArtifactStagingDirectory)
+      displayName: 'Stage build artifact to publish'
+    - task: PublishBuildArtifacts@1
+      displayName: Publish build artifacts
+      inputs:
+        pathtoPublish: '$(Build.ArtifactStagingDirectory)/dist'
+        artifactName: 'dist'
+        publishLocation: 'Container'
+  - job: PublishArtifactToFeedArtifact
+    dependsOn: BuildPublishPythonArtifact
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'specific'
+        downloadPath: '$(Pipeline.Workspace)'
+      displayName: 'Download build artifact.'
+    - task: TwineAuthenticate@1
+      inputs:
+        artifactFeed: Analytical Platform/analytical-platform
+    - script: |
+        pip install twine
+        python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
+      displayName: 'Publish artifact to analytical-platform feed.'
