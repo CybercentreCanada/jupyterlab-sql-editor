@@ -32,6 +32,7 @@ stages:
       displayName: 'Install wheel and bulid'
     - script: |
         pip install -ve .
+        jlpm run build
       displayName: 'Install jupyter deps'
     - script: |
         echo '.$(tag)' >> version.txt
