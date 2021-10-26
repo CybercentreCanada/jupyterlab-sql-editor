@@ -33,6 +33,8 @@ stages:
     - script: |
         pip install -ve .
         jlpm install
+      displayName: 'install npm modules'
+    - script: |
         jlpm run build
       displayName: 'Build lab extension'
     - script: |
