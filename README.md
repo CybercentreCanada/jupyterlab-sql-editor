@@ -265,9 +265,9 @@ c.LanguageServerManager.language_servers = {
     },
    "trino-language-server": {
         "argv": [mgr.nodejs, "--inspect", node_module_path, *args],
-        "languages": ["trinosql"],
+        "languages": ["trino"],
         "version": 2,
-        "mime_types": ["text/x-trinosql"],
+        "mime_types": ["text/x-trino"],
         "display_name": "Trino language server",
         "config_schema": load_config_schema(key),
     }
@@ -386,9 +386,9 @@ c.SparkSql.limit=20
 c.SparkSql.cacheTTL=3600
 c.SparkSql.outputFile='/tmp/sparkdb.schema.json'
 c.SparkSql.catalogs='default'
-# pre-configure the TrinoSql magic.
-c.TrinoSql.cacheTTL=3600
-c.TrinoSql.outputFile='/tmp/trinodb.schema.json'
+# pre-configure the Trino magic.
+c.Trino.cacheTTL=3600
+c.Trino.outputFile='/tmp/trinodb.schema.json'
 
 
 # pre-configure to display all cell outputs in notebook

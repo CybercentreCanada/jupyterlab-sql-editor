@@ -52,7 +52,7 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
       var sqlMode = c.CodeMirror.getMode(config, 'sql')
       // multiplex python with SQL and return it
       var multiplexedModes = sqlCodeMirrorModesFor('sparksql', sqlMode)
-        .concat(sqlCodeMirrorModesFor('trinosql', sqlMode))
+        .concat(sqlCodeMirrorModesFor('trino', sqlMode))
       return c.CodeMirror.multiplexingMode(pythonMode, ...multiplexedModes);
     }
     // Original code has a third argument. Not sure why we don't..
@@ -62,7 +62,7 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
   );
 
   registerCodeMirrorFor(c, 'sparksql')
-  registerCodeMirrorFor(c, 'trinosql')
+  registerCodeMirrorFor(c, 'trino')
 
   // The following is already done by default implementation so not redoing here
   // c.CodeMirror.defineMIME('text/x-ipython', 'ipython');
@@ -148,9 +148,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
     lspExtractorsMgr.register(markerExtractor('sparksql'), 'python');
     lspExtractorsMgr.register(lineMagicExtractor('sparksql'), 'python');
     lspExtractorsMgr.register(cellMagicExtractor('sparksql'), 'python');
-    lspExtractorsMgr.register(markerExtractor('trinosql'), 'python');
-    lspExtractorsMgr.register(lineMagicExtractor('trinosql'), 'python');
-    lspExtractorsMgr.register(cellMagicExtractor('trinosql'), 'python');
+    lspExtractorsMgr.register(markerExtractor('trino'), 'python');
+    lspExtractorsMgr.register(lineMagicExtractor('trino'), 'python');
+    lspExtractorsMgr.register(cellMagicExtractor('trino'), 'python');
     console.log('jupyterlab_sql_editor LSP extractors registered');
   }
 };

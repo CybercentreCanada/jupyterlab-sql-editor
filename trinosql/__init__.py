@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from .trinosql import TrinoSql
+from .trinosql import Trino
 
 def load_ipython_extension(ipython):
-    ipython.register_magics(TrinoSql)
+    ipython.register_magics(Trino)

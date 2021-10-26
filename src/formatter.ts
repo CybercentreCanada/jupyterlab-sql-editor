@@ -40,9 +40,9 @@ class JupyterlabNotebookCodeFormatter {
     this.notebookTracker = notebookTracker;
     this.extractors = [];
     this.extractors.push(cellMagicExtractor('sparksql'));
-    this.extractors.push(cellMagicExtractor('trinosql'));
+    this.extractors.push(cellMagicExtractor('trino'));
     this.extractors.push(markerExtractor('sparksql'));
-    this.extractors.push(markerExtractor('trinosql'));
+    this.extractors.push(markerExtractor('trino'));
     this.codeMirror = codeMirror;
     this.sqlFormatter = sqlFormatter;
   }

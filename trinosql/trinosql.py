@@ -16,7 +16,7 @@ DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = 'default'
 
 @magics_class
-class TrinoSql(Magics):
+class Trino(Magics):
     limit = Int(20, config=True, help='The maximum number of rows to display')
     outputFile = Unicode(DEFAULT_SCHEMA_OUTFILE, config=True, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
@@ -37,18 +37,6 @@ class TrinoSql(Magics):
     @argument('-a', '--catalogs', type=str, help='Retrive schema from the specified list of catalogs')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
-        self.trinosql(line, cell, local_ns)
-
-    @needs_local_scope
-    @line_cell_magic
-    @magic_arguments()
-    @argument('sql', nargs='*', type=str, help='SQL statement')
-    @argument('-l', '--limit', type=int, help='The maximum number of rows to display')
-    @argument('-f', '--outputFile', type=str, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
-    @argument('-t', '--cacheTTL', type=int, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
-    @argument('-a', '--catalogs', type=str, help='Retrive schema from the specified list of catalogs')
-    def trinosql(self, line=None, cell=None, local_ns=None):
-        "Magic that works both as %trinosql and as %%trinosql"
 
         if local_ns is None:
             local_ns = {}
@@ -56,7 +44,7 @@ class TrinoSql(Magics):
         user_ns = self.shell.user_ns.copy()
         user_ns.update(local_ns)
 
-        args = parse_argstring(self.trinosql, line)
+        args = parse_argstring(self.trino, line)
 
         conn = trino.dbapi.connect(
             host=self.host,
