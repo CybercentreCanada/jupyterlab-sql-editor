@@ -104,7 +104,7 @@ def getSparkDatabaseSchema(spark, catalogs):
     }
 
 def getTablesInLocalDatabase(spark):
-    spark.sql(f'USE default')
+    spark.sql(f'USE spark_catalog')
     rows = spark.sql(f'SHOW TABLES IN default').collect()
     return list(map(lambda r: {
         "tableName": r.tableName,
