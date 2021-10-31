@@ -1,9 +1,11 @@
+spark-warehouse
 venv
 *.bundle.*
 lib/
 node_modules/
 *.egg-info/
 .ipynb_checkpoints
+.virtual_documents
 *.tsbuildinfo
 jupyterlab_sql_editor/labextension
 

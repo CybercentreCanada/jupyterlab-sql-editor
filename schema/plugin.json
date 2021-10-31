@@ -1,12 +1,12 @@
 {
   "jupyter.lab.shortcuts": [
     {
-      "command": "jupyterlab_sql_editor:format_cell",
+      "command": "jupyterlab-sql-editor:format_cell",
       "keys": ["Ctrl Q"],
       "selector": ".jp-CodeCell"
     },
     {
-      "command": "jupyterlab_sql_editor:format_document",
+      "command": "jupyterlab-sql-editor:format_document",
       "keys": ["Ctrl Q"],
       "selector": ".jp-FileEditor"
     }

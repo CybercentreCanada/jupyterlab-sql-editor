@@ -81,7 +81,7 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
  * Initialization data for the jupyterlab_jc extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'jupyterlab_sql_editor:plugin',
+  id: 'jupyterlab-sql-editor:plugin',
   autoStart: true,
   optional: [],
   requires: [
@@ -99,11 +99,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
     editorTracker: IEditorTracker,
     tracker: INotebookTracker
   ) => {
-    console.log('JupyterLab extension jupyterlab_sql_editor is activated!');
+    console.log('JupyterLab extension jupyterlab-sql-editor is activated!');
 
     const sqlFormatter = new SqlFormatter("    ", true);
     const sqlCodeFormatter = new SqlCodeFormatter(app, tracker, editorTracker, codeMirror, sqlFormatter);
-    console.log('jupyterlab_sql_editor SQL code formatter registered');
+    console.log('jupyterlab-sql-editor SQL code formatter registered');
 
     /**
      * Load the settings for this extension
@@ -140,7 +140,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     // highlightin SQL which is embedded in a IPython magic or within
     // a python string (delimited by markers)
     codeMirrorWithSqlSyntaxHighlightSupport(codeMirror);
-    console.log('jupyterlab_sql_editor code mirror for syntax highlighting registered');
+    console.log('jupyterlab-sql-editor code mirror for syntax highlighting registered');
 
     // JupyterLab-LSP relies on extractors to pull the SQL out of the cell
     // and into a virtual document which is then passed to the sql-language-server
@@ -151,7 +151,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     lspExtractorsMgr.register(markerExtractor('trino'), 'python');
     lspExtractorsMgr.register(lineMagicExtractor('trino'), 'python');
     lspExtractorsMgr.register(cellMagicExtractor('trino'), 'python');
-    console.log('jupyterlab_sql_editor LSP extractors registered');
+    console.log('jupyterlab-sql-editor LSP extractors registered');
   }
 };
 

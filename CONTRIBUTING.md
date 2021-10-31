@@ -1,3 +1,35 @@
+Your new extension project has enough code in it to see it working in your JupyterLab. Run the following commands to install the initial project dependencies and install the extension into the JupyterLab environment.
+
+
+pip install -ve .
+
+
+The above command copies the frontend part of the extension into JupyterLab. We can run this pip install command again every time we make a change to copy the change into JupyterLab. Even better, we can use the develop command to create a symbolic link from JupyterLab to our source directory. This means our changes are automatically available in JupyterLab:
+
+jupyter labextension develop --overwrite .
+
+
+
+
+JupyterLab extensions for JupyterLab 3.0 can be distributed as Python packages. The cookiecutter template we used contains all of the Python packaging instructions in the pyproject.toml file to wrap your extension in a Python package. Before generating a package, we first need to install build.
+
+To create a Python wheel package (.whl) in the dist/ directory, do:
+
+python -m build
+
+
+Both of these commands will build the JavaScript into a bundle in the jupyterlab_apod/labextension/static directory, which is then distributed with the Python package. This bundle will include any necessary JavaScript dependencies as well. You may want to check in the jupyterlab_apod/labextension/static directory to retain a record of what JavaScript is distributed in your package, or you may want to keep this “build artifact” out of your source repository history.
+
+You can now try installing your extension as a user would. Open a new terminal and run the following commands to create a new environment and install your extension.
+
+
+conda create -n jupyterlab-apod jupyterlab
+conda activate jupyterlab-apod
+pip install jupyterlab_apod/dist/jupyterlab_apod-0.1.0-py3-none-any.whl
+jupyter lab
+
+
+
 
 ## Applying LSP code completion to SQL within python strings
 

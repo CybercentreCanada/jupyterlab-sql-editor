@@ -1,4 +1,4 @@
-# jupyterlab_sql_editor
+# jupyterlab-sql-editor
 
 This project adds support for handling SQL queries in JupyterLab.
 
@@ -45,14 +45,14 @@ You can also format SQL within a python string.
 
 
 
-`jupyterlab_sql_editor` is based on the [sparksql-magic](https://github.com/cryeo/sparksql-magic) project and expands on it by adding
+`jupyterlab-sql-editor` is based on the [sparksql-magic](https://github.com/cryeo/sparksql-magic) project and expands on it by adding
   - support for line magic
   - automatic generation of [sql-language-server](https://github.com/joe-re/sql-language-server) schema file for auto completion support
   - support fromating sql using the sql-formatter project [sql-formatter](https://github.com/zeroturnaround/sql-formatter)
 
 ### Transclusions
 
-`jupyterlab_sql_editor` includes transclusions to extract SQL statements from
+`jupyterlab-sql-editor` includes transclusions to extract SQL statements from
   - sparksql cell magic
   - sparksql line magic
   - sql in a python string (using special --start/end-sql-syntax markers)
@@ -60,7 +60,7 @@ You can also format SQL within a python string.
 Transclusions is what [jupyterlab-lsp](https://github.com/krassowski/jupyterlab-lsp) uses to extract parts of a cell in this case SQL statements and passes them to the `sql-language-server` for evaluation. This enables auto completion of spark SQL keywords, tables, columns and functions.
 
 ### Syntax Highlighting
-`jupyterlab_sql_editor` registers 3 multiplexed CodeMirrors to support precise syntax highlighting. A multiplexed CodeMirror is registered for
+`jupyterlab-sql-editor` registers 3 multiplexed CodeMirrors to support precise syntax highlighting. A multiplexed CodeMirror is registered for
   - sparksql cell magic
   - sparksql line magic
   - sql in python string
@@ -84,7 +84,7 @@ We can thus increase the `foreignCodeThreshold` from 50% to 99% to prevent this 
 To install the extension, execute:
 
 ```bash
-pip install jupyterlab_sql_editor
+pip install jupyterlab-sql-editor
 ```
 
 ## Uninstall
@@ -92,7 +92,7 @@ pip install jupyterlab_sql_editor
 To remove the extension, execute:
 
 ```bash
-pip uninstall jupyterlab_sql_editor
+pip uninstall jupyterlab-sql-editor
 ```
 
 
@@ -108,7 +108,7 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
-# Change directory to the jupyterlab_sql_editor directory
+# Change directory to the jupyterlab-sql-editor directory
 # Install package in development mode
 pip install -e .
 # Link your development version of the extension with JupyterLab
@@ -137,12 +137,12 @@ jupyter lab build --minimize=False
 ### Development uninstall
 
 ```bash
-pip uninstall jupyterlab_sql_editor
+pip uninstall jupyterlab-sql-editor
 ```
 
 In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
 command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
-folder is located. Then you can remove the symlink named `jupyterlab_sql_editor` within that folder.
+folder is located. Then you can remove the symlink named `jupyterlab-sql-editor` within that folder.
 
 ### Packaging the extension
 

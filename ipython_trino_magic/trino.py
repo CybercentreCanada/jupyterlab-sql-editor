@@ -25,8 +25,9 @@ class Trino(Magics):
     host = Unicode('localhost', config=True, help='The trino server hostname)')
     port = Int(443, config=True, help='Trino server port number)')
     httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
-    auth = Instance(klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')    
-
+    auth = Instance(allow_none=True, klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')    
+    user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User)')
+ 
     @needs_local_scope
     @line_cell_magic
     @magic_arguments()
@@ -50,6 +51,7 @@ class Trino(Magics):
             host=self.host,
             port=self.port,
             auth=self.auth,
+            user=self.user,
             http_scheme=self.httpScheme)
         cur = conn.cursor()
 
