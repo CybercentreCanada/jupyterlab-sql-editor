@@ -1,14 +1,22 @@
 # jupyterlab-sql-editor
 
-This project adds support for handling SQL queries in JupyterLab.
+SQL support for JupyterLab:
 
-Default configuration can be changed using the `%config`
+- IPython Spark line and cell magic to execute Spark SQL queries
+- IPython Trino line and cell magic to execute Trino queries
+- SQL formatter
+- Automatic extraction of database schemas (tables, columns, functions) including any locally created tables
+- Completion of tables, columns, functions (triggered by `tab` or `dot`)
+- Syntax highlighting of line magic, cell magic and within python strings
 
-![display](images/config.png)
+jupyterlab-sql-editor leverages the following projects:
 
-The magic supports many configuration options.
+- [krassowski/jupyterlab-lsp](https://github.com/jupyter-lsp/jupyterlab-lsp)
+- [joe-re/sql-language-server](https://github.com/joe-re/sql-language-server)
+- [zeroturnaround/sql-formatter](https://github.com/zeroturnaround/sql-formatter)
+- [cryeo/sparksql-magic](https://github.com/cryeo/sparksql-magic)
+- [trino-python-client](https://github.com/trinodb/trino-python-client)
 
-![doc](images/doc.png)
 
 You can capture the query as a Dataframe and make use of it in later cells.
 
@@ -73,6 +81,20 @@ We can thus increase the `foreignCodeThreshold` from 50% to 99% to prevent this 
 > Advanced Settings -> Code Syntax -> foreignCodeThreshold
 
 
+However you'll notice that as your SQL query gets larger the code cell will switch from python syntax hilighting to SQL syntax hilighting.  This is due to the fact that jupyter-lsp has a builtin behaviour to do this. It can be found here.
+
+https://github.com/krassowski/jupyterlab-lsp/blob/a52d4220ab889d0572091410db7f77fa93652f1c/packages/jupyterlab-lsp/src/features/syntax_highlighting.ts#L90
+
+```
+		// change the mode if the majority of the code is the foreign code
+        if (coverage > this.settings.composite.foreignCodeThreshold) {
+          editors_with_current_highlight.add(ce_editor);
+          let old_mode = editor.getOption('mode');
+          if (old_mode != mode.mime) {
+            editor.setOption('mode', mode.mime);
+          }
+```
+
 
 
 ## Requirements
@@ -84,7 +106,7 @@ We can thus increase the `foreignCodeThreshold` from 50% to 99% to prevent this 
 To install the extension, execute:
 
 ```bash
-pip install jupyterlab-sql-editor
+npm install --save-dev sql-language-server
 ```
 
 ## Uninstall
@@ -106,12 +128,18 @@ The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
 `yarn` or `npm` in lieu of `jlpm` below.
 
+
+Clone the repo to your local environment
+
+Run the following commands to install the initial project dependencies and install the extension into the JupyterLab environment.
+
 ```bash
-# Clone the repo to your local environment
-# Change directory to the jupyterlab-sql-editor directory
-# Install package in development mode
-pip install -e .
-# Link your development version of the extension with JupyterLab
+pip install -ve .
+```
+
+The above command copies the frontend part of the extension into JupyterLab. We can run this pip install command again every time we make a change to copy the change into JupyterLab. Even better, we can use the develop command to create a symbolic link from JupyterLab to our source directory. This means our changes are automatically available in JupyterLab:
+
+```bash
 jupyter labextension develop . --overwrite
 # Rebuild extension Typescript source after making changes
 jlpm run build
@@ -132,6 +160,25 @@ By default, the `jlpm run build` command generates the source maps for this exte
 
 ```bash
 jupyter lab build --minimize=False
+```
+
+JupyterLab extensions for JupyterLab 3.0 can be distributed as Python packages. The cookiecutter template we used contains all of the Python packaging instructions in the pyproject.toml file to wrap your extension in a Python package. Before generating a package, we first need to install build.
+
+To create a Python wheel package (.whl) in the dist/ directory, do:
+
+```bash
+python -m build
+```
+
+The command will build the JavaScript into a bundle in the jupyterlab_apod/labextension/static directory, which is then distributed with the Python package. This bundle will include any necessary JavaScript dependencies as well. You may want to check in the jupyterlab_apod/labextension/static directory to retain a record of what JavaScript is distributed in your package, or you may want to keep this “build artifact” out of your source repository history.
+
+You can now try installing your extension as a user would. Open a new terminal and run the following commands to create a new environment and install your extension.
+
+```bash
+conda create -n jupyterlab-apod jupyterlab
+conda activate jupyterlab-apod
+pip install jupyterlab_apod/dist/jupyterlab_apod-0.1.0-py3-none-any.whl
+jupyter lab
 ```
 
 ### Development uninstall
@@ -253,10 +300,15 @@ script = ["dist", "bin", "cli.js"]
 args = ["up", "--debug", "--method", "stdio"]
 node_module_path = mgr.find_node_module(node_module, *script)
 
+# You can specify additional node_modules path if jupyterlab-lsp has
+# difficulty finding your installation of sql-language-server
+mgr.extra_node_roots = ["~/.nvm/versions/node/v14.17.6/lib"]
+
+
 # c is a magic, lazy variable
 c.LanguageServerManager.language_servers = {
    "sparksql-language-server": {
-        "argv": [mgr.nodejs, "--inspect", node_module_path, *args],
+        "argv": [mgr.nodejs, node_module_path, *args],
         "languages": ["sparksql"],
         "version": 2,
         "mime_types": ["text/x-sparksql"],
@@ -264,7 +316,7 @@ c.LanguageServerManager.language_servers = {
         "config_schema": load_config_schema(key),
     },
    "trino-language-server": {
-        "argv": [mgr.nodejs, "--inspect", node_module_path, *args],
+        "argv": [mgr.nodejs, node_module_path, *args],
         "languages": ["trino"],
         "version": 2,
         "mime_types": ["text/x-trino"],
@@ -311,21 +363,7 @@ $ cat /opt/conda/share/jupyter/lab/settings/overrides.json
                                 "filename": "/tmp/sparkdb.schema.json",
                                 "jupyterLabMode": true
                             }
-                        ],
-                        "lint": {
-                            "rules": {
-                                "align-column-to-the-first": "error",
-                                "column-new-line": "error",
-                                "linebreak-after-clause-keyword": "off",
-                                "reserved-word-case": [
-                                    "error",
-                                    "upper"
-                                ],
-                                "space-surrounding-operators": "error",
-                                "where-clause-new-line": "error",
-                                "align-where-clause-to-the-first": "error"
-                            }
-                        }
+                        ]
                     }
                 }
             },
@@ -339,21 +377,7 @@ $ cat /opt/conda/share/jupyter/lab/settings/overrides.json
                                 "filename": "/tmp/trinodb.schema.json",
                                 "jupyterLabMode": true
                             }
-                        ],
-                        "lint": {
-                            "rules": {
-                                "align-column-to-the-first": "error",
-                                "column-new-line": "error",
-                                "linebreak-after-clause-keyword": "off",
-                                "reserved-word-case": [
-                                    "error",
-                                    "upper"
-                                ],
-                                "space-surrounding-operators": "error",
-                                "where-clause-new-line": "error",
-                                "align-where-clause-to-the-first": "error"
-                            }
-                        }
+                        ]
                     }
                 }
             }
@@ -378,7 +402,7 @@ c = get_config()
 
 # pre-load the sparksql magic
 c.InteractiveShellApp.extensions = [
-    'sparksql', 'trinosql'
+    'ipython_sparksql_magic', 'ipython_trino_magic'
 ]
 
 # pre-configure the SparkSql magic.
@@ -386,10 +410,17 @@ c.SparkSql.limit=20
 c.SparkSql.cacheTTL=3600
 c.SparkSql.outputFile='/tmp/sparkdb.schema.json'
 c.SparkSql.catalogs='default'
+
 # pre-configure the Trino magic.
+import trino
+c.Trino.auth=trino.auth.BasicAuthentication("principal id", "password")
+c.Trino.user=None
+c.Trino.host='localhost'
+c.Trino.port=443
+c.Trino.httpScheme='https'
 c.Trino.cacheTTL=3600
 c.Trino.outputFile='/tmp/trinodb.schema.json'
-
+c.Trino.catalogs="system,tpch"
 
 # pre-configure to display all cell outputs in notebook
 from IPython.core.interactiveshell import InteractiveShell
