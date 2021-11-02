@@ -40,6 +40,9 @@ Many thanks to the contributors of these projects:
 ## Execute and output your query results into an interactive data grid
 ![display](images/qgrid.gif)
 
+## Auto suggest column names and sub-fields
+![display](images/sparksql-nested-columns.gif)
+
 ## Auto suggest JOINs on matching column names
 ![display](images/trino-inner-join.gif)
 
