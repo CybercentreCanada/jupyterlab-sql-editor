@@ -13,7 +13,7 @@ BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/sparkdb.schema.json'
 DEFAULT_SCHEMA_TTL = -1
-DEFAULT_CATALOGS = 'default'
+DEFAULT_CATALOGS = ''
 
 @magics_class
 class SparkSql(Magics):
@@ -58,7 +58,10 @@ class SparkSql(Magics):
         cacheTTL = args.cacheTTL or self.cacheTTL
         catalogs = args.catalogs or self.catalogs
         if cacheTTL > 0:
-            checkAndUpdateSchema(spark, outputFile, cacheTTL, catalogs.split(','))
+            catalog_array = []
+            if ',' in catalogs:
+                catalog_array = catalogs.split(',')
+            checkAndUpdateSchema(spark, outputFile, cacheTTL, catalog_array)
 
         sql = cell
         if cell is None:

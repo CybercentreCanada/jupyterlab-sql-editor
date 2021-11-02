@@ -34,9 +34,14 @@ Many thanks to the contributors of these projects:
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
 - [Contributing](#contributing)
+- [Setup Trino Server for Testing](#setup-trino-server-for-testing)
+
 
 ## Execute and output your query results into an interactive data grid
 ![display](images/qgrid.gif)
+
+## Auto suggest JOINs on matching column names
+![display](images/trino-inner-join.gif)
 
 ## Format and syntax highlight Notebook code cells
 ![display](images/format-cell.gif)
@@ -61,7 +66,6 @@ Code completion is triggered on dot characters and when the tab key is pressed. 
 
 # Installation
 
-
 ## Requirements
 
 * JupyterLab >= 3.0
@@ -71,7 +75,7 @@ Code completion is triggered on dot characters and when the tab key is pressed. 
 To install the extension, execute:
 
 ```bash
-npm install --save-dev sql-language-server
+pip install jupyterlab-lsp jupyterlab-sql-editor trino pyspark
 ```
 
 ## Uninstall
@@ -89,10 +93,24 @@ Auto completion leverages the sql-language-server project.
 ### install sql-language-server
 
 ```bash
-pip install sql-language-server
+sudo npm install -g sql-language-server
 ```
 
+```bash
+$ npm list -g
+/usr/local/lib
+├── n@7.0.1
+├── npm@7.11.2
+├── sql-language-server@1.1.0
+├── yarn@1.22.10
+└── yo@3.1.1
+```
 
+```
+ls -lh /usr/local/lib/node_modules/sql-language-server/
+```
+
+Remember the location where your module is install `/usr/local/lib/` we will configure jupyterlab-lsp so it can find it.
 
 # Configuration
 
@@ -100,7 +118,7 @@ pip install sql-language-server
 ## Configure sql-language-server startup scripts
 
 ```bash
-$ cat /home/jovyan/.jupyter/jupyter_server_config.py
+$ cat ~/.jupyter/jupyter_server_config.py
 ```
 
 ```python
@@ -117,7 +135,7 @@ node_module_path = mgr.find_node_module(node_module, *script)
 
 # If jupyterlab-lsp has difficulty finding your sql-language-server
 # installation, specify additional node_modules paths
-mgr.extra_node_roots = ["~/.nvm/versions/node/v14.17.6/lib"]
+mgr.extra_node_roots = ["/usr/local/lib/"]
 
 c.LanguageServerManager.language_servers = {
    "sparksql-language-server": {
@@ -147,7 +165,7 @@ You can configure jupyterlab-lsp using the Advanced Settings Editor or using an 
 
 ### Using the Advanced Settings Editor
 
-TODO screenshot
+![display](images/jupyterlab-lsp-config.gif)
 
 ## Syntax highlighting
 
@@ -230,7 +248,7 @@ Notice the two sections `sparksql-language-server` and `trino-language-server` e
 SparkSql and Trino magic can be configured inside a Notebook. However it's convinient pre-configured them using an ipython profile.
 
 ```bash
-$ cat /home/jovyan/.ipython/profile_default/ipython_config.py 
+$ cat ~/.ipython/profile_default/ipython_config.py 
 
 # get the config
 c = get_config()
@@ -397,4 +415,67 @@ Once you know where jupyter lab looks for node_modules you can create a link to 
 ```bash
 cd /home/jovyan/node_modules/
 ln -s ~/dev/sql-language-server/packages/server/ sql-language-server
+```
+
+
+# Setup Trino Server for Testing
+
+Download server
+```bash 
+wget https://repo1.maven.org/maven2/io/trino/trino-server/364/trino-server-364.tar.gz
+tar -zxvf trino-server-364.tar.gz
+cd trino-server-364
+mkdir etc
+ ```
+
+Create a file etc/node.properties 
+```properties
+node.environment=production
+node.id=ffffffff-ffff-ffff-ffff-ffffffffffff
+node.data-dir=/var/trino/data
+```
+
+Create a file etc/jvm.config 
+```properties
+-server
+-Xmx16G
+-XX:-UseBiasedLocking
+-XX:+UseG1GC
+-XX:G1HeapRegionSize=32M
+-XX:+ExplicitGCInvokesConcurrent
+-XX:+ExitOnOutOfMemoryError
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:-OmitStackTraceInFastThrow
+-XX:ReservedCodeCacheSize=512M
+-XX:PerMethodRecompilationCutoff=10000
+-XX:PerBytecodeRecompilationCutoff=10000
+-Djdk.attach.allowAttachSelf=true
+-Djdk.nio.maxCachedBufferSize=2000000
+```
+
+Create a file etc/config.properties 
+```properties
+coordinator=true
+node-scheduler.include-coordinator=true
+http-server.http.port=8080
+query.max-memory=5GB
+query.max-memory-per-node=1GB
+query.max-total-memory-per-node=2GB
+discovery.uri=http://localhost:8080
+```
+
+Configure the sample TPCH database
+```bash
+mkdir etc/catalog
+```
+
+Create a file etc/catalog/tpch.properties with this content
+```properties
+connector.name=tpch
+```
+
+
+Launch the Trino server
+```bash
+bin/launcher start
 ```
