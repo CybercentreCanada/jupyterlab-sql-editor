@@ -6,10 +6,9 @@ import trino
 from IPython.core.display import HTML
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from traitlets import Int, Unicode, Instance
+from traitlets import Bool, Int, Unicode, Instance
 from .schema_export import checkAndUpdateSchema
-
-BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
+from ..utils.template import bind_variables
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/trinodb.schema.json'
 DEFAULT_SCHEMA_TTL = -1
@@ -21,7 +20,7 @@ class Trino(Magics):
     outputFile = Unicode(DEFAULT_SCHEMA_OUTFILE, config=True, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
     catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
-
+ 
     host = Unicode('localhost', config=True, help='The trino server hostname)')
     port = Int(443, config=True, help='Trino server port number)')
     httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
@@ -36,6 +35,7 @@ class Trino(Magics):
     @argument('-f', '--outputFile', type=str, help=f'Output schema to specified file, defaults to {DEFAULT_SCHEMA_OUTFILE}')
     @argument('-t', '--cacheTTL', type=int, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
     @argument('-a', '--catalogs', type=str, help='Retrive schema from the specified list of catalogs')
+    @argument('-p', '--print', type=str, help='Print SQL statement that will be executed (useful to test jinja templated statements')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
@@ -71,6 +71,10 @@ class Trino(Magics):
 
         limit = args.limit or self.limit
         sql = bind_variables(sql, user_ns)
+        
+        if args.print:
+            return sql
+
         cur.execute(sql)
         rows = cur.fetchmany(limit)
         header = list(map(lambda d: d[0], cur.description))
@@ -85,16 +89,6 @@ class Trino(Magics):
             html += make_tag('tr', ''.join(map(lambda x: make_tag('td', escape(str(x))), row)))
 
         return HTML(make_tag('table', html))
-
-
-def bind_variables(query, user_ns):
-    def fetch_variable(match):
-        variable = match.group(1)
-        if variable not in user_ns:
-            raise NameError('variable `%s` is not defined', variable)
-        return str(user_ns[variable])
-
-    return re.sub(BIND_VARIABLE_PATTERN, fetch_variable, query)
 
 
 def make_tag(tag_name, body='', **kwargs):

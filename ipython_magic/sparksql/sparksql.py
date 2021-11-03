@@ -8,8 +8,7 @@ from IPython.core.magic_arguments import argument, magic_arguments, parse_argstr
 from pyspark.sql import SparkSession
 from traitlets import Int, Unicode, Bool
 from .schema_export import checkAndUpdateSchema, updateLocalDatabase
-
-BIND_VARIABLE_PATTERN = re.compile(r'{([A-Za-z0-9_]+)}')
+from ..utils.template import bind_variables
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/sparkdb.schema.json'
 DEFAULT_SCHEMA_TTL = -1
@@ -114,14 +113,6 @@ class SparkSql(Magics):
             return HTML(make_tag('table', html)) 
 
 
-def bind_variables(query, user_ns):
-    def fetch_variable(match):
-        variable = match.group(1)
-        if variable not in user_ns:
-            raise NameError('variable `%s` is not defined', variable)
-        return str(user_ns[variable])
-
-    return re.sub(BIND_VARIABLE_PATTERN, fetch_variable, query)
 
 
 def get_results(df, limit):
