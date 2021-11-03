@@ -8,7 +8,7 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Bool, Int, Unicode, Instance
 from .schema_export import checkAndUpdateSchema
-from ..utils.template import bind_variables
+from ..common.template import bind_variables
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/trinodb.schema.json'
 DEFAULT_SCHEMA_TTL = -1

@@ -21,13 +21,19 @@ The easiest way to output a literal variable delimiter "{{" is by using a variab
 
 For bigger sections, it makes sense to mark a block raw. For example, to include example Jinja syntax in a template, you can use this snippet:
 
+%%trino --limit 3
 {% raw %}
-    <ul>
-    {% for item in seq %}
-        <li>{{ item }}</li>
-    {% endfor %}
-    </ul>
+/*
+This is a comment which happens to contain a jinja template
+variable {{x}} that we want to keep as is.
+*/
 {% endraw %}
+
+SELECT
+    *
+FROM
+    {{ table_name }}
+
 '''
 
 RAISING_ERROR_MSG = "Raising an error to prevent statement from being executed incorrectly."

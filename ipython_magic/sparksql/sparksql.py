@@ -8,7 +8,7 @@ from IPython.core.magic_arguments import argument, magic_arguments, parse_argstr
 from pyspark.sql import SparkSession
 from traitlets import Int, Unicode, Bool
 from .schema_export import checkAndUpdateSchema, updateLocalDatabase
-from ..utils.template import bind_variables
+from ..common.template import bind_variables
 
 DEFAULT_SCHEMA_OUTFILE = '/tmp/sparkdb.schema.json'
 DEFAULT_SCHEMA_TTL = -1
