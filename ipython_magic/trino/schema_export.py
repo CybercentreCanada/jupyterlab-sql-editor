@@ -81,22 +81,10 @@ def getDatabaseSchema(cur, catalogs):
         "functions": getFunctions(cur)
     }
 
-def checkAndUpdateSchema(cur, schemaFileName, refresh_threshold, catalogs):
-    file_exists = path.isfile(schemaFileName)
-    ttl_expired = False
-    if file_exists:
-        file_time = path.getmtime(schemaFileName)
-        current_time = time.time()
-        if current_time - file_time > refresh_threshold:
-            print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schemaFileName}')
-            ttl_expired = True
-    else:
-        print(f'Generating schema file: {schemaFileName}')
-        
-    if (not file_exists) or ttl_expired:
-        db_schema = getDatabaseSchema(cur, catalogs)
-        # Save schema to disk. sql-language-server will pickup any changes to this file.
-        with open(schemaFileName, 'w') as fout:
-            json.dump(db_schema, fout, sort_keys=True, indent=2)
-        print('Schema file updated: ' + schemaFileName)
+def updateDatabaseSchema(cur, schemaFileName, catalogs):
+    db_schema = getDatabaseSchema(cur, catalogs)
+    # Save schema to disk. sql-language-server will pickup any changes to this file.
+    with open(schemaFileName, 'w') as fout:
+        json.dump(db_schema, fout, sort_keys=True, indent=2)
+    print('Schema file updated: ' + schemaFileName)
 

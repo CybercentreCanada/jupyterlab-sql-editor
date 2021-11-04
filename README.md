@@ -258,7 +258,7 @@ c = get_config()
 
 # pre-load the sparksql magic
 c.InteractiveShellApp.extensions = [
-    'ipython_sparksql_magic', 'ipython_trino_magic'
+    'ipython_magic.trino', 'ipython_magic.sparksql'
 ]
 
 # pre-configure the SparkSql magic.

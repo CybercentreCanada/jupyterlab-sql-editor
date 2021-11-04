@@ -123,16 +123,17 @@ def checkAndUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
         if current_time - file_time > refresh_threshold:
             print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schemaFileName}')
             ttl_expired = True
-    else:
-        print(f'Generating schema file: {schemaFileName}')
         
     if (not file_exists) or ttl_expired:
-        sparkdb_schema = getSparkDatabaseSchema(spark, catalogs)
-        # Save schema to disk. sql-language-server will pickup any changes to this file.
-        with open(schemaFileName, 'w') as fout:
-            json.dump(sparkdb_schema, fout, sort_keys=True, indent=2)
-        print('Schema file updated: ' + schemaFileName)
+        updateDatabaseSchema(spark, schemaFileName, catalogs)
 
+def updateDatabaseSchema(spark, schemaFileName, catalogs):
+    print(f'Generating schema file: {schemaFileName}')
+    sparkdb_schema = getSparkDatabaseSchema(spark, catalogs)
+    # Save schema to disk. sql-language-server will pickup any changes to this file.
+    with open(schemaFileName, 'w') as fout:
+        json.dump(sparkdb_schema, fout, sort_keys=True, indent=2)
+    print('Schema file updated: ' + schemaFileName)
 
 def updateLocalDatabase(spark, schemaFileName):
     updated_tables = getTablesInLocalDatabase(spark)
