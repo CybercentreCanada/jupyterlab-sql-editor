@@ -114,7 +114,7 @@ def getTablesInLocalDatabase(spark):
     }, rows))
 
 
-def checkAndUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
+def shouldUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
     file_exists = path.isfile(schemaFileName)
     ttl_expired = False
     if file_exists:
@@ -124,8 +124,7 @@ def checkAndUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
             print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schemaFileName}')
             ttl_expired = True
         
-    if (not file_exists) or ttl_expired:
-        updateDatabaseSchema(spark, schemaFileName, catalogs)
+    return (not file_exists) or ttl_expired
 
 def updateDatabaseSchema(spark, schemaFileName, catalogs):
     print(f'Generating schema file: {schemaFileName}')
