@@ -60,13 +60,6 @@ Many thanks to the contributors of these projects:
 
 
 
-
-
-Code completion is triggered on dot characters and when the tab key is pressed. You can complete nested fields, table names, functions and joins.
-
-![display](images/sql-in-python-string.gif)
-
-
 # Installation
 
 ## Requirements
@@ -113,10 +106,15 @@ $ npm list -g
 ls -lh /usr/local/lib/node_modules/sql-language-server/
 ```
 
-Remember the location where your module is install `/usr/local/lib/` we will configure jupyterlab-lsp so it can find it.
+Remember the location where your module is installed. In this example `/usr/local/lib/`. We will configure jupyterlab-lsp with this location.
 
 # Configuration
 
+## Syntax highlighting
+
+Setting `foreignCodeThreshold` from 50% to 99% prevents the jupyterlab-lsp heuristic which tries to guess the mime type of a code cell. However when a code cell contains both python and SQL code this heuristic interfeer with this extension. We can disable the behaviour by changing the `foreignCodeThreshold` value under the JupyterLab advanced settings.
+
+> Advanced Settings -> Code Syntax -> foreignCodeThreshold
 
 ## Configure sql-language-server startup scripts
 
@@ -131,14 +129,14 @@ from jupyter_lsp.types import LanguageServerManagerAPI
 
 mgr = LanguageServerManagerAPI()
 
+# If jupyterlab-lsp has difficulty finding your sql-language-server
+# installation, specify additional node_modules paths
+mgr.extra_node_roots = ["/usr/local/lib/"]
+
 node_module = key = "sql-language-server"
 script = ["dist", "bin", "cli.js"]
 args = ["up", "--method", "stdio"]
 node_module_path = mgr.find_node_module(node_module, *script)
-
-# If jupyterlab-lsp has difficulty finding your sql-language-server
-# installation, specify additional node_modules paths
-mgr.extra_node_roots = ["/usr/local/lib/"]
 
 c.LanguageServerManager.language_servers = {
    "sparksql-language-server": {
@@ -162,20 +160,14 @@ c.LanguageServerManager.language_servers = {
 
 Notice that the launch scripts are named `sparksql-language-server` and `trino-language-server`. We will use these names to configure jupyterlab-lsp with each instance of the sql-language-server.
 
+
 ## Configure JupyterLab LSP to use registered sql-language-server
 
 You can configure jupyterlab-lsp using the Advanced Settings Editor or using an `overrides.json` file.
 
 ### Using the Advanced Settings Editor
 
-![display](images/jupyterlab-lsp-config.gif)
-
-## Syntax highlighting
-
-Setting `foreignCodeThreshold` from 50% to 99% prevents the jupyterlab-lsp heuristic which tries to guess the mime type of a code cell. However when a code cell contains both python and SQL code this heuristic interfeer with this extension. We can disable the behaviour by changing the `foreignCodeThreshold` value under the JupyterLab advanced settings.
-
-> Advanced Settings -> Code Syntax -> foreignCodeThreshold
-
+![display](images/jupyterlab-lsp-config.png)
 
 
 ### Using an overrides.json file
@@ -246,7 +238,7 @@ Notice the two sections `sparksql-language-server` and `trino-language-server` e
 
 
 
-## Magic Configurations (optional)
+## Pre-configure Magics (optional)
 
 SparkSql and Trino magic can be configured inside a Notebook. However it's convinient pre-configured them using an ipython profile.
 
