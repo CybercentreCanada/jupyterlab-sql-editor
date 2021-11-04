@@ -46,6 +46,7 @@ setup_args = dict(
     install_requires=[
         'trino',
         'ipydatagrid'
+        'Jinja2'
     ],
     zip_safe=False,
     include_package_data=True,
