@@ -9,7 +9,6 @@ from pyspark.sql import SparkSession
 from traitlets import Int, Unicode, Bool
 from .schema_export import updateDatabaseSchema, updateLocalDatabase
 from ..common.base import Base
-from ipydatagrid import DataGrid
 
 @magics_class
 class SparkSql(Base):
@@ -69,6 +68,12 @@ class SparkSql(Base):
         interactive = args.interactive or self.interactive
 
         if interactive:
+            # It's important to import DataGrid inside this magic function
+            # If you import it at the top of the file it will interfere with
+            # the use of DataGrid in a notebook cell. You get a message
+            # Loading widget...
+            from ipydatagrid import DataGrid
+
             pdf = df.limit(limit + 1).toPandas()
             num_rows = pdf.shape[0]
             if num_rows > 0: 
