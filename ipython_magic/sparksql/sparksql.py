@@ -20,7 +20,7 @@ class SparkSql(Base):
     @argument('-l', '--limit', type=int, help='The maximum number of rows to display')
     @argument('-r', '--refresh', action='store_true', help=f'Force the regeneration of the schema cache file')
     @argument('-i', '--interactive', action='store_true', help='Display results in interactive grid')
-    @argument('-p', '--print', action='store_true', type=str, help='Print SQL statement that will be executed (useful to test jinja templated statements')
+    @argument('-p', '--print', action='store_true', help='Print SQL statement that will be executed (useful to test jinja templated statements')
     @argument('-d', '--dataframe', type=str, help='Capture dataframe in a local variable')
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
