@@ -17,7 +17,8 @@ const FLAG_OPTS = [
     '-e', '--eager',  //          Cache dataframe with eager load
     '-i', '--interactive',  //          Display results in interactive grid
     '-p', '--print',
-    '-r', '--refresh'
+    '-r', '--refresh',
+    '-s', '--skipExecution'
 ].join('|')
 const SPACE = ' '
 const OPTION_VALUE = `[0-9a-zA-Z/\._]+`

@@ -17,7 +17,7 @@ class SparkSql(Base):
     @line_cell_magic
     @magic_arguments()
     @argument('sql', nargs='*', type=str, help='SQL statement')
-    @argument('-l', '--limit', type=int, help='The maximum number of rows to display')
+    @argument('-l', '--limit', type=int, help='The maximum number of rows to display. A value of zero is equivalend to --skipExecution')
     @argument('-r', '--refresh', action='store_true', help=f'Force the regeneration of the schema cache file')
     @argument('-i', '--interactive', action='store_true', help='Display results in interactive grid')
     @argument('-p', '--print', action='store_true', help='Print SQL statement that will be executed (useful to test jinja templated statements')
@@ -25,6 +25,7 @@ class SparkSql(Base):
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
     @argument('-v', '--view', type=str, help='Create or replace temporary view')
+    @argument('-s', '--skipExecution', action='store_true', help='Skip executing the query. Dataframe, caching or view creation still apply')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -64,9 +65,13 @@ class SparkSql(Base):
             print('capture dataframe to local variable `%s`' % args.dataframe)
             self.shell.user_ns.update({args.dataframe: df})
 
-        limit = args.limit or self.limit
+        limit = args.limit
+        if limit == None:
+            limit = self.limit
+        if limit <= 0 or args.skipExecution:
+            print('Query execution skipped')
+            return
         interactive = args.interactive or self.interactive
-
         if interactive:
             # It's important to import DataGrid inside this magic function
             # If you import it at the top of the file it will interfere with
