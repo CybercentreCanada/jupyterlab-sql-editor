@@ -26,7 +26,7 @@ class SparkSql(Base):
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
     @argument('-v', '--view', metavar='name', type=str, help='Create or replace a temporary view named `name`')
-    @argument('-o', '--output', metavar='sql|json|html|grid|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
+    @argument('-o', '--output', metavar='sql|json|html|grid|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
