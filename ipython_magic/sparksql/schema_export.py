@@ -7,19 +7,34 @@ import time
 
 
 def getTypeName(t):
-    if type(t) == LongType:
-        return 'long'
-    if type(t) == IntegerType:
-        return 'integer'
     if type(t) == StringType:
         return 'string'
     if type(t) == ArrayType:
         return 'array'
+    if type(t) == TimestampType:
+        return 'timestamp'
+    if type(t) == DateType:
+        return 'date'
+    if type(t) == LongType:
+        return 'long'
+    if type(t) == IntegerType:
+        return 'integer'
+    if type(t) == BooleanType:
+        return 'integer'
     if type(t) == StructType:
         return 'struct'
     if type(t) == MapType:
         return 'map'
-
+    if type(t) == DecimalType:
+        return 'decimal'
+    if type(t) == DoubleType:
+        return 'double'
+    if type(t) == FloatType:
+        return 'float'
+    if type(t) == ShortType:
+        return 'short'
+    if type(t) == BinaryType:
+        return 'binary'
 
 def getPath(path, name):
     if ' ' in name:
@@ -75,7 +90,7 @@ def getTablesInDatabase(spark, catalog, database):
 def getTablesInCatalogs(spark, catalogs):
     tables = []
     for catalog in catalogs:
-        print(f'getting tables in {catalog}')
+        print(f'Listing tables in {catalog}')
         spark.sql(f'USE {catalog}')
         rows = spark.sql(f'SHOW DATABASES').collect()
         for row in rows:
@@ -135,6 +150,7 @@ def updateDatabaseSchema(spark, schemaFileName, catalogs):
     print('Schema file updated: ' + schemaFileName)
 
 def updateLocalDatabase(spark, schemaFileName):
+    print('Updating local tables')
     updated_tables = getTablesInLocalDatabase(spark)
     current_schema = {}
     with open(schemaFileName) as f:

@@ -19,6 +19,7 @@ class SparkSql(Base):
     @argument('sql', nargs='*', type=str, help='SQL statement')
     @argument('-l', '--limit', type=int, help='The maximum number of rows to display. A value of zero is equivalend to --skipExecution')
     @argument('-r', '--refresh', action='store_true', help=f'Force the regeneration of the schema cache file')
+    @argument('-o', '--refreshLocal', action='store_true', help=f'Force updating the schema for local tables/views only')
     @argument('-i', '--interactive', action='store_true', help='Display results in interactive grid')
     @argument('-p', '--print', action='store_true', help='Print SQL statement that will be executed (useful to test jinja templated statements')
     @argument('-d', '--dataframe', type=str, help='Capture dataframe in a local variable')
@@ -35,7 +36,7 @@ class SparkSql(Base):
 
         spark = self.get_instantiated_spark_session()
         if spark is None:
-            print("active spark session is not found")
+            print("Active spark session is not found")
             return
 
         catalog_array = self.get_catalog_array()
@@ -45,6 +46,9 @@ class SparkSql(Base):
             updateDatabaseSchema(spark, outputFile, catalog_array)
             return
 
+        if args.refreshLocal:
+            updateLocalDatabase(spark, outputFile)
+
         sql = self.get_sql_statement(cell, args.sql)
         if not sql:
             return
@@ -53,17 +57,17 @@ class SparkSql(Base):
 
         df = spark.sql(sql)
         if args.cache or args.eager:
-            print('cache dataframe with %s load' % ('eager' if args.eager else 'lazy'))
+            print('Cached dataframe with %s load' % ('eager' if args.eager else 'lazy'))
             df = df.cache()
             if args.eager:
                 df.count()
         if args.view:
-            print('create temporary view `%s`' % args.view)
+            print('Created temporary view `%s`' % args.view)
             df.createOrReplaceTempView(args.view)
-            updateLocalDatabase(spark, outputFile)
         if args.dataframe:
-            print('capture dataframe to local variable `%s`' % args.dataframe)
+            print('Captured dataframe to local variable `%s`' % args.dataframe)
             self.shell.user_ns.update({args.dataframe: df})
+
 
         limit = args.limit
         if limit == None:
@@ -83,7 +87,7 @@ class SparkSql(Base):
             num_rows = pdf.shape[0]
             if num_rows > 0: 
                 if num_rows > limit:
-                    print('only showing top %d row(s)' % limit)
+                    print('Only showing top %d row(s)' % limit)
                     # Delete last row
                     pdf = pdf.head(num_rows -1) 
                 return DataGrid(pdf, selection_mode="row", layout={"height": "1000px"})
@@ -94,7 +98,7 @@ class SparkSql(Base):
         else:
             header, contents = self.get_results(df, limit)
             if len(contents) > limit:
-                print('only showing top %d row(s)' % limit)
+                print('Only showing top %d row(s)' % limit)
 
             html = self.make_tag('tr',
                         ''.join(map(lambda x: self.make_tag('td', escape(x), style='font-weight: bold'), header)),

@@ -18,6 +18,7 @@ const FLAG_OPTS = [
     '-i', '--interactive',  //          Display results in interactive grid
     '-p', '--print',
     '-r', '--refresh',
+    '-o', '--refreshLocal',
     '-s', '--skipExecution'
 ].join('|')
 const SPACE = ' '
