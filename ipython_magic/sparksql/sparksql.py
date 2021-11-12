@@ -2,11 +2,14 @@ import os
 import re
 from html import escape
 
-from IPython.core.display import HTML
+from IPython.core.display import HTML, JSON
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
+
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F
 from traitlets import Int, Unicode, Bool
+import json
 from .schema_export import updateDatabaseSchema, updateLocalDatabase
 from ..common.base import Base
 
@@ -18,15 +21,12 @@ class SparkSql(Base):
     @magic_arguments()
     @argument('sql', nargs='*', type=str, help='SQL statement')
     @argument('-l', '--limit', type=int, help='The maximum number of rows to display. A value of zero is equivalend to --skipExecution')
-    @argument('-r', '--refresh', action='store_true', help=f'Force the regeneration of the schema cache file')
-    @argument('-o', '--refreshLocal', action='store_true', help=f'Force updating the schema for local tables/views only')
-    @argument('-i', '--interactive', action='store_true', help='Display results in interactive grid')
-    @argument('-p', '--print', action='store_true', help='Print SQL statement that will be executed (useful to test jinja templated statements')
+    @argument('-r', '--refresh', type=str, default='none', help='Force the regeneration of the schema cache file. Valid options are [all|local|none]. The local option will only update tables/views created in the local Spark context.')
     @argument('-d', '--dataframe', type=str, help='Capture dataframe in a local variable')
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
     @argument('-v', '--view', type=str, help='Create or replace temporary view')
-    @argument('-s', '--skipExecution', action='store_true', help='Skip executing the query. Dataframe, caching or view creation still apply')
+    @argument('-o', '--output', type=str, default='html', help='Output format. Valid options are sql|json|html|grid|skip|none. Defaults to html. The skip and none option prevent the query from executing. Capturing a view or a dataframe is still possible. The sql option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -42,17 +42,20 @@ class SparkSql(Base):
         catalog_array = self.get_catalog_array()
         if self.shouldUpdateSchema(spark, outputFile, self.cacheTTL, catalog_array):
             updateDatabaseSchema(spark, outputFile, catalog_array)
-        if args.refresh:
-            updateDatabaseSchema(spark, outputFile, catalog_array)
-            return
 
-        if args.refreshLocal:
+        if args.refresh.lower() == 'all':
+            updateDatabaseSchema(spark, outputFile, catalog_array)
             updateLocalDatabase(spark, outputFile)
+            return
+        elif args.refresh.lower() == 'local':
+            updateLocalDatabase(spark, outputFile)
+        elif args.refresh.lower() != 'none':
+            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         sql = self.get_sql_statement(cell, args.sql)
         if not sql:
             return
-        elif args.print:
+        elif args.output.lower() == 'sql':
             return sql
 
         df = spark.sql(sql)
@@ -64,6 +67,7 @@ class SparkSql(Base):
         if args.view:
             print('Created temporary view `%s`' % args.view)
             df.createOrReplaceTempView(args.view)
+            updateLocalDatabase(spark, outputFile)
         if args.dataframe:
             print('Captured dataframe to local variable `%s`' % args.dataframe)
             self.shell.user_ns.update({args.dataframe: df})
@@ -72,11 +76,10 @@ class SparkSql(Base):
         limit = args.limit
         if limit == None:
             limit = self.limit
-        if limit <= 0 or args.skipExecution:
+        if limit <= 0 or args.output.lower() == 'skip' or args.output.lower() == 'none':
             print('Query execution skipped')
             return
-        interactive = args.interactive or self.interactive
-        if interactive:
+        elif args.output.lower() == 'grid':
             # It's important to import DataGrid inside this magic function
             # If you import it at the top of the file it will interfere with
             # the use of DataGrid in a notebook cell. You get a message
@@ -95,7 +98,11 @@ class SparkSql(Base):
             else:
                 print('No results')
                 return 
-        else:
+        elif args.output.lower() == 'json':
+            results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit)
+            json_array = [json.loads(r.json_str) for r in results]
+            return JSON(json_array)
+        elif args.output.lower() == 'html':
             header, contents = self.get_results(df, limit)
             if len(contents) > limit:
                 print('Only showing top %d row(s)' % limit)
@@ -106,6 +113,8 @@ class SparkSql(Base):
             for index, row in enumerate(contents[:limit]):
                 html += self.make_tag('tr', ''.join(map(lambda x: self.make_tag('td', escape(x)), row)))
             return HTML(self.make_tag('table', html)) 
+        else:
+            print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
 
     def get_results(self, df, limit):
         def convert_value(value):
