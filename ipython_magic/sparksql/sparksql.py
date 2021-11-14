@@ -1,6 +1,7 @@
 import os
 import re
 from html import escape
+import math
 
 from IPython.core.display import HTML, JSON
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
@@ -92,9 +93,23 @@ class SparkSql(Base):
                 if num_rows > limit:
                     print('Only showing top %d row(s)' % limit)
                     # Delete last row
-                    pdf = pdf.head(num_rows -1) 
-                return DataGrid(pdf, selection_mode="row", layout={"height": "1000px"})
+                    pdf = pdf.head(num_rows -1)
 
+                # for every order of magnitude in the limit 10, 100, 1000
+                # increase view port height by 10, 20, 30 rows
+                # and add 3 rows of padding
+
+                # limit -> num_display_rows
+                # 1         -> 3 + 0
+                # 10        -> 3 + 10
+                # 100       -> 3 + 20
+                # 1,000     -> 3 + 30
+                # 10,000    -> 3 + 40
+
+                num_display_rows = 3 + math.floor((math.log(limit, 10) * 10))
+                base_row_size = 20
+                layout_height = f"{num_display_rows * base_row_size}px"
+                return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})
             else:
                 print('No results')
                 return 
