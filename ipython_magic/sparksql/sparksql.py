@@ -21,7 +21,7 @@ class SparkSql(Base):
     @line_cell_magic
     @magic_arguments()
     @argument('sql', nargs='*', type=str, help='SQL statement to execute')
-    @argument('-l', '--limit', metavar='max_rows', type=int, help='The maximum number of rows to display. A value of zero is equivalend to `--output skip`')
+    @argument('-l', '--limit', metavar='max_rows', type=int, help='The maximum number of rows to display. A value of zero is equivalent to `--output skip`')
     @argument('-r', '--refresh', metavar='all|local|none', type=str, default='none', help='Force the regeneration of the schema cache file. The `local` option will only update tables/views created in the local Spark context.')
     @argument('-d', '--dataframe', metavar='name', type=str, help='Capture dataframe in a local variable named `name`')
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
