@@ -3,6 +3,7 @@ from traitlets import Int, Unicode, Bool
 from jinja2 import Template, StrictUndefined
 import os.path as path
 import time
+import math
 
 DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = ''
@@ -108,3 +109,25 @@ class Base(Magics):
                 ttl_expired = True
             
         return (not file_exists) or ttl_expired
+    
+    def render_grid(self, pdf, limit):
+        # It's important to import DataGrid inside this magic function
+        # If you import it at the top of the file it will interfere with
+        # the use of DataGrid in a notebook cell. You get a message
+        # Loading widget...
+        from ipydatagrid import DataGrid
+        # for every order of magnitude in the limit 10, 100, 1000
+        # increase view port height by 10, 20, 30 rows
+        # and add 3 rows of padding
+
+        # limit -> num_display_rows
+        # 1         -> 3 + 0
+        # 10        -> 3 + 10
+        # 100       -> 3 + 20
+        # 1,000     -> 3 + 30
+        # 10,000    -> 3 + 40
+
+        num_display_rows = 3 + math.floor((math.log(limit, 10) * 10))
+        base_row_size = 20
+        layout_height = f"{num_display_rows * base_row_size}px"
+        return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})

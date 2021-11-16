@@ -81,38 +81,13 @@ class SparkSql(Base):
             print('Query execution skipped')
             return
         elif args.output.lower() == 'grid':
-            # It's important to import DataGrid inside this magic function
-            # If you import it at the top of the file it will interfere with
-            # the use of DataGrid in a notebook cell. You get a message
-            # Loading widget...
-            from ipydatagrid import DataGrid
-
             pdf = df.limit(limit + 1).toPandas()
             num_rows = pdf.shape[0]
-            if num_rows > 0: 
-                if num_rows > limit:
-                    print('Only showing top %d row(s)' % limit)
-                    # Delete last row
-                    pdf = pdf.head(num_rows -1)
-
-                # for every order of magnitude in the limit 10, 100, 1000
-                # increase view port height by 10, 20, 30 rows
-                # and add 3 rows of padding
-
-                # limit -> num_display_rows
-                # 1         -> 3 + 0
-                # 10        -> 3 + 10
-                # 100       -> 3 + 20
-                # 1,000     -> 3 + 30
-                # 10,000    -> 3 + 40
-
-                num_display_rows = 3 + math.floor((math.log(limit, 10) * 10))
-                base_row_size = 20
-                layout_height = f"{num_display_rows * base_row_size}px"
-                return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})
-            else:
-                print('No results')
-                return 
+            if num_rows > limit:
+                print('Only showing top %d row(s)' % limit)
+                # Delete last row
+                pdf = pdf.head(num_rows -1)
+            return self.render_grid(pdf, limit)
         elif args.output.lower() == 'json':
             results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit)
             json_array = [json.loads(r.json_str) for r in results]

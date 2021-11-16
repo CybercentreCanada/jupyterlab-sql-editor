@@ -39,7 +39,10 @@ Many thanks to the contributors of these projects:
 
 
 ## Execute and output your query results into an interactive data grid
-![display](images/qgrid.gif)
+![display](images/ipydatagrid.gif)
+
+## Output as JSON
+![display](images/json-output.gif)
 
 ## Auto suggest column names and sub-fields
 ![display](images/sparksql-nested-columns.gif)
