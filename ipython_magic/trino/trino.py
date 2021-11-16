@@ -68,7 +68,7 @@ class Trino(Base):
 
         sql = f'select * from ({sql}) limit {limit+1}'
         if args.output.lower() == 'sql':
-            return sql
+            return self.display_sql(sql)
         elif args.output.lower() == 'json':
             sql = f'select cast(row(*) as JSON) as json_str from ({sql})'
         

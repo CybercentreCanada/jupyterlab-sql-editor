@@ -57,7 +57,7 @@ class SparkSql(Base):
         if not sql:
             return
         elif args.output.lower() == 'sql':
-            return sql
+            return self.display_sql(sql)
 
         df = spark.sql(sql)
         if args.cache or args.eager:

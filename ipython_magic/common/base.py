@@ -4,6 +4,8 @@ from jinja2 import Template, StrictUndefined
 import os.path as path
 import time
 import math
+import IPython
+
 
 DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = ''
@@ -131,3 +133,19 @@ class Base(Magics):
         base_row_size = 20
         layout_height = f"{num_display_rows * base_row_size}px"
         return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})
+
+    def display_sql(self, sql):
+        def _jupyterlab_repr_html_(self):
+            from pygments import highlight
+            from pygments.formatters import HtmlFormatter
+
+            fmt = HtmlFormatter()
+            style = "<style>{}\n{}</style>".format(
+                fmt.get_style_defs(".output_html"), fmt.get_style_defs(".jp-RenderedHTML")
+            )
+            return style + highlight(self.data, self._get_lexer(), fmt)
+
+        # Replace _repr_html_ with our own version that adds the 'jp-RenderedHTML' class
+        # in addition to 'output_html'.
+        IPython.display.Code._repr_html_ = _jupyterlab_repr_html_
+        return IPython.display.Code(data=sql, language="mysql")
