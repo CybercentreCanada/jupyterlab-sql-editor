@@ -26,7 +26,7 @@ Many thanks to the contributors of these projects:
 - [zeroturnaround/sql-formatter](https://github.com/zeroturnaround/sql-formatter)
 - [cryeo/sparksql-magic](https://github.com/cryeo/sparksql-magic)
 - [trino-python-client](https://github.com/trinodb/trino-python-client)
-- [quantopian/qgrid](https://github.com/quantopian/qgrid)
+- [bloomberg/ipydatagrid](https://github.com/bloomberg/ipydatagrid)
 
 
 # Overview
@@ -35,6 +35,7 @@ Many thanks to the contributors of these projects:
 - [How it works](#how-it-works)
 - [Contributing](#contributing)
 - [Setup Trino Server for Testing](#setup-trino-server-for-testing)
+- [Security Vulnerability Reporting](#security-vulnerability-reporting)
 
 
 ## Execute and output your query results into an interactive data grid
@@ -325,6 +326,12 @@ This is why we recommend increasing the `foreignCodeThreshold` to 99%.
 
 # Contributing
 
+We :heart: contributions.
+
+Have you had a good experience with this project? Why not share some love and contribute code, or just let us know about any issues you had with it?
+
+We welcome issue reports [here](../../issues); be sure to choose the proper issue template for your issue, so that we can be sure you're providing the necessary information.
+
 
 ### Development install
 
@@ -474,3 +481,12 @@ Launch the Trino server
 ```bash
 bin/launcher start
 ```
+
+
+## Security Vulnerability Reporting
+
+If you believe you have identified a security vulnerability in this project, please send email to the project
+team at opensource@cybercenter.gc.ca, detailing the suspected issue and any methods you've found to reproduce it.
+
+Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until
+we've had an opportunity to review and address them.
