@@ -20,7 +20,7 @@ Option 1: If you intended to use a template variable make sure to assign a value
 '''
 
 HOW_TO_ESCAPE_MSG = '''
-Option 2: If you intended to include "{{" in your statement then you'll need to escape this special Jinja variable delimitere.
+Option 2: If you intended to include "{{" in your statement then you'll need to escape this special Jinja variable delimiter.
 
 To have Jinja ignore parts it would otherwise handle as variables or blocks. For example, if, with the default syntax, you want to use {{ as a raw string in a template and not start a variable, you have to use a trick.
 
