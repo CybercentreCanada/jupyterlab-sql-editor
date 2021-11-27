@@ -1,6 +1,5 @@
 import os
 import re
-from html import escape
 import math
 
 from IPython.core.display import HTML, JSON
@@ -28,6 +27,7 @@ class SparkSql(Base):
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
     @argument('-v', '--view', metavar='name', type=str, help='Create or replace a temporary view named `name`')
     @argument('-o', '--output', metavar='sql|json|html|grid|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
+    @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -82,6 +82,10 @@ class SparkSql(Base):
             return
         elif args.output.lower() == 'grid':
             pdf = df.limit(limit + 1).toPandas()
+            if args.show_nonprinting:
+                for c in pdf.columns:
+                    pdf[c] = pdf[c].apply(lambda v: self.escape_control_chars(str(v)))
+            
             num_rows = pdf.shape[0]
             if num_rows > limit:
                 print('Only showing top %d row(s)' % limit)
@@ -91,18 +95,20 @@ class SparkSql(Base):
         elif args.output.lower() == 'json':
             results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit)
             json_array = [json.loads(r.json_str) for r in results]
+            if args.show_nonprinting:
+                self.recursive_escape(json_array)
             return JSON(json_array)
         elif args.output.lower() == 'html':
             header, contents = self.get_results(df, limit)
             if len(contents) > limit:
                 print('Only showing top %d row(s)' % limit)
 
-            html = self.make_tag('tr',
-                        ''.join(map(lambda x: self.make_tag('td', escape(x), style='font-weight: bold'), header)),
+            html = self.make_tag('tr', False,
+                        ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), header)),
                         style='border-bottom: 1px solid')
             for index, row in enumerate(contents[:limit]):
-                html += self.make_tag('tr', ''.join(map(lambda x: self.make_tag('td', escape(x)), row)))
-            return HTML(self.make_tag('table', html)) 
+                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
+            return HTML(self.make_tag('table', False, html))
         else:
             print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
 

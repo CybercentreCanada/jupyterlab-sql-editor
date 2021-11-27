@@ -5,7 +5,9 @@ import os.path as path
 import time
 import math
 import IPython
-
+import re
+import string
+from html import escape
 
 DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = ''
@@ -56,6 +58,10 @@ class ExplainUndefined(StrictUndefined):
         print(RAISING_ERROR_MSG)
         return super().__str__()
 
+printable = string.ascii_letters + string.digits + string.punctuation + ' '
+
+replchars = re.compile('([^' + re.escape(printable) + '])')
+
 
 @magics_class
 class Base(Magics):
@@ -65,7 +71,9 @@ class Base(Magics):
     interactive = Bool(False, config=True, help=f'Display results in interactive grid')
     outputFile = Unicode('', config=True, help=f'Output schema to specified file')
 
-    def make_tag(self, tag_name, body='', **kwargs):
+    def make_tag(self, tag_name, show_nonprinting, body='', **kwargs):
+        if show_nonprinting:
+            body = self.escape_control_chars(escape(body))
         attributes = ' '.join(map(lambda x: '%s="%s"' % x, kwargs.items()))
         if attributes:
             return '<%s %s>%s</%s>' % (tag_name, attributes, body, tag_name)
@@ -149,3 +157,24 @@ class Base(Magics):
         # in addition to 'output_html'.
         IPython.display.Code._repr_html_ = _jupyterlab_repr_html_
         return IPython.display.Code(data=sql, language="mysql")
+
+    def replchars_to_hex(self, match):
+        return r'\x{0:02x}'.format(ord(match.group()))
+
+    def escape_control_chars(self, text):
+        return replchars.sub(self.replchars_to_hex, text)
+
+    def recursive_escape(self, input):
+        # check whether it's a dict, list, tuple, or scalar
+        if isinstance(input, dict):
+            items = input.items()
+        elif isinstance(input, (list, tuple)):
+            items = enumerate(input)
+        else:
+            # just a value, split and return
+            return self.escape_control_chars(str(input))
+
+        # now call ourself for every value and replace in the input
+        for key, value in items:
+            input[key] = self.recursive_escape(value)
+        return input
