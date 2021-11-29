@@ -1,12 +1,11 @@
 import json
-import os.path as path
-import time
 
 
 MAX_RET = 20000
 
-def getColumns(cur, tableName):
-    sql = f'SHOW COLUMNS IN {tableName}'
+
+def get_columns(cur, table_name):
+    sql = f'SHOW COLUMNS IN {table_name}'
     #print(sql)
     cur.execute(sql)
     rows = cur.fetchmany(MAX_RET)
@@ -18,11 +17,11 @@ def getColumns(cur, tableName):
     }, rows))
 
 
-def getTables(cur, catalog, database):
+def get_tables(cur, catalog, database):
     # prevent retrieving tables from information_schema
     if database == 'information_schema':
         return []
-    
+
     path = f'{catalog}.{database}'
     sql = f'SHOW TABLES IN {path}'
     #print(sql)
@@ -30,44 +29,47 @@ def getTables(cur, catalog, database):
     rows = cur.fetchmany(MAX_RET)
     tables = []
     if len(rows) > 0:
-        for r in rows:
+        for row in rows:
             if len(tables) > 50:
                 break
-            table = r[0]
+            table = row[0]
             tables.append( {
-                "tableName": table,
-                "columns": getColumns(cur, f'{path}."{table}"'),
+                "table_name": table,
+                "columns": get_columns(cur, f'{path}."{table}"'),
                 "database": database,
                 "catalog": catalog
             })
     return tables
 
-def getSchemas(cur, catalog):
+
+def get_schemas(cur, catalog):
     sql = f'SHOW SCHEMAS IN {catalog}'
     #print(sql)
     cur.execute(sql)
     rows = cur.fetchmany(MAX_RET)
     tables = []
-    for r in rows:
-        database = r[0]
-        tables += getTables(cur, catalog, database)
+    for row in rows:
+        database = row[0]
+        tables += get_tables(cur, catalog, database)
     return tables
 
-def getCatalogs(cur, catalogs):
+
+def get_catalogs(cur, catalogs):
     tables = []
     for catalog in catalogs:
-        tables += getSchemas(cur, catalog)
+        tables += get_schemas(cur, catalog)
     return tables
 
-def getFunctions(cur):
+
+def get_functions(cur):
     sql = 'SHOW FUNCTIONS'
     #print(sql)
     cur.execute(sql)
     rows = cur.fetchmany(MAX_RET)
      # initialize a null list
     functions = []
-    for r in rows:
-        name = r[0]
+    for row in rows:
+        name = row[0]
         if not name in functions:
             functions.append(name)
     return list(map(lambda name: {
@@ -75,16 +77,17 @@ def getFunctions(cur):
         "description": ''
     }, functions))
 
-def getDatabaseSchema(cur, catalogs):
+
+def get_database_schema(cur, catalogs):
     return {
-        "tables": getCatalogs(cur, catalogs),
-        "functions": getFunctions(cur)
+        "tables": get_catalogs(cur, catalogs),
+        "functions": get_functions(cur)
     }
 
-def updateDatabaseSchema(cur, schemaFileName, catalogs):
-    db_schema = getDatabaseSchema(cur, catalogs)
-    # Save schema to disk. sql-language-server will pickup any changes to this file.
-    with open(schemaFileName, 'w') as fout:
-        json.dump(db_schema, fout, sort_keys=True, indent=2)
-    print('Schema file updated: ' + schemaFileName)
 
+def update_database_schema(cur, schema_file_name, catalogs):
+    db_schema = get_database_schema(cur, catalogs)
+    # Save schema to disk. sql-language-server will pickup any changes to this file.
+    with open(schema_file_name, 'w', encoding="utf8") as fout:
+        json.dump(db_schema, fout, sort_keys=True, indent=2)
+    print('Schema file updated: ' + schema_file_name)
