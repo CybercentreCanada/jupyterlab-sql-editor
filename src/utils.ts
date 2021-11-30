@@ -15,6 +15,7 @@ function end(language: string) { return `--end-${language}` }
 const FLAG_OPTS = [
     '-c', '--cache', //          Cache dataframe
     '-e', '--eager',  //          Cache dataframe with eager load
+    '-s', '--show-nonprinting',
 ].join('|')
 const SPACE = ' '
 const OPTION_VALUE = `[0-9a-zA-Z/\._]+`
