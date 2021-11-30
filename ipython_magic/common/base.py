@@ -1,14 +1,13 @@
+from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
+from traitlets import Int, Unicode, Bool
+from jinja2 import Template, StrictUndefined
+import os.path as path
 import time
 import math
-import os
+import IPython
 import re
 import string
 from html import escape
-
-import IPython
-from IPython.core.magic import Magics, magics_class
-from jinja2 import Template, StrictUndefined
-from traitlets import Int, Unicode, Bool
 
 DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = ''
@@ -57,11 +56,11 @@ class ExplainUndefined(StrictUndefined):
         print(VARIABLE_NOT_FOUND_MSG.format(var_name=self._undefined_name))
         print(HOW_TO_ESCAPE_MSG)
         print(RAISING_ERROR_MSG)
-        return super().__str__(self)
+        return super().__str__()
 
-PRINTABLE = string.ascii_letters + string.digits + string.punctuation + ' '
+printable = string.ascii_letters + string.digits + string.punctuation + ' '
 
-replchars = re.compile('([^' + re.escape(PRINTABLE) + '])')
+replchars = re.compile('([^' + re.escape(printable) + '])')
 
 
 @magics_class
@@ -69,37 +68,33 @@ class Base(Magics):
     limit = Int(20, config=True, help='The maximum number of rows to display')
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
     catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
-    interactive = Bool(False, config=True, help='Display results in interactive grid')
-    output_file = Unicode('', config=True, help='Output schema to specified file')
-
-    def __init__(self):
-        super().__init__()
-        self.user_ns = {}
+    interactive = Bool(False, config=True, help=f'Display results in interactive grid')
+    outputFile = Unicode('', config=True, help=f'Output schema to specified file')
 
     def make_tag(self, tag_name, show_nonprinting, body='', **kwargs):
         if show_nonprinting:
             body = self.escape_control_chars(escape(body))
         attributes = ' '.join(map(lambda x: '%s="%s"' % x, kwargs.items()))
         if attributes:
-            return f'<{tag_name} {attributes}>{body}</{tag_name}>'
+            return '<%s %s>%s</%s>' % (tag_name, attributes, body, tag_name)
         else:
-            return f'<{tag_name}>{body}</{tag_name}>'
+            return '<%s>%s</%s>' % (tag_name, body, tag_name)
 
-    @staticmethod
-    def bind_variables(query, user_ns):
-        template = Template(query, undefined=ExplainUndefined)
-        return template.render(user_ns)
+    def bind_variables(self, query, user_ns):
+        t = Template(query, undefined=ExplainUndefined)
+        ret = t.render(user_ns)
+        return ret
 
     def get_catalog_array(self):
         catalog_array = []
         if ',' in self.catalogs:
             catalog_array = self.catalogs.split(',')
         return catalog_array
-
-    def get_sql_statement(self, cell, sql_argument):
+    
+    def get_sql_statement(self, cell, sqlArgument):
         sql = cell
         if cell is None:
-            sql = ' '.join(sql_argument)
+            sql = ' '.join(sqlArgument)
         if not sql:
             print('No sql statement to execute')
         else:
@@ -113,21 +108,19 @@ class Base(Magics):
         self.user_ns = self.shell.user_ns.copy()
         self.user_ns.update(local_ns)
 
-    @staticmethod
-    def should_update_schema(schema_file_name, refresh_threshold):
-        file_exists = os.path.isfile(schema_file_name)
+    def shouldUpdateSchema(self, spark, schemaFileName, refresh_threshold, catalogs):
+        file_exists = path.isfile(schemaFileName)
         ttl_expired = False
         if file_exists:
-            file_time = os.path.getmtime(schema_file_name)
+            file_time = path.getmtime(schemaFileName)
             current_time = time.time()
             if current_time - file_time > refresh_threshold:
-                print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schema_file_name}')
+                print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schemaFileName}')
                 ttl_expired = True
-
+            
         return (not file_exists) or ttl_expired
-
-    @staticmethod
-    def render_grid(pdf, limit):
+    
+    def render_grid(self, pdf, limit):
         # It's important to import DataGrid inside this magic function
         # If you import it at the top of the file it will interfere with
         # the use of DataGrid in a notebook cell. You get a message
@@ -152,7 +145,7 @@ class Base(Magics):
     def display_sql(self, sql):
         def _jupyterlab_repr_html_(self):
             from pygments import highlight
-            from pygments.formatters.html import HtmlFormatter
+            from pygments.formatters import HtmlFormatter
 
             fmt = HtmlFormatter()
             style = "<style>{}\n{}</style>".format(
@@ -165,8 +158,7 @@ class Base(Magics):
         IPython.display.Code._repr_html_ = _jupyterlab_repr_html_
         return IPython.display.Code(data=sql, language="mysql")
 
-    @staticmethod
-    def replchars_to_hex(match):
+    def replchars_to_hex(self, match):
         return r'\x{0:02x}'.format(ord(match.group()))
 
     def escape_control_chars(self, text):

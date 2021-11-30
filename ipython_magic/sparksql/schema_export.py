@@ -1,33 +1,42 @@
 import json
-import os
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.types import *
+import os.path as path
 import time
 
-from pyspark.sql.types import * # pylint: disable=unused-wildcard-import, wildcard-import
 
+def getTypeName(t):
+    if type(t) == StringType:
+        return 'string'
+    if type(t) == ArrayType:
+        return 'array'
+    if type(t) == TimestampType:
+        return 'timestamp'
+    if type(t) == DateType:
+        return 'date'
+    if type(t) == LongType:
+        return 'long'
+    if type(t) == IntegerType:
+        return 'integer'
+    if type(t) == BooleanType:
+        return 'integer'
+    if type(t) == StructType:
+        return 'struct'
+    if type(t) == MapType:
+        return 'map'
+    if type(t) == DecimalType:
+        return 'decimal'
+    if type(t) == DoubleType:
+        return 'double'
+    if type(t) == FloatType:
+        return 'float'
+    if type(t) == ShortType:
+        return 'short'
+    if type(t) == BinaryType:
+        return 'binary'
 
-_FIELD_TYPES = {
-    StringType: 'string',
-    ArrayType: 'array',
-    TimestampType: 'timestamp',
-    DateType: 'date',
-    LongType: 'long',
-    IntegerType: 'integer',
-    BooleanType: 'integer',
-    StructType: 'struct',
-    MapType: 'map',
-    DecimalType: 'decimal',
-    DoubleType: 'double',
-    FloatType: 'float',
-    ShortType: 'short',
-    BinaryType: 'binary'
-}
-
-
-def get_type_name(field_type):
-    return _FIELD_TYPES.get(type(field_type))
-
-
-def get_path(path, name):
+def getPath(path, name):
     if ' ' in name:
         name = '`' + name + '`'
     if len(path) > 0:
@@ -35,121 +44,117 @@ def get_path(path, name):
     return name
 
 
-def get_children(field, path, fields):
-    if isinstance(field, StructField):
-        get_children(field.dataType, get_path(path, field.name), fields)
-    elif isinstance(field, MapType):
-        get_children(field.valueType, get_path(path, 'key'), fields)
-    elif isinstance(field, ArrayType):
-        get_children(field.elementType, path, fields)
-    elif isinstance(field, StructType):
+def getChildren(field, path, fields):
+    if type(field) == StructField:
+        getChildren(field.dataType, getPath(path, field.name), fields)
+    elif type(field) == MapType:
+        getChildren(field.valueType, getPath(path, 'key'), fields)
+    elif type(field) == ArrayType:
+        getChildren(field.elementType, path, fields)
+    elif type(field) == StructType:
         for name in field.fieldNames():
             child = field[name]
             fields.append({
-                'columnName': get_path(path, name),
+                'columnName': getPath(path, name),
                 'metadata': child.metadata,
-                'type': get_type_name(child.dataType),
-                'description': get_type_name(child.dataType)
+                'type': getTypeName(child.dataType),
+                'description': getTypeName(child.dataType)
             })
-            get_children(child, path, fields)
+            getChildren(child, path, fields)
 
 
-def get_columns(spark, name):
+def getColumns(spark, name):
     fields = []
-    get_children(spark.table(name).schema, '', fields)
+    getChildren(spark.table(name).schema, '', fields)
     return fields
 
 
-def get_tables_in_database(spark, catalog, database):
+def getTablesInDatabase(spark, catalog, database):
     spark.sql(f'USE {catalog}')
     rows = spark.sql(f'SHOW TABLES IN {database}').collect()
     if catalog == 'default':
         return list(map(lambda r: {
-            "table_name": r.table_name,
-            "columns": get_columns(spark, database + '.' + r.table_name),
+            "tableName": r.tableName,
+            "columns": getColumns(spark, database + '.' + r.tableName),
             "database": database,
             "catalog": None
         }, rows))
-    return list(map(lambda r: {
-        "table_name": r.table_name,
-        "columns": get_columns(spark, catalog + '.' + database + '.' + r.table_name),
-        "database": database,
-        "catalog": catalog
-    }, rows))
+    else:
+        return list(map(lambda r: {
+            "tableName": r.tableName,
+            "columns": getColumns(spark, catalog + '.' + database + '.' + r.tableName),
+            "database": database,
+            "catalog": catalog
+        }, rows))
 
-
-def get_tables_in_catalogs(spark, catalogs):
+def getTablesInCatalogs(spark, catalogs):
     tables = []
     for catalog in catalogs:
-        print('Listing tables in {catalog}')
+        print(f'Listing tables in {catalog}')
         spark.sql(f'USE {catalog}')
-        rows = spark.sql('SHOW DATABASES').collect()
+        rows = spark.sql(f'SHOW DATABASES').collect()
         for row in rows:
-            tables = tables + get_tables_in_database(spark, catalog, row.namespace)
+            tables = tables + getTablesInDatabase(spark, catalog, row.namespace)
     return tables
 
-
-def get_description(spark, name):
+def getDescription(spark, name):
     rows = spark.sql(f'DESCRIBE FUNCTION EXTENDED {name}').collect()
-    text_lines = list(map(lambda r: r.function_desc, rows))
-    return "\n".join(text_lines)
+    textLines = list(map(lambda r: r.function_desc, rows))
+    return "\n".join(textLines)
 
 
-def get_functions(spark):
+def getFunctions(spark):
     spark.sql('USE spark_catalog')
     rows = spark.sql('SHOW FUNCTIONS').collect()
     return list(map(lambda f: {
         "name": f.function,
-        "description": get_description(spark, f.function)
+        "description": getDescription(spark, f.function)
     }, rows))
 
 
-def get_spark_database_schema(spark, catalogs):
+def getSparkDatabaseSchema(spark, catalogs):
     return {
-        "functions": get_functions(spark),
-        "tables": get_tables_in_catalogs(spark, catalogs) + get_tables_in_local_database(spark)
+        "functions": getFunctions(spark),
+        "tables": getTablesInCatalogs(spark, catalogs) + getTablesInLocalDatabase(spark)
     }
 
-
-def get_tables_in_local_database(spark):
-    spark.sql('USE spark_catalog')
-    rows = spark.sql('SHOW TABLES IN default').collect()
+def getTablesInLocalDatabase(spark):
+    spark.sql(f'USE spark_catalog')
+    rows = spark.sql(f'SHOW TABLES IN default').collect()
     return list(map(lambda r: {
-        "table_name": r.table_name,
-        "columns": get_columns(spark, r.table_name),
+        "tableName": r.tableName,
+        "columns": getColumns(spark, r.tableName),
         "database": None,
         "catalog": None
     }, rows))
 
 
-def should_update_schema(schema_file_name, refresh_threshold):
-    file_exists = os.path.isfile(schema_file_name)
+def shouldUpdateSchema(spark, schemaFileName, refresh_threshold, catalogs):
+    file_exists = path.isfile(schemaFileName)
     ttl_expired = False
     if file_exists:
-        file_time = os.path.getmtime(schema_file_name)
+        file_time = path.getmtime(schemaFileName)
         current_time = time.time()
         if current_time - file_time > refresh_threshold:
-            print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schema_file_name}')
+            print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schemaFileName}')
             ttl_expired = True
-
+        
     return (not file_exists) or ttl_expired
 
-
-def update_database_schema(spark, schema_file_name, catalogs):
-    print(f'Generating schema file: {schema_file_name}')
-    sparkdb_schema = get_spark_database_schema(spark, catalogs)
+def updateDatabaseSchema(spark, schemaFileName, catalogs):
+    print(f'Generating schema file: {schemaFileName}')
+    sparkdb_schema = getSparkDatabaseSchema(spark, catalogs)
     # Save schema to disk. sql-language-server will pickup any changes to this file.
-    with open(schema_file_name, 'w', encoding="utf8") as fout:
+    with open(schemaFileName, 'w') as fout:
         json.dump(sparkdb_schema, fout, sort_keys=True, indent=2)
-    print('Schema file updated: ' + schema_file_name)
+    print('Schema file updated: ' + schemaFileName)
 
-
-def update_local_database(spark, schema_file_name):
+def updateLocalDatabase(spark, schemaFileName):
     print('Updating local tables')
-    updated_tables = get_tables_in_local_database(spark)
+    updated_tables = getTablesInLocalDatabase(spark)
     current_schema = {}
-    with open(schema_file_name, 'r', encoding="utf8") as file:
-        current_schema = json.load(file)
+    with open(schemaFileName) as f:
+        current_schema = json.load(f)
 
     for table in current_schema['tables']:
         if table['catalog']:
@@ -160,5 +165,6 @@ def update_local_database(spark, schema_file_name):
         "functions": current_schema['functions']
     }
 
-    with open(schema_file_name, 'w', encoding="utf8") as fout:
-        json.dump(updated_schema, fout, indent=2, sort_keys=True)
+    with open(schemaFileName, 'w') as fout:
+      json.dump(updated_schema, fout, indent=2, sort_keys=True)
+
