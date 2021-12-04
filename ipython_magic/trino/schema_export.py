@@ -18,16 +18,16 @@ def getColumns(cur, tableName):
             'description': r[3]
         }, rows))
     except TrinoUserError:
+        print(f'Failed to get columns for {tableName}')
         return []
         
 
 def getTables(cur, catalog, database):
+    # prevent retrieving tables from information_schema
+    if database == 'information_schema':
+        return []
+    path = f'{catalog}.{database}'
     try:
-        # prevent retrieving tables from information_schema
-        if database == 'information_schema':
-            return []
-
-        path = f'{catalog}.{database}'
         sql = f'SHOW TABLES IN {path}'
         #print(sql)
         cur.execute(sql)
@@ -46,6 +46,7 @@ def getTables(cur, catalog, database):
                 })
         return tables
     except TrinoUserError:
+        print(f'Failed to get tables for {path}')
         return []
 
 def getSchemas(cur, catalog):
