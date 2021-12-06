@@ -4,10 +4,10 @@ from html import escape
 import pandas as pd
 import numpy
 import math
-
+import json
 
 import trino
-from IPython.core.display import HTML
+from IPython.core.display import HTML, JSON
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
@@ -31,7 +31,9 @@ class Trino(Base):
     @argument('-l', '--limit', metavar='max_rows', type=int, help='The maximum number of rows to display. A value of zero is equivalent to `--output skip`')
     @argument('-r', '--refresh', metavar='all|local|none', type=str, default='none', help='Force the regeneration of the schema cache file. The `local` option will only update tables/views created in the local Spark context.')
     @argument('-d', '--dataframe', metavar='name', type=str, help='Capture results in pandas dataframe')
-    @argument('-o', '--output', metavar='sql|json|html|grid|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
+    @argument('-o', '--output', metavar='sql|json|html|grid|text|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
+    @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
+    @argument('-x', '--raw', action='store_true', help="Run statement as is. Do not wrap statement with a limit. Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.")
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
@@ -66,11 +68,24 @@ class Trino(Base):
         if limit == None:
             limit = self.limit
 
-        sql = f'select * from ({sql}) limit {limit+1}'
         if args.output.lower() == 'sql':
             return self.display_sql(sql)
         elif args.output.lower() == 'json':
-            sql = f'select cast(row(*) as JSON) as json_str from ({sql})'
+            # Determine the resulting column names
+            self.cur.execute(f'SHOW STATS FOR ({sql})')
+            results = self.cur.fetchmany(limit+1)
+            column_names = []
+            for idx, row in enumerate(results):
+                if row[0]:
+                    column_names.append(row[0])
+            # Cast every column to JSON
+            select_exprs = []
+            for column_name in column_names:
+                select_exprs.append(f'CAST({column_name} AS JSON) AS "{column_name}"')
+            select = ','.join(select_exprs)
+            sql = f'select {select} from ({sql}) limit {limit+1}'            
+        elif not args.raw == True:
+            sql = f'select * from ({sql}) limit {limit+1}'
         
         self.cur.execute(sql)
         results = self.cur.fetchmany(limit+1)
@@ -89,24 +104,91 @@ class Trino(Base):
             if len(results) > limit:
                 print('Only showing top %d row(s)' % limit)
             pdf = pd.DataFrame.from_records(results, columns=columns)
+            if args.show_nonprinting:
+                for c in pdf.columns:
+                    pdf[c] = pdf[c].apply(lambda v: self.escape_control_chars(str(v)))
             return self.render_grid(pdf, limit)
         elif args.output.lower() == 'json':
-            print('Not implemented yet')
-            return
+            if len(results) > limit:
+                print('Only showing top %d row(s)' % limit)
+            json_array = []
+            for row in results[:limit]:
+                python_obj = {}
+                for idx, column_name in enumerate(columns):
+                    python_val = None
+                    if row[idx]:
+                        python_val = json.loads(row[idx])
+                    python_obj[column_name] = python_val
+                json_array.append(python_obj)
+            if args.show_nonprinting:
+                self.recursive_escape(json_array)
+            return JSON(json_array)
         elif args.output.lower() == 'html':
             if len(results) > limit:
                 print('Only showing top %d row(s)' % limit)
-            html = self.make_tag('tr',
-                            ''.join(map(lambda x: self.make_tag('td', escape(str(x)), style='font-weight: bold'), columns)),
-                            style='border-bottom: 1px solid')
-            for index, row in enumerate(results):
-                html += self.make_tag('tr', ''.join(map(lambda x: self.make_tag('td', escape(str(x))), row)))
+            html = self.make_tag('tr', False,
+                        ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
+                        style='border-bottom: 1px solid')
+            for index, row in enumerate(results[:limit]):
+                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
+            return HTML(self.make_tag('table', False, html))
+        elif args.output.lower() == 'text':
+            if len(results) > limit:
+                print('Only showing top %d row(s)' % limit)
 
-            return HTML(self.make_tag('table', html))
+            rows = results
+            sb = ''
+            numCols = len(columns)
+            # We set a minimum column width at '3'
+            minimumColWidth = 3
+
+            # Initialise the width of each column to a minimum value
+            colWidths = [minimumColWidth for i in range(numCols)]
+
+            # Compute the width of each column
+            for i, c in enumerate(columns):
+                colWidths[i] = max(colWidths[i], len(c))
+            for row in rows:
+                for i, cell in enumerate(row):
+                    colWidths[i] = max(colWidths[i], len(str(cell)))
+
+            paddedColumns = []
+            for i, c in enumerate(columns):
+                newName = c.ljust(colWidths[i], ' ')
+                paddedColumns.append(newName)
+
+            paddedRows = []
+            for row in rows:
+                newRow = []
+                for i, cell in enumerate(row):
+                    v = str(cell)
+                    newVal = v.ljust(colWidths[i], ' ')
+                    newRow.append(newVal)
+                paddedRows.append(newRow)
+
+            # Create SeparateLine
+            sep = "+"
+            for n in colWidths:
+                for i in range(n):
+                    sep += "-"
+                sep += "+"
+            sep += "\n"
+
+            sb = sep            
+            sb += "|"
+            for c in paddedColumns:
+                sb += c + "|"
+            sb += "\n"
+
+            # data
+            sb += sep
+            for row in paddedRows:
+                sb += "|"
+                for cell in row:
+                    sb += cell + "|"
+                sb += "\n"
+            sb += sep
+            print(sb)
+            return
         else:
             print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
-
-
-
-
-
