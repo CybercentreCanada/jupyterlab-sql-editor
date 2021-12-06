@@ -65,14 +65,14 @@ def get_tables_in_database(spark, catalog, database):
     rows = spark.sql(f'SHOW TABLES IN {database}').collect()
     if catalog == 'default':
         return list(map(lambda r: {
-            "table_name": r.table_name,
-            "columns": get_columns(spark, database + '.' + r.table_name),
+            "tableName": r.tableName,
+            "columns": get_columns(spark, database + '.' + r.tableName),
             "database": database,
             "catalog": None
         }, rows))
     return list(map(lambda r: {
-        "table_name": r.table_name,
-        "columns": get_columns(spark, catalog + '.' + database + '.' + r.table_name),
+        "tableName": r.tableName,
+        "columns": get_columns(spark, catalog + '.' + database + '.' + r.tableName),
         "database": database,
         "catalog": catalog
     }, rows))
@@ -115,8 +115,8 @@ def get_tables_in_local_database(spark):
     spark.sql('USE spark_catalog')
     rows = spark.sql('SHOW TABLES IN default').collect()
     return list(map(lambda r: {
-        "table_name": r.table_name,
-        "columns": get_columns(spark, r.table_name),
+        "tableName": r.tableName,
+        "columns": get_columns(spark, r.tableName),
         "database": None,
         "catalog": None
     }, rows))

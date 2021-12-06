@@ -70,7 +70,7 @@ class Base(Magics):
     cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
     catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
     interactive = Bool(False, config=True, help='Display results in interactive grid')
-    output_file = Unicode('', config=True, help='Output schema to specified file')
+    outputFile = Unicode('', config=True, help='Output schema to specified file')
 
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)

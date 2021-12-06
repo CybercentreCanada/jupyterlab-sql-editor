@@ -31,7 +31,7 @@ class SparkSql(Base):
 
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
-        output_file = self.output_file or '/tmp/sparkdb.schema.json'
+        output_file = self.outputFile or '/tmp/sparkdb.schema.json'
 
         spark = self.get_instantiated_spark_session()
         if spark is None:

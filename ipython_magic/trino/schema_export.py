@@ -40,7 +40,7 @@ def get_tables(cur, catalog, database):
                     break
                 table = row[0]
                 tables.append( {
-                    "table_name": table,
+                    "tableName": table,
                     "columns": get_columns(cur, f'{path}."{table}"'),
                     "database": database,
                     "catalog": catalog
