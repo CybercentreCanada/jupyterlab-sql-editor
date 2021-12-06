@@ -1,45 +1,54 @@
 import json
 
+from trino.exceptions import TrinoUserError
+
 
 MAX_RET = 20000
 
 
 def get_columns(cur, table_name):
-    sql = f'SHOW COLUMNS IN {table_name}'
-    #print(sql)
-    cur.execute(sql)
-    rows = cur.fetchmany(MAX_RET)
-    return list(map(lambda r: {
-        'columnName': r[0],
-        'metadata': r[2],
-        'type': r[1],
-        'description': r[3]
-    }, rows))
+    try:
+        sql = f'SHOW COLUMNS IN {table_name}'
+        #print(sql)
+        cur.execute(sql)
+        rows = cur.fetchmany(MAX_RET)
+        return list(map(lambda r: {
+            'columnName': r[0],
+            'metadata': r[2],
+            'type': r[1],
+            'description': r[3]
+        }, rows))
+    except TrinoUserError:
+        print(f'Failed to get columns for {table_name}')
+        return []
 
 
 def get_tables(cur, catalog, database):
     # prevent retrieving tables from information_schema
     if database == 'information_schema':
         return []
-
     path = f'{catalog}.{database}'
-    sql = f'SHOW TABLES IN {path}'
-    #print(sql)
-    cur.execute(sql)
-    rows = cur.fetchmany(MAX_RET)
-    tables = []
-    if len(rows) > 0:
-        for row in rows:
-            if len(tables) > 50:
-                break
-            table = row[0]
-            tables.append( {
-                "table_name": table,
-                "columns": get_columns(cur, f'{path}."{table}"'),
-                "database": database,
-                "catalog": catalog
-            })
-    return tables
+    try:
+        sql = f'SHOW TABLES IN {path}'
+        #print(sql)
+        cur.execute(sql)
+        rows = cur.fetchmany(MAX_RET)
+        tables = []
+        if len(rows) > 0:
+            for r in rows:
+                if len(tables) > 50:
+                    break
+                table = r[0]
+                tables.append( {
+                    "table_name": table,
+                    "columns": get_columns(cur, f'{path}."{table}"'),
+                    "database": database,
+                    "catalog": catalog
+                })
+        return tables
+    except TrinoUserError:
+        print(f'Failed to get tables for {path}')
+        return []
 
 
 def get_schemas(cur, catalog):
