@@ -23,7 +23,7 @@ class SparkSql(Base):
     @argument('-c', '--cache', action='store_true', help='Cache dataframe')
     @argument('-e', '--eager', action='store_true', help='Cache dataframe with eager load')
     @argument('-v', '--view', metavar='name', type=str, help='Create or replace a temporary view named `name`')
-    @argument('-o', '--output', metavar='sql|json|html|grid|skip|none', type=str, default='html',
+    @argument('-o', '--output', metavar='sql|json|html|grid|text|skip|none', type=str, default='html',
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     def sparksql(self, line=None, cell=None, local_ns=None):
@@ -106,6 +106,9 @@ class SparkSql(Base):
             for index, row in enumerate(contents[:limit]):
                 html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
             return HTML(self.make_tag('table', False, html))
+        elif args.output.lower() == 'text':
+            df.show(n=limit, truncate=False)
+            return
         else:
             print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
 
