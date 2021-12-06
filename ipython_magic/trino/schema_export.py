@@ -35,10 +35,10 @@ def get_tables(cur, catalog, database):
         rows = cur.fetchmany(MAX_RET)
         tables = []
         if len(rows) > 0:
-            for r in rows:
+            for row in rows:
                 if len(tables) > 50:
                     break
-                table = r[0]
+                table = row[0]
                 tables.append( {
                     "table_name": table,
                     "columns": get_columns(cur, f'{path}."{table}"'),
