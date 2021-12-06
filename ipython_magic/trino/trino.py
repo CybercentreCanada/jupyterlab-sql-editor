@@ -31,7 +31,7 @@ class Trino(Base):
     @argument('-l', '--limit', metavar='max_rows', type=int, help='The maximum number of rows to display. A value of zero is equivalent to `--output skip`')
     @argument('-r', '--refresh', metavar='all|local|none', type=str, default='none', help='Force the regeneration of the schema cache file. The `local` option will only update tables/views created in the local Spark context.')
     @argument('-d', '--dataframe', metavar='name', type=str, help='Capture results in pandas dataframe')
-    @argument('-o', '--output', metavar='sql|json|html|grid|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
+    @argument('-o', '--output', metavar='sql|json|html|grid|text|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-x', '--raw', action='store_true', help="Run statement as is. Do not wrap statement with a limit. Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.")
     def trino(self, line=None, cell=None, local_ns=None):
@@ -132,10 +132,63 @@ class Trino(Base):
             for index, row in enumerate(results[:limit]):
                 html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
             return HTML(self.make_tag('table', False, html))
+        elif args.output.lower() == 'text':
+            if len(results) > limit:
+                print('Only showing top %d row(s)' % limit)
+
+            rows = results
+            sb = ''
+            numCols = len(columns)
+            # We set a minimum column width at '3'
+            minimumColWidth = 3
+
+            # Initialise the width of each column to a minimum value
+            colWidths = [minimumColWidth for i in range(numCols)]
+
+            # Compute the width of each column
+            for i, c in enumerate(columns):
+                colWidths[i] = max(colWidths[i], len(c))
+            for row in rows:
+                for i, cell in enumerate(row):
+                    colWidths[i] = max(colWidths[i], len(str(cell)))
+
+            paddedColumns = []
+            for i, c in enumerate(columns):
+                newName = c.ljust(colWidths[i], ' ')
+                paddedColumns.append(newName)
+
+            paddedRows = []
+            for row in rows:
+                newRow = []
+                for i, cell in enumerate(row):
+                    v = str(cell)
+                    newVal = v.ljust(colWidths[i], ' ')
+                    newRow.append(newVal)
+                paddedRows.append(newRow)
+
+            # Create SeparateLine
+            sep = "+"
+            for n in colWidths:
+                for i in range(n):
+                    sep += "-"
+                sep += "+"
+            sep += "\n"
+
+            sb = sep            
+            sb += "|"
+            for c in paddedColumns:
+                sb += c + "|"
+            sb += "\n"
+
+            # data
+            sb += sep
+            for row in paddedRows:
+                sb += "|"
+                for cell in row:
+                    sb += cell + "|"
+                sb += "\n"
+            sb += sep
+            print(sb)
+            return
         else:
             print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
-
-
-
-
-
