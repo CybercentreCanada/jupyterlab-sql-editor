@@ -46,6 +46,7 @@
     "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
+    "@json-schema": "^0.4.0",
     "@jupyterlab/application": "^3.0.0",
     "@jupyterlab/apputils": "^3.0.0",
     "@jupyterlab/builder": "^3.0.0",
