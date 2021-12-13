@@ -1,10 +1,12 @@
+import logging
 import pathlib
 import shutil
 import subprocess
 import sys
-import logging
+
 from jupyter_lsp.specs.config import load_config_schema
 from jupyter_lsp.types import LanguageServerManagerAPI
+
 
 NODE_LOCATION = (
     shutil.which("node") or
@@ -25,15 +27,14 @@ SCRIPTS = ["dist", "bin", "cli.js"]
 PATH_TO_BIN_JS = mgr.find_node_module(NODE_MODULE, *SCRIPTS)
 
 
-
 def main():
     logging.info(NODE)
     logging.info(PATH_TO_BIN_JS)
-    p = subprocess.Popen(
+    process = subprocess.Popen(
         [NODE, PATH_TO_BIN_JS, *sys.argv[1:]],
         stdin=sys.stdin, stdout=sys.stdout
     )
-    sys.exit(p.wait())
+    sys.exit(process.wait())
 
 
 def load(app):
