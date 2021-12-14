@@ -67,6 +67,16 @@ setup_args = dict(
         "Framework :: Jupyter :: JupyterLab :: Extensions",
         "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
     ],
+    entry_points={
+        "console_scripts": [
+            "sparksql_language_server = ipython_magic.sparksql.main:main",
+            "trino_language_server = ipython_magic.trino.main:main",
+        ],
+        "jupyter_lsp_spec_v1": [
+            "trino-language-server = ipython_magic.trino.main:load",
+            "sparksql-language-server = ipython_magic.sparksql.main:load",
+        ],
+    },
 )
 
 try:
