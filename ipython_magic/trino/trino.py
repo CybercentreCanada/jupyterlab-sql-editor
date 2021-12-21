@@ -17,7 +17,7 @@ from ..common.base import Base
 class Trino(Base):
     host = Unicode('localhost', config=True, help='The trino server hostname)')
     port = Int(443, config=True, help='Trino server port number)')
-    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
+    http_scheme = Unicode('https', config=True, help='Trino server scheme https/http)')
     auth = Instance(allow_none=True, klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')
     user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User)')
     conn = None
