@@ -25,6 +25,8 @@ labext_name = "jupyterlab-sql-editor"
 data_files_spec = [
     ("share/jupyter/labextensions/%s" % labext_name, str(lab_path.relative_to(HERE)), "**"),
     ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
+    ("share/jupyter/lab/settings/overrides.d", str("."), "trino-lsp.json"),
+    ("share/jupyter/lab/settings/overrides.d", str("."), "sparksql-lsp.json"),
 ]
 
 long_description = (HERE / "README.md").read_text()
