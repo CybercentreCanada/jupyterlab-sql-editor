@@ -1,4 +1,5 @@
 import json
+import os
 
 from IPython.core.display import display, HTML, JSON, clear_output, TextDisplayObject
 from IPython.display import Code
@@ -109,6 +110,10 @@ class SparkSql(Base):
     def display_link(self):
         link = self.spark._sc.uiWebUrl
         appName = self.spark._sc.appName
+        applicationId = self.spark._sc.applicationId
+        reverse_proxy = os.environ.get('SPARK_UI_URL')
+        if reverse_proxy:
+            link = f"{reverse_proxy}/proxy/{applicationId}"
         display(HTML(f"""<a class="external" href="{link}" target="_blank" >⭐ Spark {appName} UI 🡽</a>"""))
 
     def execute_query(self, df, output, limit, show_nonprinting):
