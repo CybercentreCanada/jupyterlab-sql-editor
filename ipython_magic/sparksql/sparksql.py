@@ -8,8 +8,9 @@ from IPython.core.magic_arguments import argument, magic_arguments, parse_argstr
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 
-from .schema_export import update_database_schema, update_local_database
-from ..common.base import Base
+from ipython_magic.common.base import Base
+from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
+
 
 from time import time, strftime, localtime
 from datetime import timedelta
@@ -58,15 +59,15 @@ class SparkSql(Base):
         catalog_array = self.get_catalog_array()
         if self.should_update_schema(output_file, self.cacheTTL):
             update_database_schema(self.spark, output_file, catalog_array)
-
-        if args.refresh.lower() == 'all':
-            update_database_schema(self.spark, output_file, catalog_array)
-            update_local_database(self.spark, output_file)
-            return
-        elif args.refresh.lower() == 'local':
-            update_local_database(self.spark, output_file)
-        elif args.refresh.lower() != 'none':
-            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
+        else:
+            if args.refresh.lower() == 'all':
+                update_database_schema(self.spark, output_file, catalog_array)
+                return
+            elif args.refresh.lower() == 'local':
+                update_local_database(self.spark, output_file)
+                return
+            elif args.refresh.lower() != 'none':
+                print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         sql = self.get_sql_statement(cell, args.sql)
         if not sql:
