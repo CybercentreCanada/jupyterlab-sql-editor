@@ -15,7 +15,6 @@ from ipython_magic.sparksql.spark_export import update_database_schema, update_l
 from time import time, strftime, localtime
 from datetime import timedelta
 
-
 class PlainText(TextDisplayObject):
     def __repr__(self):
         return self.data
@@ -44,7 +43,7 @@ class SparkSql(Base):
 
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
-        output_file = self.outputFile or '/tmp/sparkdb.schema.json'
+        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
         output = args.output.lower()
 
         if not output in self.valid_outputs:

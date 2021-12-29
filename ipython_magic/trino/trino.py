@@ -39,7 +39,7 @@ class Trino(Base):
 
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
-        output_file = self.outputFile or '/tmp/trinodb.schema.json'
+        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
         if not self.conn:
             self.conn = trino.dbapi.connect(
