@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-sql-editor",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "SQL editor support for formatting, syntax highlighing and code completion of SQL in cell magic, line magic, python string and file editor.",
   "keywords": [
     "jupyter",
@@ -62,6 +62,7 @@
     "@types/codemirror": "^5.60.2",
     "lsp-ws-connection": "^0.6.0",
     "npm-run-all": "^4.1.5",
+    "sql-language-server": "^1.1.0",
     "sql-formatter": "https://github.com/cccs-jc/sql-formatter.git"
   },
   "devDependencies": {
