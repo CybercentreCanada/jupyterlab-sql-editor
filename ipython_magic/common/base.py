@@ -67,7 +67,7 @@ replchars = re.compile('([^' + re.escape(PRINTABLE) + '])')
 @magics_class
 class Base(Magics):
     limit = Int(20, config=True, help='The maximum number of rows to display')
-    cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} seconds)')
+    cacheTTL = Int(DEFAULT_SCHEMA_TTL, config=True, help=f'Re-generate output schema file if older than time specified (defaults to {DEFAULT_SCHEMA_TTL} minutes)')
     catalogs = Unicode(DEFAULT_CATALOGS, config=True, help=f'Retrive schema from the specified list of catalogs (defaults to "{DEFAULT_CATALOGS}")')
     interactive = Bool(False, config=True, help='Display results in interactive grid')
     outputFile = Unicode('', config=True, help='Output schema to specified file')
@@ -120,8 +120,8 @@ class Base(Magics):
         if file_exists:
             file_time = os.path.getmtime(schema_file_name)
             current_time = time.time()
-            if current_time - file_time > refresh_threshold:
-                print(f'TTL {refresh_threshold} seconds expired, re-generating schema file: {schema_file_name}')
+            if current_time - file_time > (refresh_threshold * 60):
+                print(f'TTL {refresh_threshold} minutes expired, re-generating schema file: {schema_file_name}')
                 ttl_expired = True
 
         return (not file_exists) or ttl_expired

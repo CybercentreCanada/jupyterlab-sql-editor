@@ -63,126 +63,14 @@ Setting `foreignCodeThreshold` from 50% to 99% prevents the jupyterlab-lsp heuri
 
 > Advanced Settings -> Code Syntax -> foreignCodeThreshold
 
-## Configure sql-language-server startup scripts
-
-```bash
-$ cat ~/.jupyter/jupyter_server_config.py
-```
-
-```python
-import shutil
-from jupyter_lsp.specs.config import load_config_schema
-from jupyter_lsp.types import LanguageServerManagerAPI
-
-mgr = LanguageServerManagerAPI()
-
-# If jupyterlab-lsp has difficulty finding your sql-language-server
-# installation, specify additional node_modules paths
-mgr.extra_node_roots = ["/usr/local/lib/"]
-
-node_module = key = "sql-language-server"
-script = ["dist", "bin", "cli.js"]
-args = ["up", "--method", "stdio"]
-node_module_path = mgr.find_node_module(node_module, *script)
-
-c.LanguageServerManager.language_servers = {
-   "sparksql-language-server": {
-        "argv": [mgr.nodejs, node_module_path, *args],
-        "languages": ["sparksql"],
-        "version": 2,
-        "mime_types": ["text/x-sparksql"],
-        "display_name": "Spark language server",
-        "config_schema": load_config_schema(key),
-    },
-   "trino-language-server": {
-        "argv": [mgr.nodejs, node_module_path, *args],
-        "languages": ["trino"],
-        "version": 2,
-        "mime_types": ["text/x-trino"],
-        "display_name": "Trino language server",
-        "config_schema": load_config_schema(key),
-    }
-}
-```
-
-Notice that the launch scripts are named `sparksql-language-server` and `trino-language-server`. We will use these names to configure jupyterlab-lsp with each instance of the sql-language-server.
-
 
 ## Configure JupyterLab LSP to use registered sql-language-server
 
-You can configure jupyterlab-lsp using the Advanced Settings Editor or using an `overrides.json` file.
+You can configure jupyterlab-lsp using the Advanced Settings Editor.
 
 ### Using the Advanced Settings Editor
 
 ![display](images/jupyterlab-lsp-config.png)
-
-
-### Using an overrides.json file
-
-First determine the location of the application directory
-
-```bash
-$ jupyter lab path
-Application directory:   /opt/conda/share/jupyter/lab
-User Settings directory: /home/jovyan/.jupyter/lab/user-settings
-Workspaces directory: /home/jovyan/.jupyter/lab/workspaces
-```
-
-
-Use application dir to override jupyterlab-lsp configuration
-
-```bash
-$ cat /opt/conda/share/jupyter/lab/settings/overrides.json
-```
-
-```json
-{
-    "@krassowski/jupyterlab-lsp:syntax_highlighting": {
-        "foreignCodeThreshold": 0.99
-    },
-    "@krassowski/jupyterlab-lsp:plugin": {
-        "logAllCommunication": true,
-        "loggingLevel": "debug",
-        "setTrace": "verbose",
-        "language_servers": {
-            "sparksql-language-server": {
-                "serverSettings": {
-                    "sqlLanguageServer": {
-                        "connections": [
-                            {
-                                "name": "pyspark-conf",
-                                "adapter": "json",
-                                "filename": "/tmp/sparkdb.schema.json",
-                                "jupyterLabMode": true
-                            }
-                        ]
-                    }
-                }
-            },
-            "trino-language-server": {
-                "serverSettings": {
-                    "sqlLanguageServer": {
-                        "connections": [
-                            {
-                                "name": "trino-conf",
-                                "adapter": "json",
-                                "filename": "/tmp/trinodb.schema.json",
-                                "jupyterLabMode": true
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
-Notice the two sections `sparksql-language-server` and `trino-language-server` each with their own schema file location.
-
-
-
-
 
 
 ## Pre-configure Magics (optional)

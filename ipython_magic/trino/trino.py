@@ -10,8 +10,8 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
-from .schema_export import update_database_schema
-from ..common.base import Base
+from ipython_magic.common.base import Base
+from ipython_magic.trino.trino_export import update_database_schema
 
 @magics_class
 class Trino(Base):
@@ -39,7 +39,7 @@ class Trino(Base):
 
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
-        output_file = self.outputFile or '/tmp/trinodb.schema.json'
+        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
         if not self.conn:
             self.conn = trino.dbapi.connect(
@@ -53,12 +53,12 @@ class Trino(Base):
         catalog_array = self.get_catalog_array()
         if self.should_update_schema(output_file, self.cacheTTL):
             update_database_schema(self.cur, output_file, catalog_array)
-
-        if args.refresh.lower() == 'all':
-            update_database_schema(self.cur, output_file, catalog_array)
-            return
-        elif args.refresh.lower() != 'none':
-            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
+        else:
+            if args.refresh.lower() == 'all':
+                update_database_schema(self.cur, output_file, catalog_array)
+                return
+            elif args.refresh.lower() != 'none':
+                print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         sql = self.get_sql_statement(cell, args.sql)
         if not sql:
