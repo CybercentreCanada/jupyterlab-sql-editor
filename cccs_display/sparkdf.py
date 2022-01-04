@@ -1,10 +1,29 @@
 import json
 import os
 from time import time
-from ipython_display.common import make_tag, recursive_escape, render_grid
 from IPython.core.display import display, HTML, JSON, clear_output, TextDisplayObject
 from datetime import timedelta
 import pyspark.sql.functions as F
+from ipywidgets import Output, widgets
+from IPython.display import  display, display_html, JSON, HTML
+
+from cccs_display.common import make_tag, recursive_escape, render_grid
+from cccs_display.SparkSchemaWidget import SparkSchemaWidget
+
+import inspect
+
+def retrieve_name(var):
+    top_name = None
+    back_frame = inspect.currentframe().f_back
+    while back_frame:
+        callers_local_vars = back_frame.f_locals.items()
+        for var_name, var_val in callers_local_vars:
+            if var_val is var:
+                #print(f"found value named: {var_name}")
+                if var_name[0] != "_":
+                    top_name = var_name
+        back_frame =  back_frame.f_back
+    return top_name
 
 
 class PlainText(TextDisplayObject):
@@ -58,5 +77,34 @@ def display_spark_df(df, display_type, limit, show_nonprinting):
         displays.append(PlainText(data=text))
     end = time()
     elapsed = end - start
-    displays.append(PlainText(data="Execution time: " + str(timedelta(seconds=elapsed))))
+    displays.append(PlainText(data=f"Execution time: {elapse:.2f} seconds"))
     return displays
+
+
+def pyspark_dataframe_custom_plain_formatter(df, self, cycle):
+    return None
+
+def pyspark_dataframe_custom_html_formatter(df):
+    # display any stdout/stderr in a separate output which we can later clear
+    # we use this output to display the console progress bar
+    dataframe_name = retrieve_name(df)
+    if not dataframe_name:
+        dataframe_name = "schema"
+    display(SparkSchemaWidget(dataframe_name, df.schema))
+    # schema = {"schema": ex.convert()}
+    # display(JSON(expanded=False, root="result", data=schema))
+    out = Output()
+    display(out)
+    with out:
+        displays = display_spark_df(df, "grid", limit=11, show_nonprinting=False)
+    # clear any stdout/stderror that was generated
+    out.clear_output()
+    return widgets.VBox(displays)
+
+def register_display_function():
+    spark.conf.set('spark.sql.repl.eagerEval.enabled', True)
+    ip = get_ipython()
+    plain_formatter = ip.display_formatter.formatters['text/plain']
+    plain_formatter.for_type_by_name('pyspark.sql.dataframe', 'DataFrame', pyspark_dataframe_custom_plain_formatter)
+    html_formatter = ip.display_formatter.formatters['text/html']
+    html_formatter.for_type_by_name('pyspark.sql.dataframe', 'DataFrame', pyspark_dataframe_custom_html_formatter)

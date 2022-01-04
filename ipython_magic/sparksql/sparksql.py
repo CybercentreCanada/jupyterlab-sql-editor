@@ -11,7 +11,7 @@ import pyspark.sql.functions as F
 from ipython_magic.common.base import Base
 from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 
-from ipython_display.sparkdf import display_spark_df
+from cccs_display.sparkdf import display_spark_df
 from time import time, strftime, localtime
 
 @magics_class
