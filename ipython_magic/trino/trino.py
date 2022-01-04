@@ -10,6 +10,7 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
+from ipython_display.common import make_tag, recursive_escape, render_grid
 from ipython_magic.common.base import Base
 from ipython_magic.trino.trino_export import update_database_schema
 
@@ -105,8 +106,8 @@ class Trino(Base):
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if args.show_nonprinting:
                 for c in pdf.columns:
-                    pdf[c] = pdf[c].apply(lambda v: self.escape_control_chars(str(v)))
-            return self.render_grid(pdf, limit)
+                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
+            return render_grid(pdf, limit)
         elif args.output.lower() == 'json':
             if len(results) > limit:
                 print('Only showing top %d row(s)' % limit)
@@ -120,17 +121,17 @@ class Trino(Base):
                     python_obj[column_name] = python_val
                 json_array.append(python_obj)
             if args.show_nonprinting:
-                self.recursive_escape(json_array)
+                recursive_escape(json_array)
             return JSON(json_array)
         elif args.output.lower() == 'html':
             if len(results) > limit:
                 print(f'Only showing top {limit} row(s)')
-            html = self.make_tag('tr', False,
-                        ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
+            html = make_tag('tr', False,
+                        ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
                         style='border-bottom: 1px solid')
             for index, row in enumerate(results[:limit]):
-                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
-            return HTML(self.make_tag('table', False, html))
+                html += make_tag('tr', False, ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x),row)))
+            return HTML(make_tag('table', False, html))
         elif args.output.lower() == 'text':
             if len(results) > limit:
                 print(f'Only showing top {limit} row(s)')

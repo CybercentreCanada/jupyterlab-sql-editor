@@ -59,9 +59,6 @@ class ExplainUndefined(StrictUndefined):
         print(RAISING_ERROR_MSG)
         return super().__str__(self)
 
-PRINTABLE = string.ascii_letters + string.digits + string.punctuation + ' '
-
-replchars = re.compile('([^' + re.escape(PRINTABLE) + '])')
 
 
 @magics_class
@@ -76,14 +73,6 @@ class Base(Magics):
         super().__init__(shell, **kwargs)
         self.user_ns = {}
 
-    def make_tag(self, tag_name, show_nonprinting, body='', **kwargs):
-        if show_nonprinting:
-            body = self.escape_control_chars(escape(body))
-        attributes = ' '.join(map(lambda x: '%s="%s"' % x, kwargs.items()))
-        if attributes:
-            return f'<{tag_name} {attributes}>{body}</{tag_name}>'
-        else:
-            return f'<{tag_name}>{body}</{tag_name}>'
 
     @staticmethod
     def bind_variables(query, user_ns):
@@ -126,29 +115,6 @@ class Base(Magics):
 
         return (not file_exists) or ttl_expired
 
-    @staticmethod
-    def render_grid(pdf, limit):
-        # It's important to import DataGrid inside this magic function
-        # If you import it at the top of the file it will interfere with
-        # the use of DataGrid in a notebook cell. You get a message
-        # Loading widget...
-        from ipydatagrid import DataGrid
-        # for every order of magnitude in the limit 10, 100, 1000
-        # increase view port height by 10, 20, 30 rows
-        # and add 3 rows of padding
-
-        # limit -> num_display_rows
-        # 1         -> 3 + 0
-        # 10        -> 3 + 10
-        # 100       -> 3 + 20
-        # 1,000     -> 3 + 30
-        # 10,000    -> 3 + 40
-
-        num_display_rows = 3 + math.floor((math.log(limit, 10) * 10))
-        base_row_size = 20
-        layout_height = f"{num_display_rows * base_row_size}px"
-        return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})
-
     def display_sql(self, sql):
         def _jupyterlab_repr_html_(self):
             from pygments import highlight
@@ -164,25 +130,3 @@ class Base(Magics):
         # in addition to 'output_html'.
         IPython.display.Code._repr_html_ = _jupyterlab_repr_html_
         return IPython.display.Code(data=sql, language="mysql")
-
-    @staticmethod
-    def replchars_to_hex(match):
-        return r'\x{0:02x}'.format(ord(match.group()))
-
-    def escape_control_chars(self, text):
-        return replchars.sub(self.replchars_to_hex, text)
-
-    def recursive_escape(self, input):
-        # check whether it's a dict, list, tuple, or scalar
-        if isinstance(input, dict):
-            items = input.items()
-        elif isinstance(input, (list, tuple)):
-            items = enumerate(input)
-        else:
-            # just a value, split and return
-            return self.escape_control_chars(str(input))
-
-        # now call ourself for every value and replace in the input
-        for key, value in items:
-            input[key] = self.recursive_escape(value)
-        return input

@@ -1,8 +1,8 @@
 import json
 import os
 
-from IPython.core.display import display, HTML, JSON, clear_output, TextDisplayObject
-from IPython.display import Code
+from IPython.core.display import display, HTML, clear_output
+
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from pyspark.sql import SparkSession
@@ -11,14 +11,8 @@ import pyspark.sql.functions as F
 from ipython_magic.common.base import Base
 from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 
-
+from ipython_display.sparkdf import display_spark_df
 from time import time, strftime, localtime
-from datetime import timedelta
-
-class PlainText(TextDisplayObject):
-    def __repr__(self):
-        return self.data
-
 
 @magics_class
 class SparkSql(Base):
@@ -102,7 +96,7 @@ class SparkSql(Base):
             return
 
         self.display_link()
-        displays = self.execute_query(df, output, limit, args.show_nonprinting)
+        displays = display_spark_df(df, output, limit, args.show_nonprinting)
         clear_output(wait=True)
         for d in displays:
             display(d)
@@ -116,56 +110,12 @@ class SparkSql(Base):
             link = f"{reverse_proxy}/proxy/{applicationId}"
         display(HTML(f"""<a class="external" href="{link}" target="_blank" >⭐ Spark {appName} UI 🡽</a>"""))
 
-    def execute_query(self, df, output, limit, show_nonprinting):
-        displays = []
-        start = time()
-        if output == 'grid':
-            pdf = df.limit(limit + 1).toPandas()
-            if show_nonprinting:
-                for column in pdf.columns:
-                    pdf[column] = pdf[column].apply(lambda v: self.escape_control_chars(str(v)))
-            num_rows = pdf.shape[0]
-            if num_rows > limit:
-                displays.append(PlainText(data=f'Only showing top {limit} row(s)'))
-                # Delete last row
-                pdf = pdf.head(num_rows -1)
-            displays.insert(0, self.render_grid(pdf, limit))
-        elif output == 'json':
-            results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit)
-            json_array = [json.loads(r.json_str) for r in results]
-            if show_nonprinting:
-                self.recursive_escape(json_array)
-            displays.append(JSON(json_array))
-        elif output == 'html':
-            header, contents = self.get_results(df, limit)
-            if len(contents) > limit:
-                displays.append(PlainText(data=f'Only showing top {limit} row(s)'))
-            html = self.make_tag('tr', False,
-                        ''.join(map(lambda x: self.make_tag('td', show_nonprinting, x, style='font-weight: bold'), header)),
-                        style='border-bottom: 1px solid')
-            for index, row in enumerate(contents[:limit]):
-                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', show_nonprinting, x),row)))
-            displays.insert(0, HTML(self.make_tag('table', False, html)))
-        elif output == 'text':
-            text = df._jdf.showString(limit, 100, False)
-            displays.append(PlainText(data=text))
-        end = time()
-        elapsed = end - start
-        displays.append(PlainText(data="Execution time: " + str(timedelta(seconds=elapsed))))
-        return displays
-
-    @staticmethod
-    def get_results(df, limit):
-        def convert_value(value):
-            if value is None:
-                return 'null'
-            return str(value)
-
-        header = df.columns
-        contents = list(map(lambda row: list(map(convert_value, row)), df.take(limit + 1)))
-
-        return header, contents
 
     @staticmethod
     def get_instantiated_spark_session():
         return SparkSession._instantiatedSession
+
+
+
+
+
