@@ -5,8 +5,22 @@ from pyspark.sql.types import *
 
 from ipywidgets import Output
 import time
-from IPython.display import  display, display_html, JSON, HTML
+from IPython.display import display, display_html, JSON, HTML
 from ipytree import Tree, Node
+
+icons = {
+    "time": "clock",
+    "date": "calendar",
+    "string": "at",
+    "decimal": "percentage",
+    "integer": "hashtag",
+    "boolean": "check-circle",
+    "binary": "delicious",
+    "struct": "project-diagram",
+    "array": "language",
+    "map": "key",
+}
+
 
 class SparkSchemaWidget(Tree):
     def __init__(self, name, schema) -> None:
@@ -15,12 +29,12 @@ class SparkSchemaWidget(Tree):
         self.add_node(node)
 
     complex_type = {
-    "opened": False,
-    "open_icon_style": "danger",
-    "close_icon_style": "danger",
-    "icon_style": "success",
-    "open_icon":"angle-right",
-    "close_icon":"angle-down"
+        "opened": False,
+        "open_icon_style": "danger",
+        "close_icon_style": "danger",
+        "icon_style": "success",
+        "open_icon": "angle-right",
+        "close_icon": "angle-down",
     }
 
     def get_children(self, field, name):
@@ -29,15 +43,19 @@ class SparkSchemaWidget(Tree):
         elif isinstance(field, MapType):
             key = self.get_children(field.keyType, "key")
             value = self.get_children(field.valueType, "value")
-            nodes=[key, value]
+            nodes = [key, value]
             return Node(f"{name}: map", nodes, icon=icons["map"], **self.complex_type)
         elif isinstance(field, ArrayType):
             element = self.get_children(field.elementType, "element")
             nodes = [element]
-            return Node(f"{name}: array", nodes, icon=icons["array"], **self.complex_type)
+            return Node(
+                f"{name}: array", nodes, icon=icons["array"], **self.complex_type
+            )
         elif isinstance(field, StructType):
             nodes = [self.get_children(f, "") for f in field.fields]
-            return Node(f"{name}: struct", nodes, icon=icons["struct"], **self.complex_type)
+            return Node(
+                f"{name}: struct", nodes, icon=icons["struct"], **self.complex_type
+            )
         elif isinstance(field, StringType):
             return Node(f"{name} string:", icon=icons["string"])
         elif isinstance(field, TimestampType):
@@ -63,4 +81,3 @@ class SparkSchemaWidget(Tree):
 
     def to_tree(self):
         return tree
-

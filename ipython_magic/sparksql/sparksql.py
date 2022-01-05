@@ -1,7 +1,4 @@
-import json
 import os
-
-from IPython.core.display import display, HTML, clear_output
 
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
@@ -11,8 +8,7 @@ import pyspark.sql.functions as F
 from ipython_magic.common.base import Base
 from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 
-from cccs_display.sparkdf import display_spark_df
-from time import time, strftime, localtime
+from cccs.ipython.sparkdf import display_df
 
 @magics_class
 class SparkSql(Base):
@@ -68,20 +64,20 @@ class SparkSql(Base):
         elif output == 'sql':
             return self.display_sql(sql)
 
-        df = self.spark.sql(sql)
+        result = self.spark.sql(sql)
         if args.cache or args.eager:
             load_type = 'eager' if args.eager else 'lazy'
             print(f'Cached dataframe with {load_type} load')
-            df = df.cache()
+            result = result.cache()
             if args.eager:
-                df.count()
+                result.count()
         if args.view:
             print(f'Created temporary view `{args.view}`')
-            df.createOrReplaceTempView(args.view)
+            result.createOrReplaceTempView(args.view)
             update_local_database(self.spark, output_file)
         if args.dataframe:
             print(f'Captured dataframe to local variable `{args.dataframe}`')
-            self.shell.user_ns.update({args.dataframe: df})
+            self.shell.user_ns.update({args.dataframe: result})
 
         limit = args.limit
         if limit is None:
@@ -92,24 +88,10 @@ class SparkSql(Base):
             return
 
         if output == 'schema':
-            df.printSchema()
+            result.printSchema()
             return
 
-        self.display_link()
-        displays = display_spark_df(df, output, limit, args.show_nonprinting)
-        clear_output(wait=True)
-        for d in displays:
-            display(d)
-
-    def display_link(self):
-        link = self.spark._sc.uiWebUrl
-        appName = self.spark._sc.appName
-        applicationId = self.spark._sc.applicationId
-        reverse_proxy = os.environ.get('SPARK_UI_URL')
-        if reverse_proxy:
-            link = f"{reverse_proxy}/proxy/{applicationId}"
-        display(HTML(f"""<a class="external" href="{link}" target="_blank" >⭐ Spark {appName} UI 🡽</a>"""))
-
+        display_df(result, output=output, limit=limit, show_nonprinting=args.show_nonprinting)
 
     @staticmethod
     def get_instantiated_spark_session():

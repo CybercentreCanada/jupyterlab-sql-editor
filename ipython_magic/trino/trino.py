@@ -10,7 +10,7 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
-from cccs_display.common import make_tag, recursive_escape, render_grid
+from cccs.ipython.common import make_tag, recursive_escape, render_grid
 from ipython_magic.common.base import Base
 from ipython_magic.trino.trino_export import update_database_schema
 
