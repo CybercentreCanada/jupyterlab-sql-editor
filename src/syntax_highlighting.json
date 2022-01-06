@@ -1,0 +1,6 @@
+{
+    "@krassowski/jupyterlab-lsp:syntax_highlighting": {
+        "disable": true
+    }
+}
+

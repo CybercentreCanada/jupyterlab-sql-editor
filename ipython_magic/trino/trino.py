@@ -1,8 +1,7 @@
 from html import escape
 import json
-import math
+import os
 
-import numpy
 import pandas as pd
 import trino
 from IPython.core.display import HTML, JSON
@@ -10,18 +9,21 @@ from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, 
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
+from cccs.ipython.common import make_tag, recursive_escape, render_grid
 from ipython_magic.common.base import Base
 from ipython_magic.trino.trino_export import update_database_schema
 
 @magics_class
 class Trino(Base):
-    host = Unicode('localhost', config=True, help='The trino server hostname)')
-    port = Int(443, config=True, help='Trino server port number)')
-    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
+    host = Unicode('localhost', config=True, help='The trino server hostname')
+    port = Int(443, config=True, help='Trino server port number')
+    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http')
     auth = Instance(allow_none=True, klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')
-    user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User)')
+    user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User')
     conn = None
     cur = None
+    catalog = Unicode("", config=True, help='Trino catalog to use')
+    schema = Unicode("", config=True, help='Trino schema to use')
 
     @needs_local_scope
     @line_cell_magic
@@ -34,6 +36,9 @@ class Trino(Base):
     @argument('-o', '--output', metavar='sql|json|html|grid|text|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-x', '--raw', action='store_true', help="Run statement as is. Do not wrap statement with a limit. Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.")
+    @argument('-c', '--catalog', metavar='catalogname', default=None, type=str, help='Trino catalog to use')
+    @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
+    @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
@@ -41,14 +46,24 @@ class Trino(Base):
         args = parse_argstring(self.trino, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
-        if not self.conn:
-            self.conn = trino.dbapi.connect(
-                host=self.host,
-                port=self.port,
-                auth=self.auth,
-                user=self.user,
-                http_scheme=self.httpScheme)
-            self.cur = self.conn.cursor()
+        catalog = args.catalog
+        if not catalog:
+            catalog = self.catalog
+        print(catalog)
+        schema = args.schema
+        if not schema:
+            schema = self.schema
+        print(schema)
+
+        self.conn = trino.dbapi.connect(
+            host=self.host,
+            port=self.port,
+            auth=self.auth,
+            user=self.user,
+            catalog=catalog,
+            schema=schema,
+            http_scheme=self.httpScheme)
+        self.cur = self.conn.cursor()
 
         catalog_array = self.get_catalog_array()
         if self.should_update_schema(output_file, self.cacheTTL):
@@ -60,7 +75,7 @@ class Trino(Base):
             elif args.refresh.lower() != 'none':
                 print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
-        sql = self.get_sql_statement(cell, args.sql)
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
 
@@ -105,8 +120,8 @@ class Trino(Base):
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if args.show_nonprinting:
                 for c in pdf.columns:
-                    pdf[c] = pdf[c].apply(lambda v: self.escape_control_chars(str(v)))
-            return self.render_grid(pdf, limit)
+                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
+            return render_grid(pdf, limit)
         elif args.output.lower() == 'json':
             if len(results) > limit:
                 print('Only showing top %d row(s)' % limit)
@@ -120,17 +135,17 @@ class Trino(Base):
                     python_obj[column_name] = python_val
                 json_array.append(python_obj)
             if args.show_nonprinting:
-                self.recursive_escape(json_array)
+                recursive_escape(json_array)
             return JSON(json_array)
         elif args.output.lower() == 'html':
             if len(results) > limit:
                 print(f'Only showing top {limit} row(s)')
-            html = self.make_tag('tr', False,
-                        ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
+            html = make_tag('tr', False,
+                        ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
                         style='border-bottom: 1px solid')
             for index, row in enumerate(results[:limit]):
-                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', args.show_nonprinting, x),row)))
-            return HTML(self.make_tag('table', False, html))
+                html += make_tag('tr', False, ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x),row)))
+            return HTML(make_tag('table', False, html))
         elif args.output.lower() == 'text':
             if len(results) > limit:
                 print(f'Only showing top {limit} row(s)')

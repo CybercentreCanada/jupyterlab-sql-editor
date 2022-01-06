@@ -27,6 +27,7 @@ data_files_spec = [
     ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
     ("share/jupyter/lab/settings/overrides.d", str("."), "trino-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("."), "sparksql-lsp.json"),
+    ("share/jupyter/lab/settings/overrides.d", str("."), "syntax_highlighting.json"),
 ]
 
 long_description = (HERE / "README.md").read_text()
@@ -48,7 +49,8 @@ setup_args = dict(
     install_requires=[
         'trino',
         'ipydatagrid',
-        'Jinja2'
+        'Jinja2',
+        'ipytree'
     ],
     zip_safe=False,
     include_package_data=True,

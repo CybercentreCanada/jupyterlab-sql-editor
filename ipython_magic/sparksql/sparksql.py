@@ -1,8 +1,5 @@
-import json
 import os
 
-from IPython.core.display import display, HTML, JSON, clear_output, TextDisplayObject
-from IPython.display import Code
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from pyspark.sql import SparkSession
@@ -11,14 +8,7 @@ import pyspark.sql.functions as F
 from ipython_magic.common.base import Base
 from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 
-
-from time import time, strftime, localtime
-from datetime import timedelta
-
-class PlainText(TextDisplayObject):
-    def __repr__(self):
-        return self.data
-
+from cccs.ipython.sparkdf import display_df
 
 @magics_class
 class SparkSql(Base):
@@ -38,6 +28,7 @@ class SparkSql(Base):
     @argument('-o', '--output', metavar='sql|json|html|grid|text|schema|skip|none', type=str, default='html',
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
+    @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -68,26 +59,26 @@ class SparkSql(Base):
             elif args.refresh.lower() != 'none':
                 print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
-        sql = self.get_sql_statement(cell, args.sql)
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
         elif output == 'sql':
             return self.display_sql(sql)
 
-        df = self.spark.sql(sql)
+        result = self.spark.sql(sql)
         if args.cache or args.eager:
             load_type = 'eager' if args.eager else 'lazy'
             print(f'Cached dataframe with {load_type} load')
-            df = df.cache()
+            result = result.cache()
             if args.eager:
-                df.count()
+                result.count()
         if args.view:
             print(f'Created temporary view `{args.view}`')
-            df.createOrReplaceTempView(args.view)
+            result.createOrReplaceTempView(args.view)
             update_local_database(self.spark, output_file)
         if args.dataframe:
             print(f'Captured dataframe to local variable `{args.dataframe}`')
-            self.shell.user_ns.update({args.dataframe: df})
+            self.shell.user_ns.update({args.dataframe: result})
 
         limit = args.limit
         if limit is None:
@@ -98,74 +89,16 @@ class SparkSql(Base):
             return
 
         if output == 'schema':
-            df.printSchema()
+            result.printSchema()
             return
 
-        self.display_link()
-        displays = self.execute_query(df, output, limit, args.show_nonprinting)
-        clear_output(wait=True)
-        for d in displays:
-            display(d)
-
-    def display_link(self):
-        link = self.spark._sc.uiWebUrl
-        appName = self.spark._sc.appName
-        applicationId = self.spark._sc.applicationId
-        reverse_proxy = os.environ.get('SPARK_UI_URL')
-        if reverse_proxy:
-            link = f"{reverse_proxy}/proxy/{applicationId}"
-        display(HTML(f"""<a class="external" href="{link}" target="_blank" >⭐ Spark {appName} UI 🡽</a>"""))
-
-    def execute_query(self, df, output, limit, show_nonprinting):
-        displays = []
-        start = time()
-        if output == 'grid':
-            pdf = df.limit(limit + 1).toPandas()
-            if show_nonprinting:
-                for column in pdf.columns:
-                    pdf[column] = pdf[column].apply(lambda v: self.escape_control_chars(str(v)))
-            num_rows = pdf.shape[0]
-            if num_rows > limit:
-                displays.append(PlainText(data=f'Only showing top {limit} row(s)'))
-                # Delete last row
-                pdf = pdf.head(num_rows -1)
-            displays.insert(0, self.render_grid(pdf, limit))
-        elif output == 'json':
-            results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit)
-            json_array = [json.loads(r.json_str) for r in results]
-            if show_nonprinting:
-                self.recursive_escape(json_array)
-            displays.append(JSON(json_array))
-        elif output == 'html':
-            header, contents = self.get_results(df, limit)
-            if len(contents) > limit:
-                displays.append(PlainText(data=f'Only showing top {limit} row(s)'))
-            html = self.make_tag('tr', False,
-                        ''.join(map(lambda x: self.make_tag('td', show_nonprinting, x, style='font-weight: bold'), header)),
-                        style='border-bottom: 1px solid')
-            for index, row in enumerate(contents[:limit]):
-                html += self.make_tag('tr', False, ''.join(map(lambda x: self.make_tag('td', show_nonprinting, x),row)))
-            displays.insert(0, HTML(self.make_tag('table', False, html)))
-        elif output == 'text':
-            text = df._jdf.showString(limit, 100, False)
-            displays.append(PlainText(data=text))
-        end = time()
-        elapsed = end - start
-        displays.append(PlainText(data="Execution time: " + str(timedelta(seconds=elapsed))))
-        return displays
-
-    @staticmethod
-    def get_results(df, limit):
-        def convert_value(value):
-            if value is None:
-                return 'null'
-            return str(value)
-
-        header = df.columns
-        contents = list(map(lambda row: list(map(convert_value, row)), df.take(limit + 1)))
-
-        return header, contents
+        display_df(result, output=output, limit=limit, show_nonprinting=args.show_nonprinting)
 
     @staticmethod
     def get_instantiated_spark_session():
         return SparkSession._instantiatedSession
+
+
+
+
+
