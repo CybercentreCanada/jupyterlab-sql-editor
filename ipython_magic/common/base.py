@@ -85,13 +85,13 @@ class Base(Magics):
             catalog_array = self.catalogs.split(',')
         return catalog_array
 
-    def get_sql_statement(self, cell, sql_argument):
+    def get_sql_statement(self, cell, sql_argument, use_jinja):
         sql = cell
         if cell is None:
             sql = ' '.join(sql_argument)
         if not sql:
             print('No sql statement to execute')
-        else:
+        elif use_jinja:
             sql = self.bind_variables(sql, self.user_ns)
         return sql
 

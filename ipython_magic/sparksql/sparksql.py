@@ -28,6 +28,7 @@ class SparkSql(Base):
     @argument('-o', '--output', metavar='sql|json|html|grid|text|schema|skip|none', type=str, default='html',
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
+    @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -58,7 +59,7 @@ class SparkSql(Base):
             elif args.refresh.lower() != 'none':
                 print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
-        sql = self.get_sql_statement(cell, args.sql)
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
         elif output == 'sql':

@@ -38,6 +38,7 @@ class Trino(Base):
     @argument('-x', '--raw', action='store_true', help="Run statement as is. Do not wrap statement with a limit. Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.")
     @argument('-c', '--catalog', metavar='catalogname', default=None, type=str, help='Trino catalog to use')
     @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
+    @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
@@ -74,7 +75,7 @@ class Trino(Base):
             elif args.refresh.lower() != 'none':
                 print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
-        sql = self.get_sql_statement(cell, args.sql)
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
 

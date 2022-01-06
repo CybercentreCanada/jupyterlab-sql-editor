@@ -17,6 +17,7 @@ const FLAG_OPTS = [
     '-e', '--eager',  //          Cache dataframe with eager load
     '-s', '--show-nonprinting',
     '-x', '--raw',
+    '-j', '--jinja',
 ].join('|')
 const SPACE = ' '
 const OPTION_VALUE = `[0-9a-zA-Z/\._]+`
