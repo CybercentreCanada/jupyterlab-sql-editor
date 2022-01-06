@@ -3,7 +3,7 @@ import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 
-from ipython_magic.common.export import (
+from jupyterlab_sql_editor.ipython_magic.common.export import (
     Function,
     SchemaExporter,
     Connection,
