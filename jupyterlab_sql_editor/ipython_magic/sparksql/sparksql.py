@@ -5,10 +5,10 @@ from IPython.core.magic_arguments import argument, magic_arguments, parse_argstr
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 
-from ipython_magic.common.base import Base
-from ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
+from jupyterlab_sql_editor.ipython_magic.common.base import Base
+from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 
-from cccs.ipython.sparkdf import display_df
+from jupyterlab_sql_editor.ipython.sparkdf import display_df
 
 @magics_class
 class SparkSql(Base):

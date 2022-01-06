@@ -2,7 +2,7 @@ import json
 
 from trino.exceptions import TrinoUserError
 
-from ipython_magic.common.export import (
+from jupyterlab_sql_editor.ipython_magic.common.export import (
     Catalog,
     Connection,
     Function,

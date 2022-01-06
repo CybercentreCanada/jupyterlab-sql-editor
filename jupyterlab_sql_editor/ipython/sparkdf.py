@@ -8,8 +8,8 @@ from IPython.display import  display, display_html, JSON, HTML
 from IPython.core.display import display, HTML, clear_output, TextDisplayObject
 from IPython import get_ipython
 
-from cccs.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid
-from cccs.ipython.SparkSchemaWidget import SparkSchemaWidget
+from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid
+from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
 
 import inspect
 

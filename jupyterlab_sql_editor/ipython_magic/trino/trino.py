@@ -4,14 +4,14 @@ import os
 
 import pandas as pd
 import trino
-from IPython.core.display import HTML, JSON
+from IPython.core.display import HTML, JSON, display
 from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
-from cccs.ipython.common import make_tag, recursive_escape, render_grid
-from ipython_magic.common.base import Base
-from ipython_magic.trino.trino_export import update_database_schema
+from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid
+from jupyterlab_sql_editor.ipython_magic.common.base import Base
+from jupyterlab_sql_editor.ipython_magic.trino.trino_export import update_database_schema
 
 @magics_class
 class Trino(Base):
@@ -83,9 +83,15 @@ class Trino(Base):
         if limit is None:
             limit = self.limit
 
-        if args.output.lower() == 'sql':
+        output = args.output.lower()
+
+        if not output in ['sql', 'json', 'html', 'grid', 'skip', 'none']:
+            print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|skip|none].')
+            return
+
+        if output == 'sql':
             return self.display_sql(sql)
-        elif args.output.lower() == 'json':
+        elif output == 'json':
             # Determine the resulting column names
             self.cur.execute(f'SHOW STATS FOR ({sql})')
             results = self.cur.fetchmany(limit+1)
@@ -101,10 +107,16 @@ class Trino(Base):
             sql = f'select {select} from ({sql}) limit {limit+1}'            
         elif not args.raw == True:
             sql = f'select * from ({sql}) limit {limit+1}'
+        
         self.cur.execute(sql)
         results = self.cur.fetchmany(limit+1)
 
         columns = list(map(lambda d: d[0], self.cur.description))
+        
+        more_results = False
+        if len(results) > limit:
+            more_results = True
+            results = results[:limit]
 
         if args.dataframe:
             print(f'Saved results to pandas dataframe named `{args.dataframe}`')
@@ -114,17 +126,14 @@ class Trino(Base):
         if limit <= 0 or args.output.lower() == 'skip' or args.output.lower() == 'none':
             print('Query execution skipped')
             return
-        elif args.output.lower() == 'grid':
-            if len(results) > limit:
-                print(f'Only showing top {limit} row(s)')
+        
+        if output == 'grid':
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if args.show_nonprinting:
                 for c in pdf.columns:
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
-            return render_grid(pdf, limit)
-        elif args.output.lower() == 'json':
-            if len(results) > limit:
-                print('Only showing top %d row(s)' % limit)
+            display(render_grid(pdf, limit))
+        elif output == 'json':
             json_array = []
             for row in results[:limit]:
                 python_obj = {}
@@ -136,21 +145,21 @@ class Trino(Base):
                 json_array.append(python_obj)
             if args.show_nonprinting:
                 recursive_escape(json_array)
-            return JSON(json_array)
-        elif args.output.lower() == 'html':
-            if len(results) > limit:
-                print(f'Only showing top {limit} row(s)')
+            display(JSON(json_array))
+        elif output == 'html':
             html = make_tag('tr', False,
                         ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
                         style='border-bottom: 1px solid')
             for index, row in enumerate(results[:limit]):
                 html += make_tag('tr', False, ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x),row)))
-            return HTML(make_tag('table', False, html))
-        elif args.output.lower() == 'text':
-            if len(results) > limit:
-                print(f'Only showing top {limit} row(s)')
+            display(HTML(make_tag('table', False, html)))
+        elif output == 'text':
+            print(self.render_text(results, columns))
 
-            rows = results
+        if more_results:
+            print('Only showing top %d row(s)' % limit)
+    
+    def render_text(self, rows, columns):
             sb = ''
             numCols = len(columns)
             # We set a minimum column width at '3'
@@ -202,7 +211,10 @@ class Trino(Base):
                     sb += cell + "|"
                 sb += "\n"
             sb += sep
-            print(sb)
-            return
-        else:
-            print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|none].')
+            return sb
+
+    @staticmethod
+    def display_link():
+        link = "http://localhost"
+        appName = "name"
+        display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {appName}</a>"""))
