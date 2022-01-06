@@ -57,7 +57,7 @@ class SparkSchemaWidget(Tree):
                 f"{name}: struct", nodes, icon=icons["struct"], **self.complex_type
             )
         elif isinstance(field, StringType):
-            return Node(f"{name} string:", icon=icons["string"])
+            return Node(f"{name}: string", icon=icons["string"])
         elif isinstance(field, TimestampType):
             return Node(f"{name}: timestamp", icon=icons["time"])
         elif isinstance(field, DateType):
