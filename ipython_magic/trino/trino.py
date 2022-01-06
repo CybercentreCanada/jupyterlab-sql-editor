@@ -1,8 +1,7 @@
 from html import escape
 import json
-import math
+import os
 
-import numpy
 import pandas as pd
 import trino
 from IPython.core.display import HTML, JSON
@@ -16,13 +15,15 @@ from ipython_magic.trino.trino_export import update_database_schema
 
 @magics_class
 class Trino(Base):
-    host = Unicode('localhost', config=True, help='The trino server hostname)')
-    port = Int(443, config=True, help='Trino server port number)')
-    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http)')
+    host = Unicode('localhost', config=True, help='The trino server hostname')
+    port = Int(443, config=True, help='Trino server port number')
+    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http')
     auth = Instance(allow_none=True, klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')
-    user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User)')
+    user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User')
     conn = None
     cur = None
+    catalog = Unicode("", config=True, help='Trino catalog to use')
+    schema = Unicode("", config=True, help='Trino schema to use')
 
     @needs_local_scope
     @line_cell_magic
@@ -35,6 +36,8 @@ class Trino(Base):
     @argument('-o', '--output', metavar='sql|json|html|grid|text|skip|none', type=str, default='html', help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-x', '--raw', action='store_true', help="Run statement as is. Do not wrap statement with a limit. Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.")
+    @argument('-c', '--catalog', metavar='catalogname', default=None, type=str, help='Trino catalog to use')
+    @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
@@ -42,14 +45,24 @@ class Trino(Base):
         args = parse_argstring(self.trino, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
-        if not self.conn:
-            self.conn = trino.dbapi.connect(
-                host=self.host,
-                port=self.port,
-                auth=self.auth,
-                user=self.user,
-                http_scheme=self.httpScheme)
-            self.cur = self.conn.cursor()
+        catalog = args.catalog
+        if not catalog:
+            catalog = self.catalog
+        print(catalog)
+        schema = args.schema
+        if not schema:
+            schema = self.schema
+        print(schema)
+
+        self.conn = trino.dbapi.connect(
+            host=self.host,
+            port=self.port,
+            auth=self.auth,
+            user=self.user,
+            catalog=catalog,
+            schema=schema,
+            http_scheme=self.httpScheme)
+        self.cur = self.conn.cursor()
 
         catalog_array = self.get_catalog_array()
         if self.should_update_schema(output_file, self.cacheTTL):
