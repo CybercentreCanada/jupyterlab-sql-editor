@@ -93,7 +93,7 @@ def display_link():
     reverse_proxy = os.environ.get('SPARK_UI_URL')
     if reverse_proxy:
         link = f"{reverse_proxy}/proxy/{applicationId}"
-    display(HTML(f"""<a class="external" href="{link}" target="_blank" >⭐ Spark {appName} UI 🡽</a>"""))
+    display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {appName}</a>"""))
 
 def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
     display_df(df, limit=limit)
