@@ -1,20 +1,23 @@
 {
   "name": "jupyterlab-sql-editor",
-  "version": "0.1.22",
-  "description": "SQL editor support for formatting, syntax highlighing and code completion of SQL in cell magic, line magic, python string and file editor.",
+  "version": "0.1.23",
+  "description": "SQL editor support for formatting, syntax highlighting and code completion of SQL in cell magic, line magic, python string and file editor.",
   "keywords": [
     "jupyter",
     "jupyterlab",
-    "jupyterlab-extension"
+    "jupyterlab-extension",
+    "Spark",
+    "Trino",
+    "Dataframe"
   ],
-  "homepage": "https://github.com/github_username/jupyterlab_sql_editor",
+  "homepage": "https://github.com/CybercentreCanada/jupyterlab-sql-editor",
   "bugs": {
-    "url": "https://github.com/github_username/jupyterlab_sql_editor/issues"
+    "url": "https://github.com/CybercentreCanada/jupyterlab-sql-editor/issues"
   },
-  "license": "BSD-3-Clause",
+  "license": "MIT License (MIT)",
   "author": {
     "name": "cccs-jc",
-    "email": "cccs-jc@cyber.gc.ca"
+    "email": "contact@cyber.gc.ca"
   },
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
@@ -26,7 +29,7 @@
   "style": "style/index.css",
   "repository": {
     "type": "git",
-    "url": "https://github.com/github_username/jupyterlab_sql_editor.git"
+    "url": "https://github.com/CybercentreCanada/jupyterlab-sql-editor.git"
   },
   "scripts": {
     "build": "jlpm run build:lib && jlpm run build:labextension:dev",

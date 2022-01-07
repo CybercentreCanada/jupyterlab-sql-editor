@@ -56,9 +56,22 @@ setup_args = dict(
     include_package_data=True,
     python_requires=">=3.6",
     platforms="Linux, Mac OS X, Windows",
-    keywords=["Jupyter", "JupyterLab", "JupyterLab3"],
+    keywords=[
+        "sql",
+        "Jupyter",
+        "JupyterLab", 
+        "JupyterLab3",
+        "jupyter",
+        "jupyterlab-extension",
+        "spark",
+        "trino",
+        "dataframe",
+        "cccs", 
+        "canada"
+    ],
+
     classifiers=[
-        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
