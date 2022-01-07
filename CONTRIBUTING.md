@@ -3,8 +3,7 @@
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
 - [Contributing](#contributing)
-- [Setup Trino Server for Testing](#setup-trino-server-for-testing)
-- [Security Vulnerability Reporting](#security-vulnerability-reporting)
+- [Set up Trino Server for Testing](#set-up-trino-server-for-testing)
 
 
 # Installation
@@ -33,7 +32,7 @@ pip uninstall jupyterlab-sql-editor
 
 Auto completion leverages the sql-language-server project.
 
-### install sql-language-server
+### Install sql-language-server
 
 ```bash
 sudo npm install -g sql-language-server
@@ -53,16 +52,9 @@ $ npm list -g
 ls -lh /usr/local/lib/node_modules/sql-language-server/
 ```
 
-Remember the location where your module is installed. In this example `/usr/local/lib/`. We will configure jupyterlab-lsp with this location.
+Remember the location where your module is installed. We will configure jupyterlab-lsp with this location. In this example, the location is: `/usr/local/lib/`. 
 
 # Configuration
-
-## Syntax highlighting
-
-Setting `foreignCodeThreshold` from 50% to 99% prevents the jupyterlab-lsp heuristic which tries to guess the mime type of a code cell. However when a code cell contains both python and SQL code this heuristic interfeer with this extension. We can disable the behaviour by changing the `foreignCodeThreshold` value under the JupyterLab advanced settings.
-
-> Advanced Settings -> Code Syntax -> foreignCodeThreshold
-
 
 ## Configure JupyterLab LSP to use registered sql-language-server
 
@@ -75,7 +67,7 @@ You can configure jupyterlab-lsp using the Advanced Settings Editor.
 
 ## Pre-configure Magics (optional)
 
-SparkSql and Trino magic can be configured inside a Notebook. However it's convinient pre-configured them using an ipython profile.
+SparkSql and Trino magic can be configured inside a Notebook. However, it's convenient to pre-configure them using an IPython profile.
 
 ```bash
 $ cat ~/.ipython/profile_default/ipython_config.py 
@@ -122,23 +114,23 @@ Code completion is performed by an LSP server [sql-language-server](https://gith
 
 ### Transclusions
 
-`jupyterlab-sql-editor` includes transclusions to extract SQL statements from
+`jupyterlab-sql-editor` includes transclusions to extract SQL statements from:
   - sparksql cell magic
   - sparksql line magic
-  - sql in a python string (using special --start/end-sql-syntax markers)
+  - SQL in a Python strings (using special --start/end-sql-syntax markers)
 
-Transclusions is what [jupyterlab-lsp](https://github.com/krassowski/jupyterlab-lsp) uses to extract parts of a cell in this case SQL statements and passes them to the `sql-language-server` for evaluation. This enables auto completion of spark SQL keywords, tables, columns and functions.
+Transclusions are what [jupyterlab-lsp](https://github.com/krassowski/jupyterlab-lsp) uses to extract parts of a cell (in this case, SQL statements) and pass them to the `sql-language-server` for evaluation. This enables auto completion of spark SQL keywords, tables, columns and functions.
 
 ### Syntax Highlighting
-`jupyterlab-sql-editor` registers 3 multiplexed CodeMirrors to support precise syntax highlighting. A multiplexed CodeMirror is registered for
+`jupyterlab-sql-editor` registers 3 multiplexed CodeMirrors to support precise syntax highlighting. A multiplexed CodeMirror is registered for:
   - sparksql cell magic
   - sparksql line magic
-  - sql in python string
+  - SQL in Python strings
 
-Multiplexed CodeMirror are better at detecting what to syntax highligh as python and what to syntax highlight as SQL. It does not rely on `jupyterlab-lsp` heuristic detection which passed a given [foreignCodeThreshold](https://github.com/krassowski/jupyterlab-lsp/blob/master/packages/jupyterlab-lsp/schema/syntax_highlighting.json) will change the mode of the entire cell's editor. Instead multiplexed CodeMirror is able to support SQL mode which is embedded in a python mode and will syntax highligh each section the cell accordingly.
+Multiplexed CodeMirror is better at detecting what to syntax-highlight as Python and what to syntax-highlight as SQL. It does not rely on `jupyterlab-lsp` heuristic detection which, when passed a given [foreignCodeThreshold](https://github.com/krassowski/jupyterlab-lsp/blob/master/packages/jupyterlab-lsp/schema/syntax_highlighting.json), will change the mode of the entire cell's editor. Instead, multiplexed CodeMirror is able to support SQL mode which is embedded in a Python mode and will apply syntax highlighting to each section of the cell accordingly.
 
 
-However you'll notice that as your SQL query gets larger the code cell will switch from python syntax hilighting to SQL syntax hilighting.  This is due to the fact that jupyter-lsp has a builtin behaviour to do this. It can be found here.
+However, you'll notice that as your SQL query gets larger the code cell will switch from Python syntax highlighting to SQL syntax highlighting. This is due to the fact that jupyter-lsp has a builtin behaviour to do this. It can be found here.
 
 https://github.com/krassowski/jupyterlab-lsp/blob/a52d4220ab889d0572091410db7f77fa93652f1c/packages/jupyterlab-lsp/src/features/syntax_highlighting.ts#L90
 
@@ -183,7 +175,7 @@ Run the following commands to install the initial project dependencies and insta
 pip install -ve .
 ```
 
-The above command copies the frontend part of the extension into JupyterLab. We can run this pip install command again every time we make a change to copy the change into JupyterLab. Even better, we can use the develop command to create a symbolic link from JupyterLab to our source directory. This means our changes are automatically available in JupyterLab:
+The above command copies the frontend part of the extension into JupyterLab. We can run this pip install command again every time we make a change to copy the change into JupyterLab. Even better, we can use the develop command (shown below) to create a symbolic link from JupyterLab to our source directory. This means our changes are automatically available in JupyterLab!
 
 ```bash
 jupyter labextension develop . --overwrite
@@ -200,7 +192,7 @@ jlpm run watch
 jupyter lab
 ```
 
-With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
+With the watch command running, every saved change will immediately be built locally and made available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
 
 By default, the `jlpm run build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
 
@@ -233,7 +225,7 @@ cd pacakges/server
 npm run prepublish
 ```
 
-Link the location of node_modules to your build location. By running jupyter lab with debug output you can see where it will search for node_modules. For example here's a log when using the bash magic.
+Link the location of node_modules to your build location. By running JupyterLab with debug output you can see where it will search for node_modules. For example, here's a log when using the bash magic.
 
 ```bash
 jupyter lab --log-level=DEBUG > jupyter.log 2>&1
@@ -245,7 +237,7 @@ cat jupyter.log
 [D 2021-09-08 21:10:53.111 ServerApp] Checking for /opt/conda/node_modules/bash-language-server/bin/main.js
 ```
 
-Once you know where jupyter lab looks for node_modules you can create a link to your built version.
+Once you know where JupyterLab looks for node_modules you can create a link to your built version.
 
 ```bash
 cd /home/jovyan/node_modules/
@@ -253,7 +245,7 @@ ln -s ~/dev/sql-language-server/packages/server/ sql-language-server
 ```
 
 
-# Setup Trino Server for Testing
+# Set up Trino Server for Testing
 
 Download server
 ```bash 
