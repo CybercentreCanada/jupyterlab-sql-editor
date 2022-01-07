@@ -15,6 +15,8 @@ from jupyterlab_sql_editor.ipython_magic.trino.trino_export import update_databa
 
 @magics_class
 class Trino(Base):
+    valid_outputs = ['sql','text','json','html','grid','skip','none']
+
     host = Unicode('localhost', config=True, help='The trino server hostname')
     port = Int(443, config=True, help='Trino server port number')
     httpScheme = Unicode('https', config=True, help='Trino server scheme https/http')
@@ -85,8 +87,8 @@ class Trino(Base):
 
         output = args.output.lower()
 
-        if not output in ['sql', 'json', 'html', 'grid', 'skip', 'none']:
-            print(f'Invalid output option {args.output}. The valid options are [sql|json|html|grid|skip|none].')
+        if not output in self.valid_outputs:
+            print(f'Invalid output option {args.output}. The valid options are {self.valid_outputs}.')
             return
 
         if output == 'sql':
