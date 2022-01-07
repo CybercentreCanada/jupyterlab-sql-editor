@@ -109,16 +109,22 @@ def display_df(df, output="grid", limit=20, show_nonprinting=False):
     out = Output()
     display(out)
     displays = []
+    execution_succeded = True
     with out:
         display_link()
-        displays = display_spark_df(df, output=output, limit=limit, show_nonprinting=show_nonprinting)
-    # clear any stdout/stderror that was generated
-    out.clear_output()
-    for d in displays:
-        display(d)
+        try:
+            displays = display_spark_df(df, output=output, limit=limit, show_nonprinting=show_nonprinting)
+        except Exception as e:
+            execution_succeded = False
+            raise
+    if execution_succeded:
+        # clear any stdout/stderror that was generated
+        # it can contain remanences of the console progress bar
+        out.clear_output()
+        for d in displays:
+            display(d)
 
 def register_display():
-    #spark.conf.set('spark.sql.repl.eagerEval.enabled', True)
     ip = get_ipython()
     plain_formatter = ip.display_formatter.formatters['text/plain']
     plain_formatter.for_type_by_name('pyspark.sql.dataframe', 'DataFrame', pyspark_dataframe_custom_formatter)
