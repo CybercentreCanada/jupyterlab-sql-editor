@@ -109,15 +109,15 @@ def display_df(df, output="grid", limit=20, show_nonprinting=False):
     out = Output()
     display(out)
     displays = []
-    execution_succeded = True
+    execution_succeeded = True
     with out:
         display_link()
         try:
             displays = display_spark_df(df, output=output, limit=limit, show_nonprinting=show_nonprinting)
         except Exception as e:
-            execution_succeded = False
+            execution_succeeded = False
             raise
-    if execution_succeded:
+    if execution_succeeded:
         # clear any stdout/stderror that was generated
         # it can contain remanences of the console progress bar
         out.clear_output()
