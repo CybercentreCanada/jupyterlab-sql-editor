@@ -29,6 +29,7 @@ class SparkSql(Base):
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
+    @argument('-t', '--truncate', type=int, help='Truncate output')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
@@ -36,6 +37,10 @@ class SparkSql(Base):
         args = parse_argstring(self.sparksql, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
         output = args.output.lower()
+
+        truncate = 256
+        if args.truncate and args.truncate > 0:
+            truncate = args.truncate
 
         if not output in self.valid_outputs:
             print(f'Invalid output option {args.output}. The valid options are [sql|json|text|html|grid|skip|none].')
@@ -92,7 +97,7 @@ class SparkSql(Base):
             result.printSchema()
             return
 
-        display_df(result, output=output, limit=limit, show_nonprinting=args.show_nonprinting)
+        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting)
 
     @staticmethod
     def get_instantiated_spark_session():
