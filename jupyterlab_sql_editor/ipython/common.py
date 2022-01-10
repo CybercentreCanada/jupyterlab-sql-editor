@@ -19,7 +19,7 @@ def make_tag(tag_name, show_nonprinting, body='', **kwargs):
     else:
         return f'<{tag_name}>{body}</{tag_name}>'
 
-def escape_control_chars(self, text):
+def escape_control_chars(text):
     return replchars.sub(replchars_to_hex, text)
 
 def render_grid(pdf, limit):

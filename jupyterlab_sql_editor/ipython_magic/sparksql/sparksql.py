@@ -29,7 +29,7 @@ class SparkSql(Base):
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
-    @argument('-t', '--truncate', type=int, help='Truncate output')
+    @argument('-t', '--truncate', metavar='max_cell_length' type=int, help='Truncate output')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
 
