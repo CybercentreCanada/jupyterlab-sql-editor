@@ -4,16 +4,16 @@ A JupyterLab extension providing:
 
 - SQL formatter
 - Automatic extraction of database schemas
-- Auto-completion triggered by `tab` or `dot`
+- Auto-completion triggered by `tab` or `dot` for:
     - table names
-    - table alias
+    - table aliases
     - table joins
     - nested column names
     - functions
-- Syntax highlight
+- Syntax highlighting for:
     - line magic
     - cell magic
-    - python strings
+    - Python strings
 
 IPython magic for:
 - Spark SQL
@@ -60,10 +60,10 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 ## Auto suggest JOINs on matching column names / Suggestion automatiques de jointures sur nom de colones
 ![display](images/trino-inner-join.gif)
 
-## Format and syntax highlight Notebook code cells / Formattage et surbrillance de la syntaxe des cellules
+## Format and show syntax highlighting in Notebook code cells / Formattage et surbrillance de la syntaxe des cellules
 ![display](images/format-cell.gif)
 
-## Format and syntax highlight SQL within python strings / Formattage et surbrillance de la syntaxe dans un string python
+## Format and show syntax highlighting for SQL within Python strings / Formattage et surbrillance de la syntaxe dans un string python
 ![display](images/format-string.gif)
 
 
@@ -74,13 +74,13 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 
 ## Installation
 
-Following the installation instructions in [CONTRIBUTING](./CONTRIBUTING.md)
+Follow the installation instructions in [CONTRIBUTING](./CONTRIBUTING.md)
 
 Suivre les instructions d'installation dans [CONTRIBUTING](./CONTRIBUTING.md)
 
 ## Security Vulnerability Reporting
 
-If you believe you have identified a security vulnerability in this project, please send email to the project
+If you believe you have identified a security vulnerability in this project, please send an email to the project
 team at contact@cyber.gc.ca, detailing the suspected issue and any methods you've found to reproduce it.
 
 Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until
