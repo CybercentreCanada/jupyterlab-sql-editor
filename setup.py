@@ -59,14 +59,14 @@ setup_args = dict(
     keywords=[
         "sql",
         "Jupyter",
-        "JupyterLab", 
+        "JupyterLab",
         "JupyterLab3",
         "jupyter",
         "jupyterlab-extension",
         "spark",
         "trino",
         "dataframe",
-        "cccs", 
+        "cccs",
         "canada"
     ],
 
@@ -86,12 +86,12 @@ setup_args = dict(
     ],
     entry_points={
         "console_scripts": [
-            "sparksql_language_server = ipython_magic.sparksql.main:main",
-            "trino_language_server = ipython_magic.trino.main:main",
+            "sparksql_language_server = jupyterlab_sql_editor.ipython_magic.sparksql.main:main",
+            "trino_language_server = jupyterlab_sql_editor.ipython_magic.trino.main:main",
         ],
         "jupyter_lsp_spec_v1": [
-            "trino-language-server = ipython_magic.trino.main:load",
-            "sparksql-language-server = ipython_magic.sparksql.main:load",
+            "trino-language-server = jupyterlab_sql_editor.ipython_magic.trino.main:load",
+            "sparksql-language-server = jupyterlab_sql_editor.ipython_magic.sparksql.main:load",
         ],
     },
 )
