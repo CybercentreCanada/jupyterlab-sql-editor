@@ -27,7 +27,7 @@ def render_grid(pdf, limit):
     # If you import it at the top of the file it will interfere with
     # the use of DataGrid in a notebook cell. You get a message
     # Loading widget...
-    from ipydatagrid import DataGrid
+    from ipydatagrid import DataGrid, TextRenderer
     # for every order of magnitude in the limit 10, 100, 1000
     # increase view port height by 10, 20, 30 rows
     # and add 3 rows of padding
@@ -42,7 +42,15 @@ def render_grid(pdf, limit):
     num_display_rows = 3 + math.floor((math.log(limit, 10) * 10))
     base_row_size = 20
     layout_height = f"{num_display_rows * base_row_size}px"
-    return DataGrid(pdf, base_row_size=base_row_size, selection_mode="row", layout={"height": layout_height})
+
+    return DataGrid(
+        pdf,
+        base_row_size=base_row_size, 
+        selection_mode="row", 
+        layout={"height": layout_height},
+        header_renderer = TextRenderer(text_wrap=True),
+        default_renderer = TextRenderer(text_wrap=True)
+    )
 
 
 def replchars_to_hex(match):
