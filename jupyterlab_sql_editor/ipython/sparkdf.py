@@ -21,6 +21,10 @@ import pandas as pd
 
 
 def retrieve_name(var):
+    '''
+    Walk up the call stack trying to find the name of the variable
+    holding the provided dataframe instance.
+    '''
     top_name = None
     back_frame = inspect.currentframe().f_back
     while back_frame:
@@ -39,6 +43,9 @@ class PlainText(TextDisplayObject):
         return self.data
 
 def display_spark_df(df, output, limit, truncate, show_nonprinting):
+    '''
+    Execute the query of the dataframe and time the execution.
+    '''
     displays = []
     start = time()
     has_more_data = False
@@ -73,6 +80,9 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
     return displays
 
 def display_link():
+    '''
+    Display a link in notebook so a user can open the spark UI's details.
+    '''
     link = SparkSession._instantiatedSession._sc.uiWebUrl
     appName = SparkSession._instantiatedSession._sc.appName
     applicationId = SparkSession._instantiatedSession._sc.applicationId
@@ -86,6 +96,9 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
     return ""
 
 def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False):
+    '''
+    Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
+    '''
     dataframe_name = retrieve_name(df)
     if not dataframe_name:
         dataframe_name = "schema"
@@ -115,8 +128,11 @@ def register_display():
     plain_formatter = ip.display_formatter.formatters['text/plain']
     plain_formatter.for_type_by_name('pyspark.sql.dataframe', 'DataFrame', pyspark_dataframe_custom_formatter)
 
-# Code inspired from spark's dataframe.py
 def to_html(df, max_num_rows, truncate, show_nonprinting):
+    '''
+    Execute the query unerlying the dataframe and creates an html representation of the results.
+    Code inspired from spark's dataframe.py
+    '''
     sock_info = df._jdf.getRowsToPython(max_num_rows, truncate)
     rows = list(_load_from_socket(sock_info, BatchedSerializer(PickleSerializer())))
     head = rows[0]
@@ -139,8 +155,11 @@ def to_html(df, max_num_rows, truncate, show_nonprinting):
             max_num_rows, "row" if max_num_rows == 1 else "rows")
     return has_more_data, html
 
-# Code inspired from spark's dataframe.py
 def to_pandas(df, max_num_rows, truncate, show_nonprinting):
+    '''
+    Execute the query unerlying the dataframe and creates a pandas dataframe with the results.
+    Code inspired from spark's dataframe.py
+    '''
     sock_info = df._jdf.getRowsToPython(max_num_rows, truncate)
     rows = list(_load_from_socket(sock_info, BatchedSerializer(PickleSerializer())))
     head = rows[0]
