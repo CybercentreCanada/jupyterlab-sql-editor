@@ -11,6 +11,7 @@ PRINTABLE = string.ascii_letters + string.digits + string.punctuation + ' '
 replchars = re.compile('([^' + re.escape(PRINTABLE) + '])')
 
 def make_tag(tag_name, show_nonprinting, body='', **kwargs):
+    body = str(body)
     if show_nonprinting:
         body = escape_control_chars(escape(body))
     attributes = ' '.join(map(lambda x: '%s="%s"' % x, kwargs.items()))
