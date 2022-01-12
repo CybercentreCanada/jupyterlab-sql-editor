@@ -96,7 +96,8 @@ class Trino(Base):
         elif output == 'json':
             # Determine the resulting column names
             self.cur.execute(f'SHOW STATS FOR ({sql})')
-            results = self.cur.fetchmany(limit+1)
+            # Assume a maximum possible number of columns of 100000
+            results = self.cur.fetchmany(100000)
             column_names = []
             for idx, row in enumerate(results):
                 if row[0]:
