@@ -13,8 +13,8 @@ stages:
 - stage: Build_and_Publish_Python_Artifact
   displayName: Build, package and publish python artifacts.
   jobs:
-  - job: BuildPublishPythonArtifact
-    displayName: Build, package and publish python artifacts.
+  - job: BuildPythonArtifact
+    displayName: Build and package python artifacts.
     strategy:
       matrix:
         Python38:
@@ -52,7 +52,7 @@ stages:
         artifactName: 'dist'
         publishLocation: 'Container'
   - job: PublishArtifactToFeedArtifact
-    dependsOn: BuildPublishPythonArtifact
+    dependsOn: BuildPythonArtifact
     steps:
     - task: DownloadBuildArtifacts@0
       inputs:
@@ -67,3 +67,19 @@ stages:
         pip install twine
         python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
       displayName: 'Publish artifact to analytical-platform feed.'
+  - job: PublishArtifactToPypi
+    dependsOn: BuildPythonArtifact
+    steps:
+    - task: DownloadBuildArtifacts@0
+      inputs:
+        buildType: 'current'
+        downloadType: 'specific'
+        downloadPath: '$(Pipeline.Workspace)'
+      displayName: 'Download build artifact.'
+    - task: TwineAuthenticate@1
+      inputs:
+        pythonUploadServiceConnection: cccs-pypi
+    - script: |
+        pip install twine
+        python -m twine upload --skip-existing -r "cccs-pypi" --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
+      displayName: 'Publish artifact to PyPI.'
