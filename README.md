@@ -49,26 +49,26 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 
 
 ## Execute and output your query results into an interactive data grid / Execution et affichage des résultats dans une grilles interactive
-![display](images/ipydatagrid.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//ipydatagrid.gif)
 
 ## Output as JSON / Résultats en JSON
-![display](images/json-output.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//json-output.gif)
 
 ## Auto suggest column names and sub-fields / Suggestion automatique des noms de colones et sous champs
-![display](images/sparksql-nested-columns.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//sparksql-nested-columns.gif)
 
 ## Auto suggest JOINs on matching column names / Suggestion automatiques de jointures sur nom de colones
-![display](images/trino-inner-join.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//trino-inner-join.gif)
 
 ## Format and show syntax highlighting in Notebook code cells / Formattage et surbrillance de la syntaxe des cellules
-![display](images/format-cell.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images/format-cell.gif)
 
 ## Format and show syntax highlighting for SQL within Python strings / Formattage et surbrillance de la syntaxe dans un string python
-![display](images/format-string.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//format-string.gif)
 
 
 ## Capture your Spark query as a Dataframe or a temporary view / Capture de la requete dans un Dataframe ou vue temporaire
-![display](images/args.png)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//args.png)
 
 
 
