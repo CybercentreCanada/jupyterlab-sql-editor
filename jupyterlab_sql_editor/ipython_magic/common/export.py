@@ -120,31 +120,34 @@ class SchemaExporter:
         schema_file_name,
         catalogs: list(Catalog),
         local_catalog: Catalog,
+        display_progress: bool = True
     ) -> None:
         self.connection = connection
         self.schema_file_name = schema_file_name
         self.function_list = FunctionList(connection)
         self.catalogs = catalogs
         self.local_catalog = local_catalog
+        self.display_progress = display_progress
 
     def update_progress(self, message, progress):
-        bar_length = 40
-        if isinstance(progress, int):
-            progress = float(progress)
-        if not isinstance(progress, float):
-            progress = 0
-        if progress < 0:
-            progress = 0
-        if progress >= 1:
-            progress = 1
+        if self.display_progress:
+            bar_length = 40
+            if isinstance(progress, int):
+                progress = float(progress)
+            if not isinstance(progress, float):
+                progress = 0
+            if progress < 0:
+                progress = 0
+            if progress >= 1:
+                progress = 1
 
-        block = int(round(bar_length * progress))
+            block = int(round(bar_length * progress))
 
-        clear_output(wait=True)
-        text = "{0}: [{1}] {2:.1f}%".format(
-            message, "#" * block + "-" * (bar_length - block), progress * 100
-        )
-        print(text)
+            clear_output(wait=True)
+            text = "{0}: [{1}] {2:.1f}%".format(
+                message, "#" * block + "-" * (bar_length - block), progress * 100
+            )
+            print(text)
 
     def render_functions(self):
         functions = self.function_list.get_functions()

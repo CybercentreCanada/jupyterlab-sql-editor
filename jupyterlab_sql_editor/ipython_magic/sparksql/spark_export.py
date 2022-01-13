@@ -206,5 +206,5 @@ def update_database_schema(spark, schema_file_name, catalog_names):
 def update_local_database(spark, schema_file_name):
     connection = SparkConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
-    exp = SchemaExporter(connection, schema_file_name, None, local_catalog)
+    exp = SchemaExporter(connection, schema_file_name, None, local_catalog, display_progress=False)
     exp.update_local_schema()
