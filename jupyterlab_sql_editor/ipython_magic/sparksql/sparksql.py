@@ -51,19 +51,6 @@ class SparkSql(Base):
             print("Active spark session is not found")
             return
 
-        catalog_array = self.get_catalog_array()
-        if self.should_update_schema(output_file, self.cacheTTL):
-            update_database_schema(self.spark, output_file, catalog_array)
-        else:
-            if args.refresh.lower() == 'all':
-                update_database_schema(self.spark, output_file, catalog_array)
-                return
-            elif args.refresh.lower() == 'local':
-                update_local_database(self.spark, output_file)
-                return
-            elif args.refresh.lower() != 'none':
-                print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
-
         sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
@@ -80,10 +67,19 @@ class SparkSql(Base):
         if args.view:
             print(f'Created temporary view `{args.view}`')
             result.createOrReplaceTempView(args.view)
-            update_local_database(self.spark, output_file)
         if args.dataframe:
             print(f'Captured dataframe to local variable `{args.dataframe}`')
             self.shell.user_ns.update({args.dataframe: result})
+
+        catalog_array = self.get_catalog_array()
+        if args.refresh.lower() == 'all':
+            update_database_schema(self.spark, output_file, catalog_array)
+            return
+        elif args.refresh.lower() == 'local':
+            update_local_database(self.spark, output_file)
+            return
+        elif args.refresh.lower() != 'none':
+            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         limit = args.limit
         if limit is None:

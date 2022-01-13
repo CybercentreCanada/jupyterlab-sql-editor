@@ -68,14 +68,11 @@ class Trino(Base):
         self.cur = self.conn.cursor()
 
         catalog_array = self.get_catalog_array()
-        if self.should_update_schema(output_file, self.cacheTTL):
+        if args.refresh.lower() == 'all':
             update_database_schema(self.cur, output_file, catalog_array)
-        else:
-            if args.refresh.lower() == 'all':
-                update_database_schema(self.cur, output_file, catalog_array)
-                return
-            elif args.refresh.lower() != 'none':
-                print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
+            return
+        elif args.refresh.lower() != 'none':
+            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
