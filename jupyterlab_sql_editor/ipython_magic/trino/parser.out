@@ -1,0 +1,1540 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Grammar
+
+Rule 0     S' -> type
+Rule 1     type -> ARRAY LPAREN type RPAREN
+Rule 2     type -> MAP LPAREN type COMMA_SPACE type RPAREN
+Rule 3     type -> ROW LPAREN row_field_list RPAREN
+Rule 4     row_field_list -> row_field_list COMMA_SPACE row_field
+Rule 5     row_field_list -> row_field
+Rule 6     row_field -> row_field_parts
+Rule 7     row_field_parts -> field_part row_field_parts
+Rule 8     row_field_parts -> type
+Rule 9     field_part -> NAME_PART
+Rule 10    field_part -> SPACE
+Rule 11    field_part -> WITH
+Rule 12    field_part -> ZONE
+Rule 13    field_part -> ROW
+Rule 14    field_part -> MAP
+Rule 15    field_part -> type
+Rule 16    field_part -> type_name
+Rule 17    type -> type_name
+Rule 18    type_name -> BOOLEAN
+Rule 19    type_name -> TINYINT
+Rule 20    type_name -> SMALLINT
+Rule 21    type_name -> INTEGER
+Rule 22    type_name -> BIGINT
+Rule 23    type_name -> REAL
+Rule 24    type_name -> DOUBLE
+Rule 25    type_name -> DECIMAL
+Rule 26    type_name -> VARCHAR
+Rule 27    type_name -> VARCHAR LPAREN NUMBER RPAREN
+Rule 28    type_name -> CHAR
+Rule 29    type_name -> VARBINARY
+Rule 30    type_name -> JSON
+Rule 31    type_name -> DATE
+Rule 32    type_name -> TIME
+Rule 33    type_name -> TIMESTAMP
+Rule 34    type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+Terminals, with rules where they appear
+
+ARRAY                : 1
+BIGINT               : 22
+BOOLEAN              : 18
+CHAR                 : 28
+COMMA_SPACE          : 2 4
+DATE                 : 31
+DECIMAL              : 25
+DOUBLE               : 24
+INTEGER              : 21
+JSON                 : 30
+LPAREN               : 1 2 3 27 34
+MAP                  : 2 14
+NAME_PART            : 9
+NUMBER               : 27 34
+REAL                 : 23
+ROW                  : 3 13
+RPAREN               : 1 2 3 27 34
+SMALLINT             : 20
+SPACE                : 10 34 34 34
+TIME                 : 32 34
+TIMESTAMP            : 33 34
+TINYINT              : 19
+VARBINARY            : 29
+VARCHAR              : 26 27
+WITH                 : 11 34
+ZONE                 : 12 34
+error                : 
+
+Nonterminals, with rules where they appear
+
+field_part           : 7
+row_field            : 4 5
+row_field_list       : 3 4
+row_field_parts      : 6 7
+type                 : 1 2 2 8 15 0
+type_name            : 16 17
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . type
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    ARRAY           shift and go to state 2
+    MAP             shift and go to state 3
+    ROW             shift and go to state 4
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    type                           shift and go to state 1
+    type_name                      shift and go to state 5
+
+state 1
+
+    (0) S' -> type .
+
+
+
+state 2
+
+    (1) type -> ARRAY . LPAREN type RPAREN
+
+    LPAREN          shift and go to state 21
+
+
+state 3
+
+    (2) type -> MAP . LPAREN type COMMA_SPACE type RPAREN
+
+    LPAREN          shift and go to state 22
+
+
+state 4
+
+    (3) type -> ROW . LPAREN row_field_list RPAREN
+
+    LPAREN          shift and go to state 23
+
+
+state 5
+
+    (17) type -> type_name .
+
+    $end            reduce using rule 17 (type -> type_name .)
+    RPAREN          reduce using rule 17 (type -> type_name .)
+    COMMA_SPACE     reduce using rule 17 (type -> type_name .)
+
+
+state 6
+
+    (18) type_name -> BOOLEAN .
+
+    $end            reduce using rule 18 (type_name -> BOOLEAN .)
+    RPAREN          reduce using rule 18 (type_name -> BOOLEAN .)
+    COMMA_SPACE     reduce using rule 18 (type_name -> BOOLEAN .)
+    NAME_PART       reduce using rule 18 (type_name -> BOOLEAN .)
+    SPACE           reduce using rule 18 (type_name -> BOOLEAN .)
+    WITH            reduce using rule 18 (type_name -> BOOLEAN .)
+    ZONE            reduce using rule 18 (type_name -> BOOLEAN .)
+    ROW             reduce using rule 18 (type_name -> BOOLEAN .)
+    MAP             reduce using rule 18 (type_name -> BOOLEAN .)
+    ARRAY           reduce using rule 18 (type_name -> BOOLEAN .)
+    BOOLEAN         reduce using rule 18 (type_name -> BOOLEAN .)
+    TINYINT         reduce using rule 18 (type_name -> BOOLEAN .)
+    SMALLINT        reduce using rule 18 (type_name -> BOOLEAN .)
+    INTEGER         reduce using rule 18 (type_name -> BOOLEAN .)
+    BIGINT          reduce using rule 18 (type_name -> BOOLEAN .)
+    REAL            reduce using rule 18 (type_name -> BOOLEAN .)
+    DOUBLE          reduce using rule 18 (type_name -> BOOLEAN .)
+    DECIMAL         reduce using rule 18 (type_name -> BOOLEAN .)
+    VARCHAR         reduce using rule 18 (type_name -> BOOLEAN .)
+    CHAR            reduce using rule 18 (type_name -> BOOLEAN .)
+    VARBINARY       reduce using rule 18 (type_name -> BOOLEAN .)
+    JSON            reduce using rule 18 (type_name -> BOOLEAN .)
+    DATE            reduce using rule 18 (type_name -> BOOLEAN .)
+    TIME            reduce using rule 18 (type_name -> BOOLEAN .)
+    TIMESTAMP       reduce using rule 18 (type_name -> BOOLEAN .)
+
+
+state 7
+
+    (19) type_name -> TINYINT .
+
+    $end            reduce using rule 19 (type_name -> TINYINT .)
+    RPAREN          reduce using rule 19 (type_name -> TINYINT .)
+    COMMA_SPACE     reduce using rule 19 (type_name -> TINYINT .)
+    NAME_PART       reduce using rule 19 (type_name -> TINYINT .)
+    SPACE           reduce using rule 19 (type_name -> TINYINT .)
+    WITH            reduce using rule 19 (type_name -> TINYINT .)
+    ZONE            reduce using rule 19 (type_name -> TINYINT .)
+    ROW             reduce using rule 19 (type_name -> TINYINT .)
+    MAP             reduce using rule 19 (type_name -> TINYINT .)
+    ARRAY           reduce using rule 19 (type_name -> TINYINT .)
+    BOOLEAN         reduce using rule 19 (type_name -> TINYINT .)
+    TINYINT         reduce using rule 19 (type_name -> TINYINT .)
+    SMALLINT        reduce using rule 19 (type_name -> TINYINT .)
+    INTEGER         reduce using rule 19 (type_name -> TINYINT .)
+    BIGINT          reduce using rule 19 (type_name -> TINYINT .)
+    REAL            reduce using rule 19 (type_name -> TINYINT .)
+    DOUBLE          reduce using rule 19 (type_name -> TINYINT .)
+    DECIMAL         reduce using rule 19 (type_name -> TINYINT .)
+    VARCHAR         reduce using rule 19 (type_name -> TINYINT .)
+    CHAR            reduce using rule 19 (type_name -> TINYINT .)
+    VARBINARY       reduce using rule 19 (type_name -> TINYINT .)
+    JSON            reduce using rule 19 (type_name -> TINYINT .)
+    DATE            reduce using rule 19 (type_name -> TINYINT .)
+    TIME            reduce using rule 19 (type_name -> TINYINT .)
+    TIMESTAMP       reduce using rule 19 (type_name -> TINYINT .)
+
+
+state 8
+
+    (20) type_name -> SMALLINT .
+
+    $end            reduce using rule 20 (type_name -> SMALLINT .)
+    RPAREN          reduce using rule 20 (type_name -> SMALLINT .)
+    COMMA_SPACE     reduce using rule 20 (type_name -> SMALLINT .)
+    NAME_PART       reduce using rule 20 (type_name -> SMALLINT .)
+    SPACE           reduce using rule 20 (type_name -> SMALLINT .)
+    WITH            reduce using rule 20 (type_name -> SMALLINT .)
+    ZONE            reduce using rule 20 (type_name -> SMALLINT .)
+    ROW             reduce using rule 20 (type_name -> SMALLINT .)
+    MAP             reduce using rule 20 (type_name -> SMALLINT .)
+    ARRAY           reduce using rule 20 (type_name -> SMALLINT .)
+    BOOLEAN         reduce using rule 20 (type_name -> SMALLINT .)
+    TINYINT         reduce using rule 20 (type_name -> SMALLINT .)
+    SMALLINT        reduce using rule 20 (type_name -> SMALLINT .)
+    INTEGER         reduce using rule 20 (type_name -> SMALLINT .)
+    BIGINT          reduce using rule 20 (type_name -> SMALLINT .)
+    REAL            reduce using rule 20 (type_name -> SMALLINT .)
+    DOUBLE          reduce using rule 20 (type_name -> SMALLINT .)
+    DECIMAL         reduce using rule 20 (type_name -> SMALLINT .)
+    VARCHAR         reduce using rule 20 (type_name -> SMALLINT .)
+    CHAR            reduce using rule 20 (type_name -> SMALLINT .)
+    VARBINARY       reduce using rule 20 (type_name -> SMALLINT .)
+    JSON            reduce using rule 20 (type_name -> SMALLINT .)
+    DATE            reduce using rule 20 (type_name -> SMALLINT .)
+    TIME            reduce using rule 20 (type_name -> SMALLINT .)
+    TIMESTAMP       reduce using rule 20 (type_name -> SMALLINT .)
+
+
+state 9
+
+    (21) type_name -> INTEGER .
+
+    $end            reduce using rule 21 (type_name -> INTEGER .)
+    RPAREN          reduce using rule 21 (type_name -> INTEGER .)
+    COMMA_SPACE     reduce using rule 21 (type_name -> INTEGER .)
+    NAME_PART       reduce using rule 21 (type_name -> INTEGER .)
+    SPACE           reduce using rule 21 (type_name -> INTEGER .)
+    WITH            reduce using rule 21 (type_name -> INTEGER .)
+    ZONE            reduce using rule 21 (type_name -> INTEGER .)
+    ROW             reduce using rule 21 (type_name -> INTEGER .)
+    MAP             reduce using rule 21 (type_name -> INTEGER .)
+    ARRAY           reduce using rule 21 (type_name -> INTEGER .)
+    BOOLEAN         reduce using rule 21 (type_name -> INTEGER .)
+    TINYINT         reduce using rule 21 (type_name -> INTEGER .)
+    SMALLINT        reduce using rule 21 (type_name -> INTEGER .)
+    INTEGER         reduce using rule 21 (type_name -> INTEGER .)
+    BIGINT          reduce using rule 21 (type_name -> INTEGER .)
+    REAL            reduce using rule 21 (type_name -> INTEGER .)
+    DOUBLE          reduce using rule 21 (type_name -> INTEGER .)
+    DECIMAL         reduce using rule 21 (type_name -> INTEGER .)
+    VARCHAR         reduce using rule 21 (type_name -> INTEGER .)
+    CHAR            reduce using rule 21 (type_name -> INTEGER .)
+    VARBINARY       reduce using rule 21 (type_name -> INTEGER .)
+    JSON            reduce using rule 21 (type_name -> INTEGER .)
+    DATE            reduce using rule 21 (type_name -> INTEGER .)
+    TIME            reduce using rule 21 (type_name -> INTEGER .)
+    TIMESTAMP       reduce using rule 21 (type_name -> INTEGER .)
+
+
+state 10
+
+    (22) type_name -> BIGINT .
+
+    $end            reduce using rule 22 (type_name -> BIGINT .)
+    RPAREN          reduce using rule 22 (type_name -> BIGINT .)
+    COMMA_SPACE     reduce using rule 22 (type_name -> BIGINT .)
+    NAME_PART       reduce using rule 22 (type_name -> BIGINT .)
+    SPACE           reduce using rule 22 (type_name -> BIGINT .)
+    WITH            reduce using rule 22 (type_name -> BIGINT .)
+    ZONE            reduce using rule 22 (type_name -> BIGINT .)
+    ROW             reduce using rule 22 (type_name -> BIGINT .)
+    MAP             reduce using rule 22 (type_name -> BIGINT .)
+    ARRAY           reduce using rule 22 (type_name -> BIGINT .)
+    BOOLEAN         reduce using rule 22 (type_name -> BIGINT .)
+    TINYINT         reduce using rule 22 (type_name -> BIGINT .)
+    SMALLINT        reduce using rule 22 (type_name -> BIGINT .)
+    INTEGER         reduce using rule 22 (type_name -> BIGINT .)
+    BIGINT          reduce using rule 22 (type_name -> BIGINT .)
+    REAL            reduce using rule 22 (type_name -> BIGINT .)
+    DOUBLE          reduce using rule 22 (type_name -> BIGINT .)
+    DECIMAL         reduce using rule 22 (type_name -> BIGINT .)
+    VARCHAR         reduce using rule 22 (type_name -> BIGINT .)
+    CHAR            reduce using rule 22 (type_name -> BIGINT .)
+    VARBINARY       reduce using rule 22 (type_name -> BIGINT .)
+    JSON            reduce using rule 22 (type_name -> BIGINT .)
+    DATE            reduce using rule 22 (type_name -> BIGINT .)
+    TIME            reduce using rule 22 (type_name -> BIGINT .)
+    TIMESTAMP       reduce using rule 22 (type_name -> BIGINT .)
+
+
+state 11
+
+    (23) type_name -> REAL .
+
+    $end            reduce using rule 23 (type_name -> REAL .)
+    RPAREN          reduce using rule 23 (type_name -> REAL .)
+    COMMA_SPACE     reduce using rule 23 (type_name -> REAL .)
+    NAME_PART       reduce using rule 23 (type_name -> REAL .)
+    SPACE           reduce using rule 23 (type_name -> REAL .)
+    WITH            reduce using rule 23 (type_name -> REAL .)
+    ZONE            reduce using rule 23 (type_name -> REAL .)
+    ROW             reduce using rule 23 (type_name -> REAL .)
+    MAP             reduce using rule 23 (type_name -> REAL .)
+    ARRAY           reduce using rule 23 (type_name -> REAL .)
+    BOOLEAN         reduce using rule 23 (type_name -> REAL .)
+    TINYINT         reduce using rule 23 (type_name -> REAL .)
+    SMALLINT        reduce using rule 23 (type_name -> REAL .)
+    INTEGER         reduce using rule 23 (type_name -> REAL .)
+    BIGINT          reduce using rule 23 (type_name -> REAL .)
+    REAL            reduce using rule 23 (type_name -> REAL .)
+    DOUBLE          reduce using rule 23 (type_name -> REAL .)
+    DECIMAL         reduce using rule 23 (type_name -> REAL .)
+    VARCHAR         reduce using rule 23 (type_name -> REAL .)
+    CHAR            reduce using rule 23 (type_name -> REAL .)
+    VARBINARY       reduce using rule 23 (type_name -> REAL .)
+    JSON            reduce using rule 23 (type_name -> REAL .)
+    DATE            reduce using rule 23 (type_name -> REAL .)
+    TIME            reduce using rule 23 (type_name -> REAL .)
+    TIMESTAMP       reduce using rule 23 (type_name -> REAL .)
+
+
+state 12
+
+    (24) type_name -> DOUBLE .
+
+    $end            reduce using rule 24 (type_name -> DOUBLE .)
+    RPAREN          reduce using rule 24 (type_name -> DOUBLE .)
+    COMMA_SPACE     reduce using rule 24 (type_name -> DOUBLE .)
+    NAME_PART       reduce using rule 24 (type_name -> DOUBLE .)
+    SPACE           reduce using rule 24 (type_name -> DOUBLE .)
+    WITH            reduce using rule 24 (type_name -> DOUBLE .)
+    ZONE            reduce using rule 24 (type_name -> DOUBLE .)
+    ROW             reduce using rule 24 (type_name -> DOUBLE .)
+    MAP             reduce using rule 24 (type_name -> DOUBLE .)
+    ARRAY           reduce using rule 24 (type_name -> DOUBLE .)
+    BOOLEAN         reduce using rule 24 (type_name -> DOUBLE .)
+    TINYINT         reduce using rule 24 (type_name -> DOUBLE .)
+    SMALLINT        reduce using rule 24 (type_name -> DOUBLE .)
+    INTEGER         reduce using rule 24 (type_name -> DOUBLE .)
+    BIGINT          reduce using rule 24 (type_name -> DOUBLE .)
+    REAL            reduce using rule 24 (type_name -> DOUBLE .)
+    DOUBLE          reduce using rule 24 (type_name -> DOUBLE .)
+    DECIMAL         reduce using rule 24 (type_name -> DOUBLE .)
+    VARCHAR         reduce using rule 24 (type_name -> DOUBLE .)
+    CHAR            reduce using rule 24 (type_name -> DOUBLE .)
+    VARBINARY       reduce using rule 24 (type_name -> DOUBLE .)
+    JSON            reduce using rule 24 (type_name -> DOUBLE .)
+    DATE            reduce using rule 24 (type_name -> DOUBLE .)
+    TIME            reduce using rule 24 (type_name -> DOUBLE .)
+    TIMESTAMP       reduce using rule 24 (type_name -> DOUBLE .)
+
+
+state 13
+
+    (25) type_name -> DECIMAL .
+
+    $end            reduce using rule 25 (type_name -> DECIMAL .)
+    RPAREN          reduce using rule 25 (type_name -> DECIMAL .)
+    COMMA_SPACE     reduce using rule 25 (type_name -> DECIMAL .)
+    NAME_PART       reduce using rule 25 (type_name -> DECIMAL .)
+    SPACE           reduce using rule 25 (type_name -> DECIMAL .)
+    WITH            reduce using rule 25 (type_name -> DECIMAL .)
+    ZONE            reduce using rule 25 (type_name -> DECIMAL .)
+    ROW             reduce using rule 25 (type_name -> DECIMAL .)
+    MAP             reduce using rule 25 (type_name -> DECIMAL .)
+    ARRAY           reduce using rule 25 (type_name -> DECIMAL .)
+    BOOLEAN         reduce using rule 25 (type_name -> DECIMAL .)
+    TINYINT         reduce using rule 25 (type_name -> DECIMAL .)
+    SMALLINT        reduce using rule 25 (type_name -> DECIMAL .)
+    INTEGER         reduce using rule 25 (type_name -> DECIMAL .)
+    BIGINT          reduce using rule 25 (type_name -> DECIMAL .)
+    REAL            reduce using rule 25 (type_name -> DECIMAL .)
+    DOUBLE          reduce using rule 25 (type_name -> DECIMAL .)
+    DECIMAL         reduce using rule 25 (type_name -> DECIMAL .)
+    VARCHAR         reduce using rule 25 (type_name -> DECIMAL .)
+    CHAR            reduce using rule 25 (type_name -> DECIMAL .)
+    VARBINARY       reduce using rule 25 (type_name -> DECIMAL .)
+    JSON            reduce using rule 25 (type_name -> DECIMAL .)
+    DATE            reduce using rule 25 (type_name -> DECIMAL .)
+    TIME            reduce using rule 25 (type_name -> DECIMAL .)
+    TIMESTAMP       reduce using rule 25 (type_name -> DECIMAL .)
+
+
+state 14
+
+    (26) type_name -> VARCHAR .
+    (27) type_name -> VARCHAR . LPAREN NUMBER RPAREN
+
+    $end            reduce using rule 26 (type_name -> VARCHAR .)
+    RPAREN          reduce using rule 26 (type_name -> VARCHAR .)
+    COMMA_SPACE     reduce using rule 26 (type_name -> VARCHAR .)
+    NAME_PART       reduce using rule 26 (type_name -> VARCHAR .)
+    SPACE           reduce using rule 26 (type_name -> VARCHAR .)
+    WITH            reduce using rule 26 (type_name -> VARCHAR .)
+    ZONE            reduce using rule 26 (type_name -> VARCHAR .)
+    ROW             reduce using rule 26 (type_name -> VARCHAR .)
+    MAP             reduce using rule 26 (type_name -> VARCHAR .)
+    ARRAY           reduce using rule 26 (type_name -> VARCHAR .)
+    BOOLEAN         reduce using rule 26 (type_name -> VARCHAR .)
+    TINYINT         reduce using rule 26 (type_name -> VARCHAR .)
+    SMALLINT        reduce using rule 26 (type_name -> VARCHAR .)
+    INTEGER         reduce using rule 26 (type_name -> VARCHAR .)
+    BIGINT          reduce using rule 26 (type_name -> VARCHAR .)
+    REAL            reduce using rule 26 (type_name -> VARCHAR .)
+    DOUBLE          reduce using rule 26 (type_name -> VARCHAR .)
+    DECIMAL         reduce using rule 26 (type_name -> VARCHAR .)
+    VARCHAR         reduce using rule 26 (type_name -> VARCHAR .)
+    CHAR            reduce using rule 26 (type_name -> VARCHAR .)
+    VARBINARY       reduce using rule 26 (type_name -> VARCHAR .)
+    JSON            reduce using rule 26 (type_name -> VARCHAR .)
+    DATE            reduce using rule 26 (type_name -> VARCHAR .)
+    TIME            reduce using rule 26 (type_name -> VARCHAR .)
+    TIMESTAMP       reduce using rule 26 (type_name -> VARCHAR .)
+    LPAREN          shift and go to state 24
+
+
+state 15
+
+    (28) type_name -> CHAR .
+
+    $end            reduce using rule 28 (type_name -> CHAR .)
+    RPAREN          reduce using rule 28 (type_name -> CHAR .)
+    COMMA_SPACE     reduce using rule 28 (type_name -> CHAR .)
+    NAME_PART       reduce using rule 28 (type_name -> CHAR .)
+    SPACE           reduce using rule 28 (type_name -> CHAR .)
+    WITH            reduce using rule 28 (type_name -> CHAR .)
+    ZONE            reduce using rule 28 (type_name -> CHAR .)
+    ROW             reduce using rule 28 (type_name -> CHAR .)
+    MAP             reduce using rule 28 (type_name -> CHAR .)
+    ARRAY           reduce using rule 28 (type_name -> CHAR .)
+    BOOLEAN         reduce using rule 28 (type_name -> CHAR .)
+    TINYINT         reduce using rule 28 (type_name -> CHAR .)
+    SMALLINT        reduce using rule 28 (type_name -> CHAR .)
+    INTEGER         reduce using rule 28 (type_name -> CHAR .)
+    BIGINT          reduce using rule 28 (type_name -> CHAR .)
+    REAL            reduce using rule 28 (type_name -> CHAR .)
+    DOUBLE          reduce using rule 28 (type_name -> CHAR .)
+    DECIMAL         reduce using rule 28 (type_name -> CHAR .)
+    VARCHAR         reduce using rule 28 (type_name -> CHAR .)
+    CHAR            reduce using rule 28 (type_name -> CHAR .)
+    VARBINARY       reduce using rule 28 (type_name -> CHAR .)
+    JSON            reduce using rule 28 (type_name -> CHAR .)
+    DATE            reduce using rule 28 (type_name -> CHAR .)
+    TIME            reduce using rule 28 (type_name -> CHAR .)
+    TIMESTAMP       reduce using rule 28 (type_name -> CHAR .)
+
+
+state 16
+
+    (29) type_name -> VARBINARY .
+
+    $end            reduce using rule 29 (type_name -> VARBINARY .)
+    RPAREN          reduce using rule 29 (type_name -> VARBINARY .)
+    COMMA_SPACE     reduce using rule 29 (type_name -> VARBINARY .)
+    NAME_PART       reduce using rule 29 (type_name -> VARBINARY .)
+    SPACE           reduce using rule 29 (type_name -> VARBINARY .)
+    WITH            reduce using rule 29 (type_name -> VARBINARY .)
+    ZONE            reduce using rule 29 (type_name -> VARBINARY .)
+    ROW             reduce using rule 29 (type_name -> VARBINARY .)
+    MAP             reduce using rule 29 (type_name -> VARBINARY .)
+    ARRAY           reduce using rule 29 (type_name -> VARBINARY .)
+    BOOLEAN         reduce using rule 29 (type_name -> VARBINARY .)
+    TINYINT         reduce using rule 29 (type_name -> VARBINARY .)
+    SMALLINT        reduce using rule 29 (type_name -> VARBINARY .)
+    INTEGER         reduce using rule 29 (type_name -> VARBINARY .)
+    BIGINT          reduce using rule 29 (type_name -> VARBINARY .)
+    REAL            reduce using rule 29 (type_name -> VARBINARY .)
+    DOUBLE          reduce using rule 29 (type_name -> VARBINARY .)
+    DECIMAL         reduce using rule 29 (type_name -> VARBINARY .)
+    VARCHAR         reduce using rule 29 (type_name -> VARBINARY .)
+    CHAR            reduce using rule 29 (type_name -> VARBINARY .)
+    VARBINARY       reduce using rule 29 (type_name -> VARBINARY .)
+    JSON            reduce using rule 29 (type_name -> VARBINARY .)
+    DATE            reduce using rule 29 (type_name -> VARBINARY .)
+    TIME            reduce using rule 29 (type_name -> VARBINARY .)
+    TIMESTAMP       reduce using rule 29 (type_name -> VARBINARY .)
+
+
+state 17
+
+    (30) type_name -> JSON .
+
+    $end            reduce using rule 30 (type_name -> JSON .)
+    RPAREN          reduce using rule 30 (type_name -> JSON .)
+    COMMA_SPACE     reduce using rule 30 (type_name -> JSON .)
+    NAME_PART       reduce using rule 30 (type_name -> JSON .)
+    SPACE           reduce using rule 30 (type_name -> JSON .)
+    WITH            reduce using rule 30 (type_name -> JSON .)
+    ZONE            reduce using rule 30 (type_name -> JSON .)
+    ROW             reduce using rule 30 (type_name -> JSON .)
+    MAP             reduce using rule 30 (type_name -> JSON .)
+    ARRAY           reduce using rule 30 (type_name -> JSON .)
+    BOOLEAN         reduce using rule 30 (type_name -> JSON .)
+    TINYINT         reduce using rule 30 (type_name -> JSON .)
+    SMALLINT        reduce using rule 30 (type_name -> JSON .)
+    INTEGER         reduce using rule 30 (type_name -> JSON .)
+    BIGINT          reduce using rule 30 (type_name -> JSON .)
+    REAL            reduce using rule 30 (type_name -> JSON .)
+    DOUBLE          reduce using rule 30 (type_name -> JSON .)
+    DECIMAL         reduce using rule 30 (type_name -> JSON .)
+    VARCHAR         reduce using rule 30 (type_name -> JSON .)
+    CHAR            reduce using rule 30 (type_name -> JSON .)
+    VARBINARY       reduce using rule 30 (type_name -> JSON .)
+    JSON            reduce using rule 30 (type_name -> JSON .)
+    DATE            reduce using rule 30 (type_name -> JSON .)
+    TIME            reduce using rule 30 (type_name -> JSON .)
+    TIMESTAMP       reduce using rule 30 (type_name -> JSON .)
+
+
+state 18
+
+    (31) type_name -> DATE .
+
+    $end            reduce using rule 31 (type_name -> DATE .)
+    RPAREN          reduce using rule 31 (type_name -> DATE .)
+    COMMA_SPACE     reduce using rule 31 (type_name -> DATE .)
+    NAME_PART       reduce using rule 31 (type_name -> DATE .)
+    SPACE           reduce using rule 31 (type_name -> DATE .)
+    WITH            reduce using rule 31 (type_name -> DATE .)
+    ZONE            reduce using rule 31 (type_name -> DATE .)
+    ROW             reduce using rule 31 (type_name -> DATE .)
+    MAP             reduce using rule 31 (type_name -> DATE .)
+    ARRAY           reduce using rule 31 (type_name -> DATE .)
+    BOOLEAN         reduce using rule 31 (type_name -> DATE .)
+    TINYINT         reduce using rule 31 (type_name -> DATE .)
+    SMALLINT        reduce using rule 31 (type_name -> DATE .)
+    INTEGER         reduce using rule 31 (type_name -> DATE .)
+    BIGINT          reduce using rule 31 (type_name -> DATE .)
+    REAL            reduce using rule 31 (type_name -> DATE .)
+    DOUBLE          reduce using rule 31 (type_name -> DATE .)
+    DECIMAL         reduce using rule 31 (type_name -> DATE .)
+    VARCHAR         reduce using rule 31 (type_name -> DATE .)
+    CHAR            reduce using rule 31 (type_name -> DATE .)
+    VARBINARY       reduce using rule 31 (type_name -> DATE .)
+    JSON            reduce using rule 31 (type_name -> DATE .)
+    DATE            reduce using rule 31 (type_name -> DATE .)
+    TIME            reduce using rule 31 (type_name -> DATE .)
+    TIMESTAMP       reduce using rule 31 (type_name -> DATE .)
+
+
+state 19
+
+    (32) type_name -> TIME .
+
+    $end            reduce using rule 32 (type_name -> TIME .)
+    RPAREN          reduce using rule 32 (type_name -> TIME .)
+    COMMA_SPACE     reduce using rule 32 (type_name -> TIME .)
+    NAME_PART       reduce using rule 32 (type_name -> TIME .)
+    SPACE           reduce using rule 32 (type_name -> TIME .)
+    WITH            reduce using rule 32 (type_name -> TIME .)
+    ZONE            reduce using rule 32 (type_name -> TIME .)
+    ROW             reduce using rule 32 (type_name -> TIME .)
+    MAP             reduce using rule 32 (type_name -> TIME .)
+    ARRAY           reduce using rule 32 (type_name -> TIME .)
+    BOOLEAN         reduce using rule 32 (type_name -> TIME .)
+    TINYINT         reduce using rule 32 (type_name -> TIME .)
+    SMALLINT        reduce using rule 32 (type_name -> TIME .)
+    INTEGER         reduce using rule 32 (type_name -> TIME .)
+    BIGINT          reduce using rule 32 (type_name -> TIME .)
+    REAL            reduce using rule 32 (type_name -> TIME .)
+    DOUBLE          reduce using rule 32 (type_name -> TIME .)
+    DECIMAL         reduce using rule 32 (type_name -> TIME .)
+    VARCHAR         reduce using rule 32 (type_name -> TIME .)
+    CHAR            reduce using rule 32 (type_name -> TIME .)
+    VARBINARY       reduce using rule 32 (type_name -> TIME .)
+    JSON            reduce using rule 32 (type_name -> TIME .)
+    DATE            reduce using rule 32 (type_name -> TIME .)
+    TIME            reduce using rule 32 (type_name -> TIME .)
+    TIMESTAMP       reduce using rule 32 (type_name -> TIME .)
+
+
+state 20
+
+    (33) type_name -> TIMESTAMP .
+    (34) type_name -> TIMESTAMP . LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    $end            reduce using rule 33 (type_name -> TIMESTAMP .)
+    RPAREN          reduce using rule 33 (type_name -> TIMESTAMP .)
+    COMMA_SPACE     reduce using rule 33 (type_name -> TIMESTAMP .)
+    NAME_PART       reduce using rule 33 (type_name -> TIMESTAMP .)
+    SPACE           reduce using rule 33 (type_name -> TIMESTAMP .)
+    WITH            reduce using rule 33 (type_name -> TIMESTAMP .)
+    ZONE            reduce using rule 33 (type_name -> TIMESTAMP .)
+    ROW             reduce using rule 33 (type_name -> TIMESTAMP .)
+    MAP             reduce using rule 33 (type_name -> TIMESTAMP .)
+    ARRAY           reduce using rule 33 (type_name -> TIMESTAMP .)
+    BOOLEAN         reduce using rule 33 (type_name -> TIMESTAMP .)
+    TINYINT         reduce using rule 33 (type_name -> TIMESTAMP .)
+    SMALLINT        reduce using rule 33 (type_name -> TIMESTAMP .)
+    INTEGER         reduce using rule 33 (type_name -> TIMESTAMP .)
+    BIGINT          reduce using rule 33 (type_name -> TIMESTAMP .)
+    REAL            reduce using rule 33 (type_name -> TIMESTAMP .)
+    DOUBLE          reduce using rule 33 (type_name -> TIMESTAMP .)
+    DECIMAL         reduce using rule 33 (type_name -> TIMESTAMP .)
+    VARCHAR         reduce using rule 33 (type_name -> TIMESTAMP .)
+    CHAR            reduce using rule 33 (type_name -> TIMESTAMP .)
+    VARBINARY       reduce using rule 33 (type_name -> TIMESTAMP .)
+    JSON            reduce using rule 33 (type_name -> TIMESTAMP .)
+    DATE            reduce using rule 33 (type_name -> TIMESTAMP .)
+    TIME            reduce using rule 33 (type_name -> TIMESTAMP .)
+    TIMESTAMP       reduce using rule 33 (type_name -> TIMESTAMP .)
+    LPAREN          shift and go to state 25
+
+
+state 21
+
+    (1) type -> ARRAY LPAREN . type RPAREN
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    ARRAY           shift and go to state 2
+    MAP             shift and go to state 3
+    ROW             shift and go to state 4
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    type                           shift and go to state 26
+    type_name                      shift and go to state 5
+
+state 22
+
+    (2) type -> MAP LPAREN . type COMMA_SPACE type RPAREN
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    ARRAY           shift and go to state 2
+    MAP             shift and go to state 3
+    ROW             shift and go to state 4
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    type                           shift and go to state 27
+    type_name                      shift and go to state 5
+
+state 23
+
+    (3) type -> ROW LPAREN . row_field_list RPAREN
+    (4) row_field_list -> . row_field_list COMMA_SPACE row_field
+    (5) row_field_list -> . row_field
+    (6) row_field -> . row_field_parts
+    (7) row_field_parts -> . field_part row_field_parts
+    (8) row_field_parts -> . type
+    (9) field_part -> . NAME_PART
+    (10) field_part -> . SPACE
+    (11) field_part -> . WITH
+    (12) field_part -> . ZONE
+    (13) field_part -> . ROW
+    (14) field_part -> . MAP
+    (15) field_part -> . type
+    (16) field_part -> . type_name
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    NAME_PART       shift and go to state 34
+    SPACE           shift and go to state 35
+    WITH            shift and go to state 36
+    ZONE            shift and go to state 37
+    ROW             shift and go to state 28
+    MAP             shift and go to state 38
+    ARRAY           shift and go to state 2
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    row_field_list                 shift and go to state 29
+    row_field                      shift and go to state 30
+    row_field_parts                shift and go to state 31
+    field_part                     shift and go to state 32
+    type                           shift and go to state 33
+    type_name                      shift and go to state 39
+
+state 24
+
+    (27) type_name -> VARCHAR LPAREN . NUMBER RPAREN
+
+    NUMBER          shift and go to state 40
+
+
+state 25
+
+    (34) type_name -> TIMESTAMP LPAREN . NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    NUMBER          shift and go to state 41
+
+
+state 26
+
+    (1) type -> ARRAY LPAREN type . RPAREN
+
+    RPAREN          shift and go to state 42
+
+
+state 27
+
+    (2) type -> MAP LPAREN type . COMMA_SPACE type RPAREN
+
+    COMMA_SPACE     shift and go to state 43
+
+
+state 28
+
+    (13) field_part -> ROW .
+    (3) type -> ROW . LPAREN row_field_list RPAREN
+
+    NAME_PART       reduce using rule 13 (field_part -> ROW .)
+    SPACE           reduce using rule 13 (field_part -> ROW .)
+    WITH            reduce using rule 13 (field_part -> ROW .)
+    ZONE            reduce using rule 13 (field_part -> ROW .)
+    ROW             reduce using rule 13 (field_part -> ROW .)
+    MAP             reduce using rule 13 (field_part -> ROW .)
+    ARRAY           reduce using rule 13 (field_part -> ROW .)
+    BOOLEAN         reduce using rule 13 (field_part -> ROW .)
+    TINYINT         reduce using rule 13 (field_part -> ROW .)
+    SMALLINT        reduce using rule 13 (field_part -> ROW .)
+    INTEGER         reduce using rule 13 (field_part -> ROW .)
+    BIGINT          reduce using rule 13 (field_part -> ROW .)
+    REAL            reduce using rule 13 (field_part -> ROW .)
+    DOUBLE          reduce using rule 13 (field_part -> ROW .)
+    DECIMAL         reduce using rule 13 (field_part -> ROW .)
+    VARCHAR         reduce using rule 13 (field_part -> ROW .)
+    CHAR            reduce using rule 13 (field_part -> ROW .)
+    VARBINARY       reduce using rule 13 (field_part -> ROW .)
+    JSON            reduce using rule 13 (field_part -> ROW .)
+    DATE            reduce using rule 13 (field_part -> ROW .)
+    TIME            reduce using rule 13 (field_part -> ROW .)
+    TIMESTAMP       reduce using rule 13 (field_part -> ROW .)
+    LPAREN          shift and go to state 23
+
+
+state 29
+
+    (3) type -> ROW LPAREN row_field_list . RPAREN
+    (4) row_field_list -> row_field_list . COMMA_SPACE row_field
+
+    RPAREN          shift and go to state 44
+    COMMA_SPACE     shift and go to state 45
+
+
+state 30
+
+    (5) row_field_list -> row_field .
+
+    RPAREN          reduce using rule 5 (row_field_list -> row_field .)
+    COMMA_SPACE     reduce using rule 5 (row_field_list -> row_field .)
+
+
+state 31
+
+    (6) row_field -> row_field_parts .
+
+    RPAREN          reduce using rule 6 (row_field -> row_field_parts .)
+    COMMA_SPACE     reduce using rule 6 (row_field -> row_field_parts .)
+
+
+state 32
+
+    (7) row_field_parts -> field_part . row_field_parts
+    (7) row_field_parts -> . field_part row_field_parts
+    (8) row_field_parts -> . type
+    (9) field_part -> . NAME_PART
+    (10) field_part -> . SPACE
+    (11) field_part -> . WITH
+    (12) field_part -> . ZONE
+    (13) field_part -> . ROW
+    (14) field_part -> . MAP
+    (15) field_part -> . type
+    (16) field_part -> . type_name
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    NAME_PART       shift and go to state 34
+    SPACE           shift and go to state 35
+    WITH            shift and go to state 36
+    ZONE            shift and go to state 37
+    ROW             shift and go to state 28
+    MAP             shift and go to state 38
+    ARRAY           shift and go to state 2
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    field_part                     shift and go to state 32
+    row_field_parts                shift and go to state 46
+    type                           shift and go to state 33
+    type_name                      shift and go to state 39
+
+state 33
+
+    (8) row_field_parts -> type .
+    (15) field_part -> type .
+
+    RPAREN          reduce using rule 8 (row_field_parts -> type .)
+    COMMA_SPACE     reduce using rule 8 (row_field_parts -> type .)
+    NAME_PART       reduce using rule 15 (field_part -> type .)
+    SPACE           reduce using rule 15 (field_part -> type .)
+    WITH            reduce using rule 15 (field_part -> type .)
+    ZONE            reduce using rule 15 (field_part -> type .)
+    ROW             reduce using rule 15 (field_part -> type .)
+    MAP             reduce using rule 15 (field_part -> type .)
+    ARRAY           reduce using rule 15 (field_part -> type .)
+    BOOLEAN         reduce using rule 15 (field_part -> type .)
+    TINYINT         reduce using rule 15 (field_part -> type .)
+    SMALLINT        reduce using rule 15 (field_part -> type .)
+    INTEGER         reduce using rule 15 (field_part -> type .)
+    BIGINT          reduce using rule 15 (field_part -> type .)
+    REAL            reduce using rule 15 (field_part -> type .)
+    DOUBLE          reduce using rule 15 (field_part -> type .)
+    DECIMAL         reduce using rule 15 (field_part -> type .)
+    VARCHAR         reduce using rule 15 (field_part -> type .)
+    CHAR            reduce using rule 15 (field_part -> type .)
+    VARBINARY       reduce using rule 15 (field_part -> type .)
+    JSON            reduce using rule 15 (field_part -> type .)
+    DATE            reduce using rule 15 (field_part -> type .)
+    TIME            reduce using rule 15 (field_part -> type .)
+    TIMESTAMP       reduce using rule 15 (field_part -> type .)
+
+
+state 34
+
+    (9) field_part -> NAME_PART .
+
+    NAME_PART       reduce using rule 9 (field_part -> NAME_PART .)
+    SPACE           reduce using rule 9 (field_part -> NAME_PART .)
+    WITH            reduce using rule 9 (field_part -> NAME_PART .)
+    ZONE            reduce using rule 9 (field_part -> NAME_PART .)
+    ROW             reduce using rule 9 (field_part -> NAME_PART .)
+    MAP             reduce using rule 9 (field_part -> NAME_PART .)
+    ARRAY           reduce using rule 9 (field_part -> NAME_PART .)
+    BOOLEAN         reduce using rule 9 (field_part -> NAME_PART .)
+    TINYINT         reduce using rule 9 (field_part -> NAME_PART .)
+    SMALLINT        reduce using rule 9 (field_part -> NAME_PART .)
+    INTEGER         reduce using rule 9 (field_part -> NAME_PART .)
+    BIGINT          reduce using rule 9 (field_part -> NAME_PART .)
+    REAL            reduce using rule 9 (field_part -> NAME_PART .)
+    DOUBLE          reduce using rule 9 (field_part -> NAME_PART .)
+    DECIMAL         reduce using rule 9 (field_part -> NAME_PART .)
+    VARCHAR         reduce using rule 9 (field_part -> NAME_PART .)
+    CHAR            reduce using rule 9 (field_part -> NAME_PART .)
+    VARBINARY       reduce using rule 9 (field_part -> NAME_PART .)
+    JSON            reduce using rule 9 (field_part -> NAME_PART .)
+    DATE            reduce using rule 9 (field_part -> NAME_PART .)
+    TIME            reduce using rule 9 (field_part -> NAME_PART .)
+    TIMESTAMP       reduce using rule 9 (field_part -> NAME_PART .)
+
+
+state 35
+
+    (10) field_part -> SPACE .
+
+    NAME_PART       reduce using rule 10 (field_part -> SPACE .)
+    SPACE           reduce using rule 10 (field_part -> SPACE .)
+    WITH            reduce using rule 10 (field_part -> SPACE .)
+    ZONE            reduce using rule 10 (field_part -> SPACE .)
+    ROW             reduce using rule 10 (field_part -> SPACE .)
+    MAP             reduce using rule 10 (field_part -> SPACE .)
+    ARRAY           reduce using rule 10 (field_part -> SPACE .)
+    BOOLEAN         reduce using rule 10 (field_part -> SPACE .)
+    TINYINT         reduce using rule 10 (field_part -> SPACE .)
+    SMALLINT        reduce using rule 10 (field_part -> SPACE .)
+    INTEGER         reduce using rule 10 (field_part -> SPACE .)
+    BIGINT          reduce using rule 10 (field_part -> SPACE .)
+    REAL            reduce using rule 10 (field_part -> SPACE .)
+    DOUBLE          reduce using rule 10 (field_part -> SPACE .)
+    DECIMAL         reduce using rule 10 (field_part -> SPACE .)
+    VARCHAR         reduce using rule 10 (field_part -> SPACE .)
+    CHAR            reduce using rule 10 (field_part -> SPACE .)
+    VARBINARY       reduce using rule 10 (field_part -> SPACE .)
+    JSON            reduce using rule 10 (field_part -> SPACE .)
+    DATE            reduce using rule 10 (field_part -> SPACE .)
+    TIME            reduce using rule 10 (field_part -> SPACE .)
+    TIMESTAMP       reduce using rule 10 (field_part -> SPACE .)
+
+
+state 36
+
+    (11) field_part -> WITH .
+
+    NAME_PART       reduce using rule 11 (field_part -> WITH .)
+    SPACE           reduce using rule 11 (field_part -> WITH .)
+    WITH            reduce using rule 11 (field_part -> WITH .)
+    ZONE            reduce using rule 11 (field_part -> WITH .)
+    ROW             reduce using rule 11 (field_part -> WITH .)
+    MAP             reduce using rule 11 (field_part -> WITH .)
+    ARRAY           reduce using rule 11 (field_part -> WITH .)
+    BOOLEAN         reduce using rule 11 (field_part -> WITH .)
+    TINYINT         reduce using rule 11 (field_part -> WITH .)
+    SMALLINT        reduce using rule 11 (field_part -> WITH .)
+    INTEGER         reduce using rule 11 (field_part -> WITH .)
+    BIGINT          reduce using rule 11 (field_part -> WITH .)
+    REAL            reduce using rule 11 (field_part -> WITH .)
+    DOUBLE          reduce using rule 11 (field_part -> WITH .)
+    DECIMAL         reduce using rule 11 (field_part -> WITH .)
+    VARCHAR         reduce using rule 11 (field_part -> WITH .)
+    CHAR            reduce using rule 11 (field_part -> WITH .)
+    VARBINARY       reduce using rule 11 (field_part -> WITH .)
+    JSON            reduce using rule 11 (field_part -> WITH .)
+    DATE            reduce using rule 11 (field_part -> WITH .)
+    TIME            reduce using rule 11 (field_part -> WITH .)
+    TIMESTAMP       reduce using rule 11 (field_part -> WITH .)
+
+
+state 37
+
+    (12) field_part -> ZONE .
+
+    NAME_PART       reduce using rule 12 (field_part -> ZONE .)
+    SPACE           reduce using rule 12 (field_part -> ZONE .)
+    WITH            reduce using rule 12 (field_part -> ZONE .)
+    ZONE            reduce using rule 12 (field_part -> ZONE .)
+    ROW             reduce using rule 12 (field_part -> ZONE .)
+    MAP             reduce using rule 12 (field_part -> ZONE .)
+    ARRAY           reduce using rule 12 (field_part -> ZONE .)
+    BOOLEAN         reduce using rule 12 (field_part -> ZONE .)
+    TINYINT         reduce using rule 12 (field_part -> ZONE .)
+    SMALLINT        reduce using rule 12 (field_part -> ZONE .)
+    INTEGER         reduce using rule 12 (field_part -> ZONE .)
+    BIGINT          reduce using rule 12 (field_part -> ZONE .)
+    REAL            reduce using rule 12 (field_part -> ZONE .)
+    DOUBLE          reduce using rule 12 (field_part -> ZONE .)
+    DECIMAL         reduce using rule 12 (field_part -> ZONE .)
+    VARCHAR         reduce using rule 12 (field_part -> ZONE .)
+    CHAR            reduce using rule 12 (field_part -> ZONE .)
+    VARBINARY       reduce using rule 12 (field_part -> ZONE .)
+    JSON            reduce using rule 12 (field_part -> ZONE .)
+    DATE            reduce using rule 12 (field_part -> ZONE .)
+    TIME            reduce using rule 12 (field_part -> ZONE .)
+    TIMESTAMP       reduce using rule 12 (field_part -> ZONE .)
+
+
+state 38
+
+    (14) field_part -> MAP .
+    (2) type -> MAP . LPAREN type COMMA_SPACE type RPAREN
+
+    NAME_PART       reduce using rule 14 (field_part -> MAP .)
+    SPACE           reduce using rule 14 (field_part -> MAP .)
+    WITH            reduce using rule 14 (field_part -> MAP .)
+    ZONE            reduce using rule 14 (field_part -> MAP .)
+    ROW             reduce using rule 14 (field_part -> MAP .)
+    MAP             reduce using rule 14 (field_part -> MAP .)
+    ARRAY           reduce using rule 14 (field_part -> MAP .)
+    BOOLEAN         reduce using rule 14 (field_part -> MAP .)
+    TINYINT         reduce using rule 14 (field_part -> MAP .)
+    SMALLINT        reduce using rule 14 (field_part -> MAP .)
+    INTEGER         reduce using rule 14 (field_part -> MAP .)
+    BIGINT          reduce using rule 14 (field_part -> MAP .)
+    REAL            reduce using rule 14 (field_part -> MAP .)
+    DOUBLE          reduce using rule 14 (field_part -> MAP .)
+    DECIMAL         reduce using rule 14 (field_part -> MAP .)
+    VARCHAR         reduce using rule 14 (field_part -> MAP .)
+    CHAR            reduce using rule 14 (field_part -> MAP .)
+    VARBINARY       reduce using rule 14 (field_part -> MAP .)
+    JSON            reduce using rule 14 (field_part -> MAP .)
+    DATE            reduce using rule 14 (field_part -> MAP .)
+    TIME            reduce using rule 14 (field_part -> MAP .)
+    TIMESTAMP       reduce using rule 14 (field_part -> MAP .)
+    LPAREN          shift and go to state 22
+
+
+state 39
+
+    (16) field_part -> type_name .
+    (17) type -> type_name .
+
+  ! reduce/reduce conflict for NAME_PART resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for SPACE resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for WITH resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for ZONE resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for ROW resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for MAP resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for ARRAY resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for BOOLEAN resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for TINYINT resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for SMALLINT resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for INTEGER resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for BIGINT resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for REAL resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for DOUBLE resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for DECIMAL resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for VARCHAR resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for CHAR resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for VARBINARY resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for JSON resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for DATE resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for TIME resolved using rule 16 (field_part -> type_name .)
+  ! reduce/reduce conflict for TIMESTAMP resolved using rule 16 (field_part -> type_name .)
+    NAME_PART       reduce using rule 16 (field_part -> type_name .)
+    SPACE           reduce using rule 16 (field_part -> type_name .)
+    WITH            reduce using rule 16 (field_part -> type_name .)
+    ZONE            reduce using rule 16 (field_part -> type_name .)
+    ROW             reduce using rule 16 (field_part -> type_name .)
+    MAP             reduce using rule 16 (field_part -> type_name .)
+    ARRAY           reduce using rule 16 (field_part -> type_name .)
+    BOOLEAN         reduce using rule 16 (field_part -> type_name .)
+    TINYINT         reduce using rule 16 (field_part -> type_name .)
+    SMALLINT        reduce using rule 16 (field_part -> type_name .)
+    INTEGER         reduce using rule 16 (field_part -> type_name .)
+    BIGINT          reduce using rule 16 (field_part -> type_name .)
+    REAL            reduce using rule 16 (field_part -> type_name .)
+    DOUBLE          reduce using rule 16 (field_part -> type_name .)
+    DECIMAL         reduce using rule 16 (field_part -> type_name .)
+    VARCHAR         reduce using rule 16 (field_part -> type_name .)
+    CHAR            reduce using rule 16 (field_part -> type_name .)
+    VARBINARY       reduce using rule 16 (field_part -> type_name .)
+    JSON            reduce using rule 16 (field_part -> type_name .)
+    DATE            reduce using rule 16 (field_part -> type_name .)
+    TIME            reduce using rule 16 (field_part -> type_name .)
+    TIMESTAMP       reduce using rule 16 (field_part -> type_name .)
+    RPAREN          reduce using rule 17 (type -> type_name .)
+    COMMA_SPACE     reduce using rule 17 (type -> type_name .)
+
+  ! NAME_PART       [ reduce using rule 17 (type -> type_name .) ]
+  ! SPACE           [ reduce using rule 17 (type -> type_name .) ]
+  ! WITH            [ reduce using rule 17 (type -> type_name .) ]
+  ! ZONE            [ reduce using rule 17 (type -> type_name .) ]
+  ! ROW             [ reduce using rule 17 (type -> type_name .) ]
+  ! MAP             [ reduce using rule 17 (type -> type_name .) ]
+  ! ARRAY           [ reduce using rule 17 (type -> type_name .) ]
+  ! BOOLEAN         [ reduce using rule 17 (type -> type_name .) ]
+  ! TINYINT         [ reduce using rule 17 (type -> type_name .) ]
+  ! SMALLINT        [ reduce using rule 17 (type -> type_name .) ]
+  ! INTEGER         [ reduce using rule 17 (type -> type_name .) ]
+  ! BIGINT          [ reduce using rule 17 (type -> type_name .) ]
+  ! REAL            [ reduce using rule 17 (type -> type_name .) ]
+  ! DOUBLE          [ reduce using rule 17 (type -> type_name .) ]
+  ! DECIMAL         [ reduce using rule 17 (type -> type_name .) ]
+  ! VARCHAR         [ reduce using rule 17 (type -> type_name .) ]
+  ! CHAR            [ reduce using rule 17 (type -> type_name .) ]
+  ! VARBINARY       [ reduce using rule 17 (type -> type_name .) ]
+  ! JSON            [ reduce using rule 17 (type -> type_name .) ]
+  ! DATE            [ reduce using rule 17 (type -> type_name .) ]
+  ! TIME            [ reduce using rule 17 (type -> type_name .) ]
+  ! TIMESTAMP       [ reduce using rule 17 (type -> type_name .) ]
+
+
+state 40
+
+    (27) type_name -> VARCHAR LPAREN NUMBER . RPAREN
+
+    RPAREN          shift and go to state 47
+
+
+state 41
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER . RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    RPAREN          shift and go to state 48
+
+
+state 42
+
+    (1) type -> ARRAY LPAREN type RPAREN .
+
+    $end            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    RPAREN          reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    COMMA_SPACE     reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    NAME_PART       reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    SPACE           reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    WITH            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    ZONE            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    ROW             reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    MAP             reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    ARRAY           reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    BOOLEAN         reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    TINYINT         reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    SMALLINT        reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    INTEGER         reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    BIGINT          reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    REAL            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    DOUBLE          reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    DECIMAL         reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    VARCHAR         reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    CHAR            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    VARBINARY       reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    JSON            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    DATE            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    TIME            reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+    TIMESTAMP       reduce using rule 1 (type -> ARRAY LPAREN type RPAREN .)
+
+
+state 43
+
+    (2) type -> MAP LPAREN type COMMA_SPACE . type RPAREN
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    ARRAY           shift and go to state 2
+    MAP             shift and go to state 3
+    ROW             shift and go to state 4
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    type                           shift and go to state 49
+    type_name                      shift and go to state 5
+
+state 44
+
+    (3) type -> ROW LPAREN row_field_list RPAREN .
+
+    $end            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    RPAREN          reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    COMMA_SPACE     reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    NAME_PART       reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    SPACE           reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    WITH            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    ZONE            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    ROW             reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    MAP             reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    ARRAY           reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    BOOLEAN         reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    TINYINT         reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    SMALLINT        reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    INTEGER         reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    BIGINT          reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    REAL            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    DOUBLE          reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    DECIMAL         reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    VARCHAR         reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    CHAR            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    VARBINARY       reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    JSON            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    DATE            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    TIME            reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+    TIMESTAMP       reduce using rule 3 (type -> ROW LPAREN row_field_list RPAREN .)
+
+
+state 45
+
+    (4) row_field_list -> row_field_list COMMA_SPACE . row_field
+    (6) row_field -> . row_field_parts
+    (7) row_field_parts -> . field_part row_field_parts
+    (8) row_field_parts -> . type
+    (9) field_part -> . NAME_PART
+    (10) field_part -> . SPACE
+    (11) field_part -> . WITH
+    (12) field_part -> . ZONE
+    (13) field_part -> . ROW
+    (14) field_part -> . MAP
+    (15) field_part -> . type
+    (16) field_part -> . type_name
+    (1) type -> . ARRAY LPAREN type RPAREN
+    (2) type -> . MAP LPAREN type COMMA_SPACE type RPAREN
+    (3) type -> . ROW LPAREN row_field_list RPAREN
+    (17) type -> . type_name
+    (18) type_name -> . BOOLEAN
+    (19) type_name -> . TINYINT
+    (20) type_name -> . SMALLINT
+    (21) type_name -> . INTEGER
+    (22) type_name -> . BIGINT
+    (23) type_name -> . REAL
+    (24) type_name -> . DOUBLE
+    (25) type_name -> . DECIMAL
+    (26) type_name -> . VARCHAR
+    (27) type_name -> . VARCHAR LPAREN NUMBER RPAREN
+    (28) type_name -> . CHAR
+    (29) type_name -> . VARBINARY
+    (30) type_name -> . JSON
+    (31) type_name -> . DATE
+    (32) type_name -> . TIME
+    (33) type_name -> . TIMESTAMP
+    (34) type_name -> . TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
+
+    NAME_PART       shift and go to state 34
+    SPACE           shift and go to state 35
+    WITH            shift and go to state 36
+    ZONE            shift and go to state 37
+    ROW             shift and go to state 28
+    MAP             shift and go to state 38
+    ARRAY           shift and go to state 2
+    BOOLEAN         shift and go to state 6
+    TINYINT         shift and go to state 7
+    SMALLINT        shift and go to state 8
+    INTEGER         shift and go to state 9
+    BIGINT          shift and go to state 10
+    REAL            shift and go to state 11
+    DOUBLE          shift and go to state 12
+    DECIMAL         shift and go to state 13
+    VARCHAR         shift and go to state 14
+    CHAR            shift and go to state 15
+    VARBINARY       shift and go to state 16
+    JSON            shift and go to state 17
+    DATE            shift and go to state 18
+    TIME            shift and go to state 19
+    TIMESTAMP       shift and go to state 20
+
+    row_field                      shift and go to state 50
+    row_field_parts                shift and go to state 31
+    field_part                     shift and go to state 32
+    type                           shift and go to state 33
+    type_name                      shift and go to state 39
+
+state 46
+
+    (7) row_field_parts -> field_part row_field_parts .
+
+    RPAREN          reduce using rule 7 (row_field_parts -> field_part row_field_parts .)
+    COMMA_SPACE     reduce using rule 7 (row_field_parts -> field_part row_field_parts .)
+
+
+state 47
+
+    (27) type_name -> VARCHAR LPAREN NUMBER RPAREN .
+
+    $end            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    RPAREN          reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    COMMA_SPACE     reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    NAME_PART       reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    SPACE           reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    WITH            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    ZONE            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    ROW             reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    MAP             reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    ARRAY           reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    BOOLEAN         reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    TINYINT         reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    SMALLINT        reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    INTEGER         reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    BIGINT          reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    REAL            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    DOUBLE          reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    DECIMAL         reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    VARCHAR         reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    CHAR            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    VARBINARY       reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    JSON            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    DATE            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    TIME            reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+    TIMESTAMP       reduce using rule 27 (type_name -> VARCHAR LPAREN NUMBER RPAREN .)
+
+
+state 48
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN . SPACE WITH SPACE TIME SPACE ZONE
+
+    SPACE           shift and go to state 51
+
+
+state 49
+
+    (2) type -> MAP LPAREN type COMMA_SPACE type . RPAREN
+
+    RPAREN          shift and go to state 52
+
+
+state 50
+
+    (4) row_field_list -> row_field_list COMMA_SPACE row_field .
+
+    RPAREN          reduce using rule 4 (row_field_list -> row_field_list COMMA_SPACE row_field .)
+    COMMA_SPACE     reduce using rule 4 (row_field_list -> row_field_list COMMA_SPACE row_field .)
+
+
+state 51
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE . WITH SPACE TIME SPACE ZONE
+
+    WITH            shift and go to state 53
+
+
+state 52
+
+    (2) type -> MAP LPAREN type COMMA_SPACE type RPAREN .
+
+    $end            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    RPAREN          reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    COMMA_SPACE     reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    NAME_PART       reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    SPACE           reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    WITH            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    ZONE            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    ROW             reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    MAP             reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    ARRAY           reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    BOOLEAN         reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    TINYINT         reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    SMALLINT        reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    INTEGER         reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    BIGINT          reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    REAL            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    DOUBLE          reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    DECIMAL         reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    VARCHAR         reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    CHAR            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    VARBINARY       reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    JSON            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    DATE            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    TIME            reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+    TIMESTAMP       reduce using rule 2 (type -> MAP LPAREN type COMMA_SPACE type RPAREN .)
+
+
+state 53
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH . SPACE TIME SPACE ZONE
+
+    SPACE           shift and go to state 54
+
+
+state 54
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE . TIME SPACE ZONE
+
+    TIME            shift and go to state 55
+
+
+state 55
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME . SPACE ZONE
+
+    SPACE           shift and go to state 56
+
+
+state 56
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE . ZONE
+
+    ZONE            shift and go to state 57
+
+
+state 57
+
+    (34) type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .
+
+    $end            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    RPAREN          reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    COMMA_SPACE     reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    NAME_PART       reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    SPACE           reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    WITH            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    ZONE            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    ROW             reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    MAP             reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    ARRAY           reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    BOOLEAN         reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    TINYINT         reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    SMALLINT        reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    INTEGER         reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    BIGINT          reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    REAL            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    DOUBLE          reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    DECIMAL         reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    VARCHAR         reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    CHAR            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    VARBINARY       reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    JSON            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    DATE            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    TIME            reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+    TIMESTAMP       reduce using rule 34 (type_name -> TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE .)
+
+WARNING: 
+WARNING: Conflicts:
+WARNING: 
+WARNING: reduce/reduce conflict in state 39 resolved using rule (field_part -> type_name)
+WARNING: rejected rule (type -> type_name) in state 39

@@ -8,65 +8,9 @@ from jupyterlab_sql_editor.ipython_magic.common.export import (
     SchemaExporter,
     Connection,
     Catalog,
+    SparkTableSchema,
     Table,
 )
-
-
-class SparkTableSchema:
-    def __init__(self, schema) -> None:
-        self.schema = schema
-
-    _FIELD_TYPES = {
-        StringType: "string",
-        ArrayType: "array",
-        TimestampType: "timestamp",
-        DateType: "date",
-        LongType: "long",
-        IntegerType: "integer",
-        BooleanType: "integer",
-        StructType: "struct",
-        MapType: "map",
-        DecimalType: "decimal",
-        DoubleType: "double",
-        FloatType: "float",
-        ShortType: "short",
-        BinaryType: "binary",
-    }
-
-    def get_type_name(self, field_type):
-        return self._FIELD_TYPES.get(type(field_type))
-
-    def get_path(self, path, name):
-        if " " in name:
-            name = "`" + name + "`"
-        if len(path) > 0:
-            return f"{path}.{name}"
-        return name
-
-    def get_children(self, field, path, fields):
-        if isinstance(field, StructField):
-            self.get_children(field.dataType, self.get_path(path, field.name), fields)
-        elif isinstance(field, MapType):
-            self.get_children(field.valueType, self.get_path(path, "key"), fields)
-        elif isinstance(field, ArrayType):
-            self.get_children(field.elementType, path, fields)
-        elif isinstance(field, StructType):
-            for name in field.fieldNames():
-                child = field[name]
-                fields.append(
-                    {
-                        "columnName": self.get_path(path, name),
-                        "metadata": child.metadata,
-                        "type": self.get_type_name(child.dataType),
-                        "description": self.get_type_name(child.dataType),
-                    }
-                )
-                self.get_children(child, path, fields)
-
-    def convert(self):
-        fields = []
-        self.get_children(self.schema, "", fields)
-        return fields
 
 
 class SparkConnection(Connection):
