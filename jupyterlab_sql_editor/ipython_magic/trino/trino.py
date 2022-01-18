@@ -5,11 +5,11 @@ import os
 import pandas as pd
 import trino
 from IPython.core.display import HTML, JSON, display
-from IPython.core.magic import Magics, line_cell_magic, line_magic, cell_magic, magics_class, needs_local_scope
+from IPython.core.magic import Magics, line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from traitlets import Int, Unicode, Instance
 
-from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid
+from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython_magic.common.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import update_database_schema
 
@@ -41,12 +41,17 @@ class Trino(Base):
     @argument('-c', '--catalog', metavar='catalogname', default=None, type=str, help='Trino catalog to use')
     @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
+    @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
 
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
+
+        truncate = 256
+        if args.truncate and args.truncate > 0:
+            truncate = args.truncate
 
         catalog = args.catalog
         if not catalog:
@@ -127,6 +132,13 @@ class Trino(Base):
             print('Query execution skipped')
             return
         
+        def format_cell(v):
+            v = str(v) if v else "null"
+            if len(v) > truncate:
+                v = v[:truncate] + "..."
+            return v
+        results = list(map(lambda row: [format_cell(v) for v in row], results[:limit]))
+
         if output == 'grid':
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if args.show_nonprinting:
@@ -135,7 +147,7 @@ class Trino(Base):
             display(render_grid(pdf, limit))
         elif output == 'json':
             json_array = []
-            for row in results[:limit]:
+            for row in results:
                 python_obj = {}
                 for idx, column_name in enumerate(columns):
                     python_val = None
@@ -147,11 +159,7 @@ class Trino(Base):
                 recursive_escape(json_array)
             display(JSON(json_array))
         elif output == 'html':
-            html = make_tag('tr', False,
-                        ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x, style='font-weight: bold'), columns)),
-                        style='border-bottom: 1px solid')
-            for index, row in enumerate(results[:limit]):
-                html += make_tag('tr', False, ''.join(map(lambda x: make_tag('td', args.show_nonprinting, x),row)))
+            html = rows_to_html(columns, results, args.show_nonprinting)
             display(HTML(make_tag('table', False, html)))
         elif output == 'text':
             print(self.render_text(results, columns))

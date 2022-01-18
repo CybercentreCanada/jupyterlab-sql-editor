@@ -8,13 +8,12 @@ from IPython.display import  display, display_html, JSON, HTML
 from IPython.core.display import display, HTML, clear_output, TextDisplayObject
 from IPython import get_ipython
 
-from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid
+from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
 
 import inspect
 
 from pyspark.sql.session import SparkSession
-from html import escape as html_escape
 from pyspark.serializers import BatchedSerializer, PickleSerializer
 from pyspark.rdd import _load_from_socket
 import pandas as pd
@@ -135,24 +134,14 @@ def to_html(df, max_num_rows, truncate, show_nonprinting):
     '''
     sock_info = df._jdf.getRowsToPython(max_num_rows, truncate)
     rows = list(_load_from_socket(sock_info, BatchedSerializer(PickleSerializer())))
-    head = rows[0]
+    columns = rows[0]
     row_data = rows[1:]
     has_more_data = len(row_data) > max_num_rows
     row_data = row_data[:max_num_rows]
-
-    html = "<table border='1'>\n"
-    # generate table head
-    html += "<tr><th>%s</th></tr>\n" % "</th><th>".join(map(lambda x: html_escape(x), head))
-    # generate table rows
-    for row in row_data:
-        if show_nonprinting:
-            row = [escape_control_chars(str(v)) for v in row]
-        html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(
-            map(lambda x: html_escape(x), row))
-    html += "</table>\n"
+    html = rows_to_html(columns, row_data, show_nonprinting)
     if has_more_data:
         html += "only showing top %d %s\n" % (
-            max_num_rows, "row" if max_num_rows == 1 else "rows")
+        max_num_rows, "row" if max_num_rows == 1 else "rows")
     return has_more_data, html
 
 def to_pandas(df, max_num_rows, truncate, show_nonprinting):
