@@ -128,13 +128,13 @@ class Trino(Base):
             pdf = pd.DataFrame.from_records(results, columns=columns)
             self.shell.user_ns.update({args.dataframe: pdf})
 
-        if limit <= 0 or args.output.lower() == 'skip' or args.output.lower() == 'none':
+        if limit <= 0 or output == 'skip' or output == 'none':
             print('Query execution skipped')
             return
         
         def format_cell(v):
             v = str(v) if v else "null"
-            if len(v) > truncate:
+            if output != 'json' and len(v) > truncate:
                 v = v[:truncate] + "..."
             return v
         results = list(map(lambda row: [format_cell(v) for v in row], results[:limit]))

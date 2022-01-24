@@ -1,12 +1,16 @@
 import json
-
+import logging
+from pyspark.sql.types import *
 from trino.exceptions import TrinoUserError
+
+from jupyterlab_sql_editor.ipython_magic.trino.parser import trino_column_parser, trino_column_lexer
 
 from jupyterlab_sql_editor.ipython_magic.common.export import (
     Catalog,
     Connection,
     Function,
     SchemaExporter,
+    SparkTableSchema,
     Table,
 )
 
@@ -82,17 +86,18 @@ class TrinoConnection(Connection):
             # print(sql)
             self.cur.execute(sql)
             rows = self.cur.fetchmany(MAX_RET)
-            return list(
-                map(
-                    lambda r: {
-                        "columnName": r[0],
-                        "metadata": r[2],
-                        "type": r[1],
-                        "description": r[3],
-                    },
-                    rows,
-                )
-            )
+            schema = StructType()
+            for row in rows:
+                name = row[0]
+                row_schema = row[1]
+                try:
+                    column_type = trino_column_parser.parse(row_schema)
+                    schema.add(name, column_type)
+                except Exception as e:
+                    logging.warn(f"failed to parse column with schema {row_schema}")
+                    schema.add(name, StringType())
+
+            return SparkTableSchema(schema, quoting_char="\"").convert()
         except TrinoUserError:
             print(f"Failed to get columns for {table_name}")
             return []
