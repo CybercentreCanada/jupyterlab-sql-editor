@@ -66,9 +66,11 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 ## Format and show syntax highlighting for SQL within Python strings / Formattage et surbrillance de la syntaxe dans un string python
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//format-string.gif)
 
-
 ## Capture your Spark query as a Dataframe or a temporary view / Capture de la requete dans un Dataframe ou vue temporaire
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//args.png)
+
+## Use jinja templating to create re-usable SQL / Utilisation de jinja pour creation de SQL réutilisable
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//jinja.png)
 
 
 
