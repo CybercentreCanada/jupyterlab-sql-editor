@@ -1,4 +1,5 @@
 import os
+from time import time
 
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
@@ -51,13 +52,34 @@ class SparkSql(Base):
             print("Active spark session is not found")
             return
 
+        catalog_array = self.get_catalog_array()
+        if args.refresh.lower() == 'all':
+            update_database_schema(self.spark, output_file, catalog_array)
+            return
+        elif args.refresh.lower() == 'local':
+            update_local_database(self.spark, output_file)
+            return
+        elif args.refresh.lower() != 'none':
+            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
+
         sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
         elif output == 'sql':
             return self.display_sql(sql)
 
+        # statements like INSERT INTO, USE SCHEMA, CREATE TABLE, DROP TABLE
+        # execute immediatly, they do not require us to perform a .show(), .collect()
+        # we detect these use case by checking for an empty list of columns (no return schema)
+        # we treat these use cases differently than a SELECT that returns rows of data
+        start = time()
         result = self.spark.sql(sql)
+        end = time()
+        if len(result.columns) == 0:
+            elapsed = end - start
+            print(f"Execution time: {elapsed:.2f} seconds")
+            return
+
         if args.cache or args.eager:
             load_type = 'eager' if args.eager else 'lazy'
             print(f'Cached dataframe with {load_type} load')
@@ -71,15 +93,6 @@ class SparkSql(Base):
             print(f'Captured dataframe to local variable `{args.dataframe}`')
             self.shell.user_ns.update({args.dataframe: result})
 
-        catalog_array = self.get_catalog_array()
-        if args.refresh.lower() == 'all':
-            update_database_schema(self.spark, output_file, catalog_array)
-            return
-        elif args.refresh.lower() == 'local':
-            update_local_database(self.spark, output_file)
-            return
-        elif args.refresh.lower() != 'none':
-            print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
         limit = args.limit
         if limit is None:
