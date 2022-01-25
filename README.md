@@ -63,8 +63,9 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 ## Format and show syntax highlighting in Notebook code cells / Formattage et surbrillance de la syntaxe des cellules
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images/format-cell.gif)
 
-## Format and show syntax highlighting for SQL within Python strings / Formattage et surbrillance de la syntaxe dans un string python
-![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//format-string.gif)
+## Works in Python strings / Fonctionne a l'intérieur d'un string python
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//python-string.gif)
+
 
 ## Capture your Spark query as a Dataframe or a temporary view / Capture de la requete dans un Dataframe ou vue temporaire
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//args.png)
