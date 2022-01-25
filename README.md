@@ -58,7 +58,7 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//sparksql-nested-columns.gif)
 
 ## Auto suggest JOINs on matching column names / Suggestion automatiques de jointures sur nom de colones
-![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//trino-inner-join.gif)
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//spark-inner-join.gif)
 
 ## Format and show syntax highlighting in Notebook code cells / Formattage et surbrillance de la syntaxe des cellules
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images/format-cell.gif)
@@ -66,9 +66,11 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 ## Format and show syntax highlighting for SQL within Python strings / Formattage et surbrillance de la syntaxe dans un string python
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//format-string.gif)
 
-
 ## Capture your Spark query as a Dataframe or a temporary view / Capture de la requete dans un Dataframe ou vue temporaire
 ![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//args.png)
+
+## Use jinja templating to create re-usable SQL / Utilisation de jinja pour creation de SQL réutilisable
+![](https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//jinja.png)
 
 
 
