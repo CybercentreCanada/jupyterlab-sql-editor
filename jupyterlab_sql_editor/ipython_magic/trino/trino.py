@@ -111,7 +111,7 @@ class Trino(Base):
             select = ','.join(select_exprs)
             sql = f'select {select} from ({sql}) limit {limit+1}'            
         elif not args.raw == True:
-            sql = f'select * from ({sql}) limit {limit+1}'
+            sql = f'{sql} limit {limit+1}'
         
         self.cur.execute(sql)
         results = self.cur.fetchmany(limit+1)
