@@ -18,6 +18,7 @@ const FLAG_OPTS = [
     '-s', '--show-nonprinting',
     '-x', '--raw',
     '-j', '--jinja',
+    '-b', '--dbt',
 ].join('|')
 const SPACE = ' '
 const OPTION_VALUE = `[0-9a-zA-Z/\._]+`
