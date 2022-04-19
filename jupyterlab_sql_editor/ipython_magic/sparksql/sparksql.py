@@ -8,12 +8,16 @@ import pyspark.sql.functions as F
 
 from jupyterlab_sql_editor.ipython_magic.common.base import Base
 from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
+from traitlets import Unicode
+
 
 from jupyterlab_sql_editor.ipython.sparkdf import display_df
 
 @magics_class
 class SparkSql(Base):
     valid_outputs = ['sql','text','json','html','grid','schema','skip','none']
+
+    dbt_project_dir = Unicode('', config=True, help='The dbt project directory')
 
     @needs_local_scope
     @line_cell_magic
@@ -30,6 +34,7 @@ class SparkSql(Base):
                 help='Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)')
     @argument('-s', '--show-nonprinting', action='store_true', help='Replace none printable characters with their ascii codes (LF -> \x0a)')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
+    @argument('-b', '--dbt', action='store_true', help='Enable DBT templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
@@ -62,7 +67,11 @@ class SparkSql(Base):
         elif args.refresh.lower() != 'none':
             print(f'Invalid refresh option given {args.refresh}. Valid refresh options are [all|local|none]')
 
-        sql = self.get_sql_statement(cell, args.sql, args.jinja)
+        if args.dbt:
+            sql = self.get_dbt_sql_statement(cell, args.sql)
+        else:
+            sql = self.get_sql_statement(cell, args.sql, args.jinja)
+            
         if not sql:
             return
         elif output == 'sql':
@@ -112,6 +121,55 @@ class SparkSql(Base):
     def get_instantiated_spark_session():
         return SparkSession._instantiatedSession
 
+    def get_dbt_sql_statement(self, cell, sql_argument):
+        import importlib
+        if not importlib.util.find_spec("dbt.main"):
+            print('dbt is not installed\npip install dbt-core')
+            return
+
+        if not self.dbt_project_dir:
+            print("""dbt_project_dir configuration not set, you can configure it with
+                %config SparkSql.dbt_project_dir = "/home/jovyan/<dbt_project>"
+                """)
+            return
+    
+        sql = cell
+        if cell is None:
+            sql = ' '.join(sql_argument)
+        if not sql:
+            print('No sql statement to execute')
+            return
+
+        stage_file = self.dbt_project_dir + "/analyses/__sparksql__stage_file__.sql"
+        with open(stage_file, "w") as f:
+            f.write(sql)
+        
+        # reset dbt logging to prevent duplicate log entries.
+        from importlib import reload
+        import logging
+        import dbt.main
+        import dbt.logger
+        reload(dbt.main)
+        reload(dbt.logger)
+        logger = logging.getLogger("configured_std_out")
+        while logger.hasHandlers():
+            logger.removeHandler(logger.handlers[0])
+
+        results, succeeded = dbt.main.handle_and_check([
+                '--no-write-json',
+                'compile', 
+                '--model', 
+                '__sparksql__stage_file__', 
+                '--project-dir', 
+                self.dbt_project_dir,])
+        os.remove(stage_file)
+        if succeeded:
+            compiled_file = self.dbt_project_dir + "/" + results.results[0].node.compiled_path
+            with open(compiled_file, "r") as f:
+                compiled_sql = f.read()
+            return compiled_sql
+        return ""
+   
 
 
 
