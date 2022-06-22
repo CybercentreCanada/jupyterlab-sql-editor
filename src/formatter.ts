@@ -92,7 +92,12 @@ class JupyterlabNotebookCodeFormatter {
     extractor: RegExpForeignCodeExtractor
   ): string | null {
     const extracted = extractor.extract_foreign_code(cellText);
-    if (extracted && extracted.length > 0 && extracted[0].foreign_code) {
+    if (
+      extracted &&
+      extracted.length > 0 &&
+      extracted[0].foreign_code &&
+      extracted[0].range
+    ) {
       const sqlText = extracted[0].foreign_code;
       const formattedSql = this.sqlFormatter.format(sqlText) + '\n';
       const doc = new this.codeMirror.CodeMirror.Doc(cellText, 'sql', 0, '\n');
