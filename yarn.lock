@@ -8192,9 +8192,10 @@ sprintf-js@~1.0.2:
   resolved "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.0.3.tgz"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-"sql-formatter@https://github.com/cccs-jc/sql-formatter.git":
+sql-formatter@^4.0.2:
   version "4.0.2"
-  resolved "git+ssh://git@github.com/cccs-jc/sql-formatter.git#3f3e1b30e53892add900e7741483bf1299507877"
+  resolved "https://registry.yarnpkg.com/sql-formatter/-/sql-formatter-4.0.2.tgz#2b359e5a4c611498d327b9659da7329d71724607"
+  integrity sha512-R6u9GJRiXZLr/lDo8p56L+OyyN2QFJPCDnsyEOsbdIpsnDKL8gubYFo7lNR7Zx7hfdWT80SfkoVS0CMaF/DE2w==
   dependencies:
     argparse "^2.0.1"
 
