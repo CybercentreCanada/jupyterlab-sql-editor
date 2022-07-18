@@ -15,17 +15,23 @@
   "description": "SQL editor support for formatting, syntax highlighing and code completion of SQL in cell magic, line magic, python string and file editor.",
   "type": "object",
   "properties": {
-    "formatIndent": {
-      "type": "string",
-      "title": "Indent",
-      "description": "Indent using this string, can be one, two, four spaces or a tab.",
-      "default": "    "
+    "formatTabWidth": {
+      "type": "number",
+      "title": "Tab width",
+      "description": "Specifies amount of spaces to be used for indentation.",
+      "default": 4
     },
-    "formatUppercase": {
+    "formatUseTabs": {
       "type": "boolean",
-      "title": "Upper case all keywords",
-      "description": "Upper case all keywords",
-      "default": true
+      "title": "Use tabs",
+      "description": "Uses TAB characters for indentation.",
+      "default": false
+    },
+    "formatKeywordCase": {
+      "type": "string",
+      "title": "Keyword case",
+      "description": "Converts reserved keywords and builtin function names to upper or lowercase. ('preserve', 'upper' or 'lower')",
+      "default": "preserve"
     }
   },
   "additionalProperties": false
