@@ -1,7 +1,7 @@
 import os
 from time import time
 
-from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
+from IPython.core.magic import line_cell_magic, line_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
@@ -16,8 +16,8 @@ from jupyterlab_sql_editor.ipython.sparkdf import display_df
 @magics_class
 class SparkSql(Base):
     valid_outputs = ['sql','text','json','html','grid','schema','skip','none']
-
-    dbt_project_dir = Unicode('', config=True, help='The dbt project directory')
+    dbt_args = []
+    dbt_project_dir = ''
 
     @needs_local_scope
     @line_cell_magic
@@ -122,28 +122,38 @@ class SparkSql(Base):
         return SparkSession._instantiatedSession
 
     def get_dbt_sql_statement(self, cell, sql_argument):
-        import importlib
-        if not importlib.util.find_spec("dbt.main"):
-            print('dbt is not installed\npip install dbt-core')
-            return
-
-        if not self.dbt_project_dir:
-            print("""dbt_project_dir configuration not set, you can configure it with
-                %config SparkSql.dbt_project_dir = "/home/jovyan/<dbt_project>"
-                """)
-            return
-    
         sql = cell
         if cell is None:
             sql = ' '.join(sql_argument)
         if not sql:
             print('No sql statement to execute')
             return
-
+        
         stage_file = self.dbt_project_dir + "/analyses/__sparksql__stage_file__.sql"
         with open(stage_file, "w") as f:
             f.write(sql)
-        
+
+        dbt_compile_args = [
+                '--no-write-json',
+                'compile', 
+                '--model', 
+                '__sparksql__stage_file__',
+                ] + self.dbt_args
+        results, succeeded = self.invoke_dbt(dbt_compile_args)
+        os.remove(stage_file)
+        if succeeded:
+            compiled_file = self.dbt_project_dir + "/" + results.results[0].node.compiled_path
+            with open(compiled_file, "r") as f:
+                compiled_sql = f.read()
+            return compiled_sql
+        return ""
+
+    def import_dbt(self):
+        import importlib
+        if not importlib.util.find_spec("dbt.main"):
+            print('dbt is not installed\npip install dbt-core')
+            return False
+    
         # reset dbt logging to prevent duplicate log entries.
         from importlib import reload
         import logging
@@ -154,22 +164,28 @@ class SparkSql(Base):
         logger = logging.getLogger("configured_std_out")
         while logger.hasHandlers():
             logger.removeHandler(logger.handlers[0])
+        return True
 
-        results, succeeded = dbt.main.handle_and_check([
-                '--no-write-json',
-                'compile', 
-                '--model', 
-                '__sparksql__stage_file__', 
-                '--project-dir', 
-                self.dbt_project_dir,])
-        os.remove(stage_file)
-        if succeeded:
-            compiled_file = self.dbt_project_dir + "/" + results.results[0].node.compiled_path
-            with open(compiled_file, "r") as f:
-                compiled_sql = f.read()
-            return compiled_sql
-        return ""
-   
+    def invoke_dbt(self, args):
+        if self.import_dbt():
+            import dbt.main
+            return dbt.main.handle_and_check(args)
+
+    def get_dbt_project_dir(self, args):
+        if self.import_dbt():
+            import dbt.main
+            parsed = dbt.main.parse_args(['debug'] + self.dbt_args)
+            return parsed.project_dir
+
+    @line_magic
+    def dbt(self, line=None, local_ns=None):
+        self.dbt_args = line.split()
+        self.dbt_project_dir = self.get_dbt_project_dir(['debug'] + self.dbt_args)
+        if not self.dbt_project_dir:
+            print('dbt project directory not specified')
+            return
+        os.chdir(self.dbt_project_dir)
+        self.invoke_dbt(['debug'] + self.dbt_args)
 
 
 
