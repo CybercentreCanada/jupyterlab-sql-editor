@@ -1,13 +1,25 @@
-import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
+import {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ILSPCodeExtractorsManager } from '@krassowski/jupyterlab-lsp';
 import { ICodeMirror } from '@jupyterlab/codemirror'
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IEditorTracker } from '@jupyterlab/fileeditor';
-import { JupyterLabCodeFormatter as SqlCodeFormatter, SqlFormatter } from './formatter';
-import { cellMagicExtractor, markerExtractor, lineMagicExtractor, sqlCodeMirrorModesFor, registerCodeMirrorFor } from './utils';
+import {
+  JupyterLabCodeFormatter as SqlCodeFormatter,
+  SqlFormatter
+} from './formatter';
+import {
+  cellMagicExtractor,
+  markerExtractor,
+  lineMagicExtractor,
+  sqlCodeMirrorModesFor,
+  registerCodeMirrorFor
+} from './utils';
 import { Constants } from './constants';
-
+import { KeywordCase } from 'sql-formatter';
 
 /*
 Results in
@@ -46,13 +58,17 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
       //return c.CodeMirror.getMode(config, pythonConf);
 
       // Instead of returning this mode we multiplex it with SQL
-      var pythonMode = c.CodeMirror.getMode(config, pythonConf);
+      const pythonMode = c.CodeMirror.getMode(config, pythonConf);
 
       // get a mode for SQL
-      var sqlMode = c.CodeMirror.getMode(config, 'sql')
+      const sqlMode = c.CodeMirror.getMode(config, 'sql');
+
       // multiplex python with SQL and return it
-      var multiplexedModes = sqlCodeMirrorModesFor('sparksql', sqlMode)
-        .concat(sqlCodeMirrorModesFor('trino', sqlMode))
+      const multiplexedModes = sqlCodeMirrorModesFor(
+        'sparksql',
+        sqlMode
+      ).concat(sqlCodeMirrorModesFor('trino', sqlMode));
+
       return c.CodeMirror.multiplexingMode(pythonMode, ...multiplexedModes);
     }
     // Original code has a third argument. Not sure why we don't..
@@ -61,8 +77,8 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
     // 'python'
   );
 
-  registerCodeMirrorFor(c, 'sparksql')
-  registerCodeMirrorFor(c, 'trino')
+  registerCodeMirrorFor(c, 'sparksql');
+  registerCodeMirrorFor(c, 'trino');
 
   // The following is already done by default implementation so not redoing here
   // c.CodeMirror.defineMIME('text/x-ipython', 'ipython');
@@ -73,9 +89,6 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
   //   name: 'ipython'
   // });
 }
-
-
-
 
 /**
  * Initialization data for the jupyterlab_jc extension.
@@ -101,8 +114,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
   ) => {
     console.log('JupyterLab extension jupyterlab-sql-editor is activated!');
 
-    const sqlFormatter = new SqlFormatter("    ", true);
-    const sqlCodeFormatter = new SqlCodeFormatter(app, tracker, editorTracker, codeMirror, sqlFormatter);
+    const sqlFormatter = new SqlFormatter(4, false, 'upper');
+    const sqlCodeFormatter = new SqlCodeFormatter(
+      app,
+      tracker,
+      editorTracker,
+      codeMirror,
+      sqlFormatter
+    );
     console.log('jupyterlab-sql-editor SQL code formatter registered');
 
     /**
@@ -112,35 +131,44 @@ const plugin: JupyterFrontEndPlugin<void> = {
      */
     function loadSetting(settings: ISettingRegistry.ISettings): void {
       // Read the settings and convert to the correct type
-      const formatIndent = settings.get('formatIndent').composite as string;
-      const formatUppercase = settings.get('formatUppercase').composite as boolean;
-      const sqlFormatter = new SqlFormatter(formatIndent, formatUppercase);
-      sqlCodeFormatter.setFormatter(sqlFormatter)
+      const formatTabwidth = settings.get('formatTabWidth').composite as number;
+      const formatUseTabs = settings.get('formatUseTabs').composite as boolean;
+      const formatKeywordCase = settings.get('formatKeywordCase')
+        .composite as KeywordCase;
+      const sqlFormatter = new SqlFormatter(
+        formatTabwidth,
+        formatUseTabs,
+        formatKeywordCase
+      );
+      sqlCodeFormatter.setFormatter(sqlFormatter);
     }
 
     // Wait for the application to be restored and
     // for the settings for this plugin to be loaded
-    Promise.all([app.restored, settingRegistry.load(Constants.SETTINGS_SECTION)])
+    Promise.all([
+      app.restored,
+      settingRegistry.load(Constants.SETTINGS_SECTION)
+    ])
       .then(([, settings]) => {
         // Read the settings
         loadSetting(settings);
         // Listen for your plugin setting changes using Signal
         settings.changed.connect(loadSetting);
-
       })
-      .catch((reason) => {
+      .catch(reason => {
         console.error(
           `Something went wrong when reading the settings.\n${reason}`
         );
       });
-
 
     // JupyterLab uses the CodeMirror library to syntax highlight code
     // within the cells. Register a multiplex CodeMirror capable of
     // highlightin SQL which is embedded in a IPython magic or within
     // a python string (delimited by markers)
     codeMirrorWithSqlSyntaxHighlightSupport(codeMirror);
-    console.log('jupyterlab-sql-editor code mirror for syntax highlighting registered');
+    console.log(
+      'jupyterlab-sql-editor code mirror for syntax highlighting registered'
+    );
 
     // JupyterLab-LSP relies on extractors to pull the SQL out of the cell
     // and into a virtual document which is then passed to the sql-language-server
