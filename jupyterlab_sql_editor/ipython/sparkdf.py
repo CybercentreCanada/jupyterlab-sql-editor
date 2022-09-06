@@ -1,14 +1,12 @@
 import json
 import os
 from time import time
-from datetime import timedelta
 import pyspark.sql.functions as F
-from ipywidgets import Output, widgets
-from IPython.display import  display, display_html, JSON, HTML
-from IPython.core.display import display, HTML, clear_output, TextDisplayObject
+from ipywidgets import Output
+from IPython.display import  display, JSON, HTML, TextDisplayObject
 from IPython import get_ipython
 
-from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid, rows_to_html
+from jupyterlab_sql_editor.ipython.common import escape_control_chars, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
 
 import inspect
@@ -161,4 +159,3 @@ def to_pandas(df, max_num_rows, truncate, show_nonprinting):
             row = [escape_control_chars(str(v)) for v in row]
         pdf.loc[i] = row
     return has_more_data, pdf
-
