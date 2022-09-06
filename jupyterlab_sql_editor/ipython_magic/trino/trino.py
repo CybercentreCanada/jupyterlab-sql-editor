@@ -26,17 +26,12 @@ class Trino(Base):
     conn = None
     cur = None
 
-    def __init__(self, shell=None, line=None, local_ns=None, **kwargs):
+    def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
-        self.args = parse_argstring(self.trino, line)
-        self.output = self.args.output.lower()
-        if self.outputFile is None:
-            self.outputFile = f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
-        if self.args.truncate and self.args.truncate > 0:
-            self.truncate = self.args.truncate
-        else:
-            self.truncate = 256
-        self.set_user_ns(local_ns)
+        self.args = None
+        self.output = None
+        self.output_file = None
+        self.truncate = None
 
     @needs_local_scope
     @line_cell_magic
@@ -57,8 +52,17 @@ class Trino(Base):
     @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
-    def trino(self, cell=None, shell=None, line=None, local_ns=None):
+    def trino(self, cell=None, line=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
+        self.set_user_ns(local_ns)
+        self.args = parse_argstring(self.trino, line)
+        self.output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
+        self.output = self.args.output.lower()
+
+        self.truncate = 256
+        if self.args.truncate and self.args.truncate > 0:
+            self.truncate = self.args.truncate
+
         catalog = self.args.catalog
         if not catalog:
             catalog = self.catalog

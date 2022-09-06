@@ -22,18 +22,13 @@ class SparkSql(Base):
     dbt_args = List([], config=True, help='dbt arguments')
     dbt_project_dir = Unicode('', config=True, help='Path to dbt project directory')
 
-    def __init__(self, shell=None, line=None, local_ns=None, **kwargs):
+    def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
-        self.args = parse_argstring(self.sparksql, line)
+        self.args = None
         self.spark = None
-        self.output = self.args.output.lower()
-        if self.outputFile is None:
-            self.outputFile = f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
-        if self.args.truncate and self.args.truncate > 0:
-            self.truncate = self.args.truncate
-        else:
-            self.truncate = 256
-        self.set_user_ns(local_ns)
+        self.output = None
+        self.output_file = None
+        self.truncate = None
 
     @needs_local_scope
     @line_cell_magic
@@ -52,8 +47,17 @@ class SparkSql(Base):
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-b', '--dbt', action='store_true', help='Enable DBT templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
-    def sparksql(self, cell=None, shell=None, line=None, local_ns=None):
+    def sparksql(self, cell=None, line=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
+        self.set_user_ns(local_ns)
+        self.args = parse_argstring(self.sparksql, line)
+        self.output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
+        self.output = self.args.output.lower()
+
+        self.truncate = 256
+        if self.args.truncate and self.args.truncate > 0:
+            self.truncate = self.args.truncate
+
         if not self.output in VALID_OUTPUTS:
             print(f'Invalid output option {self.args.output}. The valid options are [sql|json|text|html|grid|skip|none].')
             return
@@ -64,7 +68,7 @@ class SparkSql(Base):
             return
 
         catalog_array = self.get_catalog_array()
-        if self.check_refresh(self.args.refresh, self.outputFile, catalog_array):
+        if self.check_refresh(self.args.refresh, self.output_file, catalog_array):
             return
 
         if self.args.dbt:
