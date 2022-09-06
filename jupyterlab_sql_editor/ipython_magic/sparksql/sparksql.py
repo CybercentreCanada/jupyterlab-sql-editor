@@ -52,7 +52,7 @@ class SparkSql(Base):
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-b', '--dbt', action='store_true', help='Enable DBT templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
-    def sparksql(self, cell=None):
+    def sparksql(self, cell=None, shell=None, line=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         if not self.output in VALID_OUTPUTS:
             print(f'Invalid output option {self.args.output}. The valid options are [sql|json|text|html|grid|skip|none].')
