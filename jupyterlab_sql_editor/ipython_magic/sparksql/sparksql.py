@@ -4,7 +4,7 @@ import logging
 import dbt.main
 import dbt.logger
 
-from importlib import reload
+from importlib import reload, util
 from IPython.core.magic import line_cell_magic, line_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from jupyterlab_sql_editor.ipython.sparkdf import display_df
@@ -24,11 +24,7 @@ class SparkSql(Base):
 
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
-        self.args = None
         self.spark = None
-        self.output = None
-        self.output_file = None
-        self.truncate = None
 
     @needs_local_scope
     @line_cell_magic
@@ -47,19 +43,19 @@ class SparkSql(Base):
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-b', '--dbt', action='store_true', help='Enable DBT templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
-    def sparksql(self, cell=None, line=None, local_ns=None):
+    def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
-        self.args = parse_argstring(self.sparksql, line)
-        self.output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
-        self.output = self.args.output.lower()
+        args = parse_argstring(self.sparksql, line)
+        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
+        output = args.output.lower()
 
-        self.truncate = 256
-        if self.args.truncate and self.args.truncate > 0:
-            self.truncate = self.args.truncate
+        truncate = 256
+        if args.truncate and args.truncate > 0:
+            truncate = args.truncate
 
-        if not self.output in VALID_OUTPUTS:
-            print(f'Invalid output option {self.args.output}. The valid options are [sql|json|text|html|grid|skip|none].')
+        if not output in VALID_OUTPUTS:
+            print(f'Invalid output option {args.output}. The valid options are [sql|json|text|html|grid|skip|none].')
             return
 
         self.spark = self.get_instantiated_spark_session()
@@ -68,18 +64,17 @@ class SparkSql(Base):
             return
 
         catalog_array = self.get_catalog_array()
-        if self.check_refresh(self.args.refresh, self.output_file, catalog_array):
+        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
             return
 
-        if self.args.dbt:
-            sql = self.get_dbt_sql_statement(cell, self.args.sql)
+        if args.dbt:
+            sql = self.get_dbt_sql_statement(cell, args.sql)
         else:
-            sql = self.get_sql_statement(cell, self.args.sql, self.args.jinja)
+            sql = self.get_sql_statement(cell, args.sql, args.jinja)
 
         if not sql:
             return
-
-        if self.output == 'sql':
+        elif output == 'sql':
             return self.display_sql(sql)
 
         # statements like INSERT INTO, USE SCHEMA, CREATE TABLE, DROP TABLE
@@ -94,41 +89,42 @@ class SparkSql(Base):
             print(f"Execution time: {elapsed:.2f} seconds")
             return
 
-        if self.args.cache or self.args.eager:
-            load_type = 'eager' if self.args.eager else 'lazy'
+        if args.cache or args.eager:
+            load_type = 'eager' if args.eager else 'lazy'
             print(f'Cached dataframe with {load_type} load')
             result = result.cache()
-            if self.args.eager:
+            if args.eager:
                 result.count()
-        if self.args.view:
-            print(f'Created temporary view `{self.args.view}`')
-            result.createOrReplaceTempView(self.args.view)
-        if self.args.dataframe:
-            print(f'Captured dataframe to local variable `{self.args.dataframe}`')
-            self.shell.user_ns.update({self.args.dataframe: result})
+        if args.view:
+            print(f'Created temporary view `{args.view}`')
+            result.createOrReplaceTempView(args.view)
+        if args.dataframe:
+            print(f'Captured dataframe to local variable `{args.dataframe}`')
+            self.shell.user_ns.update({args.dataframe: result})
 
-        limit = self.args.limit
+
+        limit = args.limit
         if limit is None:
             limit = self.limit
 
-        if limit <= 0 or self.output == 'skip' or self.output == 'none':
+        if limit <= 0 or output == 'skip' or output == 'none':
             print('Query execution skipped')
             return
 
-        if self.output == 'schema':
+        if output == 'schema':
             result.printSchema()
             return
 
-        display_df(result, output=self.output, limit=limit, truncate=self.truncate, show_nonprinting=self.args.show_nonprinting)
+        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting)
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
-        if refresh_arg.lower() == 'all':
+        if refresh_arg == 'all':
             update_database_schema(self.spark, output_file, catalog_array)
             return True
-        if self.args.refresh.lower() == 'local':
+        if refresh_arg == 'local':
             update_local_database(self.spark, output_file)
             return True
-        if refresh_arg.lower() != 'none':
+        if refresh_arg != 'none':
             print(f'Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]')
         return False
 
@@ -165,6 +161,10 @@ class SparkSql(Base):
 
     @staticmethod
     def import_dbt():
+        if not util.find_spec("dbt.main"):
+            print('dbt is not installed\npip install dbt-core')
+            return False
+
         # reset dbt logging to prevent duplicate log entries.
         reload(dbt.main)
         reload(dbt.logger)
@@ -193,4 +193,3 @@ class SparkSql(Base):
             return
         os.chdir(self.dbt_project_dir)
         self.invoke_dbt(['debug'] + self.dbt_args)
-        return

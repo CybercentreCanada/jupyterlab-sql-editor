@@ -26,13 +26,6 @@ class Trino(Base):
     conn = None
     cur = None
 
-    def __init__(self, shell=None, **kwargs):
-        super().__init__(shell, **kwargs)
-        self.args = None
-        self.output = None
-        self.output_file = None
-        self.truncate = None
-
     @needs_local_scope
     @line_cell_magic
     @magic_arguments()
@@ -55,19 +48,18 @@ class Trino(Base):
     def trino(self, cell=None, line=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
-        self.args = parse_argstring(self.trino, line)
-        self.output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
-        self.output = self.args.output.lower()
+        args = parse_argstring(self.trino, line)
+        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
-        self.truncate = 256
-        if self.args.truncate and self.args.truncate > 0:
-            self.truncate = self.args.truncate
+        truncate = 256
+        if args.truncate and args.truncate > 0:
+            truncate = args.truncate
 
-        catalog = self.args.catalog
+        catalog = args.catalog
         if not catalog:
             catalog = self.catalog
         print(catalog)
-        schema = self.args.schema
+        schema = args.schema
         if not schema:
             schema = self.schema
         print(schema)
@@ -83,24 +75,26 @@ class Trino(Base):
         self.cur = self.conn.cursor()
 
         catalog_array = self.get_catalog_array()
-        if self.check_refresh(self.args.refresh, self.outputFile, catalog_array):
+        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
             return
 
-        sql = self.get_sql_statement(cell, self.args.sql, self.args.jinja)
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
         if not sql:
             return
 
-        limit = self.args.limit
+        limit = args.limit
         if limit is None:
             limit = self.limit
 
-        if not self.output in VALID_OUTPUTS:
-            print(f'Invalid output option {self.output}. The valid options are {VALID_OUTPUTS}.')
+        output = args.output.lower()
+
+        if not output in VALID_OUTPUTS:
+            print(f'Invalid output option {args.output}. The valid options are {self.valid_outputs}.')
             return
 
-        if self.output == 'sql':
+        if output == 'sql':
             return self.display_sql(sql)
-        if self.output == 'json':
+        elif output == 'json':
             # Determine the resulting column names
             self.cur.execute(f'SHOW STATS FOR ({sql})')
             # Assume a maximum possible number of columns of 100000
@@ -115,7 +109,7 @@ class Trino(Base):
                 select_exprs.append(f'CAST({column_name} AS JSON) AS "{column_name}"')
             select = ','.join(select_exprs)
             sql = f'select {select} from ({sql}) limit {limit+1}'
-        if not self.args.raw is True:
+        elif not args.raw is True:
             sql = f'{sql} limit {limit+1}'
 
         self.cur.execute(sql)
@@ -128,29 +122,29 @@ class Trino(Base):
             more_results = True
             results = results[:limit]
 
-        if self.args.dataframe:
-            print(f'Saved results to pandas dataframe named `{self.args.dataframe}`')
+        if args.dataframe:
+            print(f'Saved results to pandas dataframe named `{args.dataframe}`')
             pdf = pd.DataFrame.from_records(results, columns=columns)
-            self.shell.user_ns.update({self.args.dataframe: pdf})
+            self.shell.user_ns.update({args.dataframe: pdf})
 
-        if limit <= 0 or self.output == 'skip' or self.output == 'none':
+        if limit <= 0 or output == 'skip' or output == 'none':
             print('Query execution skipped')
             return
 
-        def format_cell(cell_value):
-            cell_value = str(cell_value) if cell_value else "null"
-            if self.output != 'json' and len(cell_value) > self.truncate:
-                cell_value = cell_value[:self.truncate] + "..."
-            return cell_value
-        results = list(map(lambda row: [format_cell(value) for value in row], results[:limit]))
+        def format_cell(v):
+            v = str(v) if v else "null"
+            if output != 'json' and len(v) > truncate:
+                v = v[:truncate] + "..."
+            return v
+        results = list(map(lambda row: [format_cell(v) for v in row], results[:limit]))
 
-        if self.output == 'grid':
+        if output == 'grid':
             pdf = pd.DataFrame.from_records(results, columns=columns)
-            if self.args.show_nonprinting:
-                for column in pdf.columns:
-                    pdf[column] = pdf[column].apply(lambda v: escape_control_chars(str(v)))
+            if args.show_nonprinting:
+                for c in pdf.columns:
+                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_grid(pdf, limit))
-        elif self.output == 'json':
+        elif output == 'json':
             json_array = []
             for row in results:
                 python_obj = {}
@@ -160,23 +154,23 @@ class Trino(Base):
                         python_val = json.loads(row[idx])
                     python_obj[column_name] = python_val
                 json_array.append(python_obj)
-            if self.args.show_nonprinting:
+            if args.show_nonprinting:
                 recursive_escape(json_array)
             display(JSON(json_array))
-        elif self.output == 'html':
-            html = rows_to_html(columns, results, self.args.show_nonprinting)
+        elif output == 'html':
+            html = rows_to_html(columns, results, args.show_nonprinting)
             display(HTML(make_tag('table', False, html)))
-        elif self.output == 'text':
+        elif output == 'text':
             print(self.render_text(results, columns))
 
         if more_results:
             print('Only showing top %d row(s)' % limit)
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
-        if refresh_arg.lower() == 'all':
+        if refresh_arg == 'all':
             update_database_schema(self.cur, output_file, catalog_array)
             return True
-        if refresh_arg.lower() != 'none':
+        if refresh_arg != 'none':
             print(f'Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]')
         return False
 
