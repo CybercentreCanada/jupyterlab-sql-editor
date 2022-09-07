@@ -51,7 +51,8 @@ setup_args = dict(
         'ipydatagrid',
         'Jinja2',
         'ipytree',
-        'ply'
+        'ply',
+        'dbt-core'
     ],
     zip_safe=False,
     include_package_data=True,
