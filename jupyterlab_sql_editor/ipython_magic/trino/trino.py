@@ -45,7 +45,7 @@ class Trino(Base):
     @argument('-m', '--schema', metavar='schemaname', type=str, help='Trino schema to use')
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
-    def trino(self, cell=None, line=None, local_ns=None):
+    def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
