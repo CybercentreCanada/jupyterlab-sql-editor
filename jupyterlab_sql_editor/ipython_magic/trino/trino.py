@@ -10,19 +10,21 @@ from IPython.core.magic_arguments import argument, magic_arguments, parse_argstr
 from jupyterlab_sql_editor.ipython.common import escape_control_chars, make_tag, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython_magic.common.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import update_database_schema
-from traitlets import Instance, Int, Unicode
+from traitlets import Bool, Instance, Int, Unicode, Union
 
 VALID_OUTPUTS = ['sql', 'text', 'json', 'html', 'grid', 'skip', 'none']
 
 @magics_class
 class Trino(Base):
-    host = Unicode('localhost', config=True, help='The trino server hostname')
+    host = Unicode('localhost', config=True, help='Trino server hostname')
     port = Int(443, config=True, help='Trino server port number')
-    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http')
     auth = Instance(allow_none=True, klass='trino.auth.Authentication', config=True, help='An instance of the Trino Authentication class')
     user = Unicode('user', config=True, help='Trino user to use when no authentication is specified. This will set the HTTP header X-Trino-User')
     catalog = Unicode("", config=True, help='Trino catalog to use')
     schema = Unicode("", config=True, help='Trino schema to use')
+    httpScheme = Unicode('https', config=True, help='Trino server scheme https/http')
+    verify = Union([Bool(), Unicode()], default_value=True, config=True,
+                  help='Trino SSL verification. True or False to enable or disable SSL verification. /path/to/cert.crt for self-signed certificate.')
     conn = None
     cur = None
 
@@ -71,7 +73,9 @@ class Trino(Base):
             user=self.user,
             catalog=catalog,
             schema=schema,
-            http_scheme=self.httpScheme)
+            http_scheme=self.httpScheme,
+            verify=self.verify
+        )
         self.cur = self.conn.cursor()
 
         catalog_array = self.get_catalog_array()
