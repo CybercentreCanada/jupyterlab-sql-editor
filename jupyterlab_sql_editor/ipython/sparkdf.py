@@ -8,7 +8,6 @@ from IPython import get_ipython
 
 from jupyterlab_sql_editor.ipython.common import escape_control_chars, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
-# import module which loads bokeh output_notebook
 import jupyterlab_sql_editor.ipython.spark_streaming_query as streaming
 
 import inspect

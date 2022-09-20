@@ -13,9 +13,9 @@ from pyspark.sql.session import SparkSession
 
 # global list of streaming contexts, keyed by dataframe object
 context_dict = {}
-bokeh.io.output_notebook(hide_banner=False)
 
 def get_streaming_ctx(query_name, df=None, sql=None):
+    bokeh.io.output_notebook(hide_banner=True)
     should_restart = False
     ctx = context_dict.get(query_name)
     # check if streaming query should be stopped
