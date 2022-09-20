@@ -11,11 +11,9 @@ from IPython.display import Javascript
 import os
 from pyspark.sql.session import SparkSession
 
-bokeh.io.output_notebook(hide_banner=True)
-
-
 # global list of streaming contexts, keyed by dataframe object
 context_dict = {}
+bokeh.io.output_notebook(hide_banner=False)
 
 def get_streaming_ctx(query_name, df=None, sql=None):
     should_restart = False
@@ -161,6 +159,15 @@ class StreamingContext:
                 self.get_duration_value(duration, "walCommit"))
 
     def display_streaming_metrics(self):
+        timestamp = []
+        processedRate = []
+        inputRate = []
+        duration = []
+
+        avgProcessed = 0
+        avgInput = 0
+        avgDuration = 0
+        
         if len(self.query.recentProgress) > 0:
             timestamp = list(map(lambda p: dateutil.parser.isoparse(p["timestamp"]), self.query.recentProgress))
             processedRate = list(map(lambda p: p["processedRowsPerSecond"], self.query.recentProgress))
@@ -172,30 +179,30 @@ class StreamingContext:
             avgDuration = sum(duration) / len(duration)
 
 
-            # create a new plot with a title and axis labels
-            p1 = bokeh.plotting.figure(width=500, height=250, 
-                        background_fill_color="#fafafa",
-                        toolbar_location=None,
-                        title=f"Input vs Processing Rate (avg {avgInput:.0f} row/s vs {avgProcessed:.0f} row/s)",
-                       x_axis_type='datetime',
-                       x_axis_label='time', 
-                       y_axis_label='row / s')
-            # add a line renderer with legend and line thickness to the plot
-            p1.line(timestamp, inputRate, color='red', legend_label='input', line_width=2)
-            p1.line(timestamp, processedRate, legend_label='processing', line_width=2)
-            p1.legend.location = "top_left"
+        # create a new plot with a title and axis labels
+        p1 = bokeh.plotting.figure(width=500, height=250, 
+                    background_fill_color="#fafafa",
+                    toolbar_location=None,
+                    title=f"Input vs Processing Rate (avg {avgInput:.0f} row/s vs {avgProcessed:.0f} row/s)",
+                   x_axis_type='datetime',
+                   x_axis_label='time', 
+                   y_axis_label='row / s')
+        # add a line renderer with legend and line thickness to the plot
+        p1.line(timestamp, inputRate, color='red', legend_label='input', line_width=2)
+        p1.line(timestamp, processedRate, legend_label='processing', line_width=2)
+        p1.legend.location = "top_left"
 
-            # create a new plot with a title and axis labels
-            p2 = bokeh.plotting.figure(width=500, height=250, 
-                        background_fill_color="#fafafa",
-                        toolbar_location=None,
-                        title=f"Batch execution time (avg {avgDuration:.0f} ms)",
-                       x_axis_type='datetime',
-                       x_axis_label='time',
-                       y_axis_label='time (ms)')
-            # add a line renderer with legend and line thickness to the plot
-            p2.line(timestamp, duration, line_width=2)
+        # create a new plot with a title and axis labels
+        p2 = bokeh.plotting.figure(width=500, height=250, 
+                    background_fill_color="#fafafa",
+                    toolbar_location=None,
+                    title=f"Batch execution time (avg {avgDuration:.0f} ms)",
+                   x_axis_type='datetime',
+                   x_axis_label='time',
+                   y_axis_label='time (ms)')
+        # add a line renderer with legend and line thickness to the plot
+        p2.line(timestamp, duration, line_width=2)
 
-            bokeh.plotting.show(bokeh.layouts.row(p1, p2))
+        bokeh.plotting.show(bokeh.layouts.row(p1, p2))
 
 
