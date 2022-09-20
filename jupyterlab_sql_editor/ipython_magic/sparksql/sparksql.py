@@ -115,7 +115,7 @@ class SparkSql(Base):
             result.printSchema()
             return
 
-        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting)
+        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting, sql=sql)
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == 'all':

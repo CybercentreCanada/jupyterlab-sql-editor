@@ -8,6 +8,7 @@ from IPython import get_ipython
 
 from jupyterlab_sql_editor.ipython.common import escape_control_chars, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
+from jupyterlab_sql_editor.ipython.spark_streaming_query import get_streaming_ctx
 
 import inspect
 
@@ -92,7 +93,19 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
     display_df(df, limit=limit)
     return ""
 
-def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False):
+
+def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name='deault_streaming_query_name', sql=None):
+    query = None
+    if df.isStreaming:
+        ctx = get_streaming_ctx(query_name, df=df, sql=sql)
+        query = ctx.query
+        ctx.display_streaming_query()
+        display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting)
+    else:
+        display_batch_df(df, output, limit, truncate, show_nonprinting)
+    return query
+
+def display_batch_df(df, output, limit, truncate, show_nonprinting):
     '''
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     '''
