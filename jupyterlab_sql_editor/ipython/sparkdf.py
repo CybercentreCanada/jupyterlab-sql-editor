@@ -8,7 +8,8 @@ from IPython import get_ipython
 
 from jupyterlab_sql_editor.ipython.common import escape_control_chars, recursive_escape, render_grid, rows_to_html
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
-from jupyterlab_sql_editor.ipython.spark_streaming_query import get_streaming_ctx
+# import module which loads bokeh output_notebook
+import jupyterlab_sql_editor.ipython.spark_streaming_query as streaming
 
 import inspect
 
@@ -97,7 +98,7 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
 def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name='deault_streaming_query_name', sql=None):
     query = None
     if df.isStreaming:
-        ctx = get_streaming_ctx(query_name, df=df, sql=sql)
+        ctx = streaming.get_streaming_ctx(query_name, df=df, sql=sql)
         query = ctx.query
         ctx.display_streaming_query()
         display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting)
@@ -112,7 +113,7 @@ def display_batch_df(df, output, limit, truncate, show_nonprinting):
     dataframe_name = retrieve_name(df)
     if not dataframe_name:
         dataframe_name = "schema"
-    display(SparkSchemaWidget(dataframe_name, df.schema))
+    display(SparkSchemaWidget(dataframe_name, df.schema))   
     # display any stdout/stderr in a separate output which we can later clear
     # we use this output to display the console progress bar
     out = Output()

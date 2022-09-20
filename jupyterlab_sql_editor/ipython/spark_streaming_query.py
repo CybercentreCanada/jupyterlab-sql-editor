@@ -11,7 +11,7 @@ from IPython.display import Javascript
 import os
 from pyspark.sql.session import SparkSession
 
-bokeh.io.output_notebook()
+bokeh.io.output_notebook(hide_banner=True)
 
 
 # global list of streaming contexts, keyed by dataframe object
