@@ -28,6 +28,7 @@ data_files_spec = [
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "trino-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "sparksql-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "syntax_highlighting.json"),
+    ("jupyterlab_sql_editor/ipython/", str("jupyterlab_sql_editor/ipython/"), "*.gif"),
 ]
 
 long_description = (HERE / "README.md").read_text()
