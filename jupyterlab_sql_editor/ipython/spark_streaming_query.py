@@ -10,6 +10,7 @@ import ipywidgets as widgets
 from IPython.display import Javascript
 import os
 from pyspark.sql.session import SparkSession
+from bokeh.embed import components
 
 # global list of streaming contexts, keyed by dataframe object
 context_dict = {}
@@ -32,7 +33,7 @@ def get_streaming_ctx(query_name, df=None, sql=None):
                 # user provided dataframe, check if user is using the same dataframe
                 if ctx.streaming_df != df:
                     should_restart = True
-    
+
         if should_restart:
             ctx.stop_streaming_query()
             ctx.out.clear_output()
@@ -42,7 +43,7 @@ def get_streaming_ctx(query_name, df=None, sql=None):
     # check if we should create a new streaming query
     if not ctx:
         ctx = StreamingContext(query_name, df, sql)
-    
+
     context_dict[query_name] = ctx
     return ctx
 
@@ -55,7 +56,7 @@ class StreamingContext:
         self.query_name = query_name
         self.spark = SparkSession.builder.getOrCreate()
         self.start_streaming_query()
- 
+
     def start_streaming_query(self):
         # TODO: need a better idea here, deal with local vs cluster modes, or disable checkpointing..
         if os.path.isdir('/tmp/checkpoint'):
@@ -77,9 +78,6 @@ class StreamingContext:
             link = f"{reverse_proxy}/proxy/{sc.applicationId}"
         self.out.append_display_data(Javascript(f'window.open("{link}/StreamingQuery/");'))
 
-    def create_query_label(self):
-        self.query_label = widgets.HTML(f"""<b>Streaming query id: {self.query.id}</b>""")
-
     def create_spinner(self):
         file_name = os.path.join(os.path.dirname(__file__), "balls_line.gif")
         with open(file_name, "rb") as f:
@@ -92,11 +90,11 @@ class StreamingContext:
     def create_stop_button(self):
         self.stop_button = widgets.Button(icon='stop', button_style='warning', layout=widgets.Layout(width='180px'))
         self.stop_button.on_click(self.stop_streaming_query)
-    
+
     def create_spark_ui_button(self):
-        self.open_spark_ui_button = widgets.Button(description='Open Spark UI', 
-                                                   icon='star-o', 
-                                                   button_style='info', 
+        self.open_spark_ui_button = widgets.Button(description='Open Spark UI',
+                                                   icon='star-o',
+                                                   button_style='info',
                                                    layout=widgets.Layout(width='180px'))
         self.open_spark_ui_button.on_click(self.open_spark_ui)
 
@@ -134,12 +132,10 @@ class StreamingContext:
         display(self.out)
 
     def display_controls(self):
-        self.create_query_label()
         self.create_spinner()
         self.create_stop_button()
         self.create_spark_ui_button()
-        box = widgets.HBox([self.query_label, self.spinner_image, self.stop_button, self.open_spark_ui_button])
-        box.layout.border = 'solid 1px'
+        box = widgets.HBox([self.spinner_image, self.stop_button, self.open_spark_ui_button])
         box.layout.align_items = 'center'
         self.update_streaming_controls()
         self.out.append_display_data(box)
@@ -150,7 +146,7 @@ class StreamingContext:
         if not value:
             value = 0
         return value
-        
+
     def sum_duration(self, duration):
         return (self.get_duration_value(duration, "addBatch") +
                 self.get_duration_value(duration, "getBatch") +
@@ -167,7 +163,7 @@ class StreamingContext:
         avgProcessed = 0
         avgInput = 0
         avgDuration = 0
-        
+
         if len(self.query.recentProgress) > 0:
             timestamp = list(map(lambda p: dateutil.parser.isoparse(p["timestamp"]), self.query.recentProgress))
             processedRate = list(map(lambda p: p["processedRowsPerSecond"], self.query.recentProgress))
@@ -180,12 +176,12 @@ class StreamingContext:
 
 
         # create a new plot with a title and axis labels
-        p1 = bokeh.plotting.figure(width=500, height=250, 
+        p1 = bokeh.plotting.figure(width=400, height=250,
                     background_fill_color="#fafafa",
                     toolbar_location=None,
                     title=f"Input vs Processing Rate (avg {avgInput:.0f} row/s vs {avgProcessed:.0f} row/s)",
                    x_axis_type='datetime',
-                   x_axis_label='time', 
+                   x_axis_label='time',
                    y_axis_label='row / s')
         # add a line renderer with legend and line thickness to the plot
         p1.line(timestamp, inputRate, color='red', legend_label='input', line_width=2)
@@ -193,7 +189,7 @@ class StreamingContext:
         p1.legend.location = "top_left"
 
         # create a new plot with a title and axis labels
-        p2 = bokeh.plotting.figure(width=500, height=250, 
+        p2 = bokeh.plotting.figure(width=400, height=250,
                     background_fill_color="#fafafa",
                     toolbar_location=None,
                     title=f"Batch execution time (avg {avgDuration:.0f} ms)",
@@ -203,6 +199,15 @@ class StreamingContext:
         # add a line renderer with legend and line thickness to the plot
         p2.line(timestamp, duration, line_width=2)
 
-        bokeh.plotting.show(bokeh.layouts.row(p1, p2))
-
+        # instead of using bokeh show() function we use components()
+        # thus we get the bokeh chart's java script code and the html div
+        script, div = components((p1, p2))
+        chart1 = widgets.HTML(div[0])
+        chart2 = widgets.HTML(div[1])
+        hbox = widgets.HBox([chart1, chart2])
+        accordion = widgets.Accordion(children=[hbox], selected_index=None)
+        accordion.set_title(0, f'Streaming query id: {self.query.id}')
+        display(accordion)
+        script = script.replace('<script type="text/javascript">','').replace('</script>', '')
+        display(Javascript(script))
 
