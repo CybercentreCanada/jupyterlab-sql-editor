@@ -58,17 +58,24 @@ class StreamingContext:
         self.start_streaming_query()
 
     def start_streaming_query(self):
-        # TODO: need a better idea here, deal with local vs cluster modes, or disable checkpointing..
-        if os.path.isdir('/tmp/checkpoint'):
-            shutil.rmtree('/tmp/checkpoint')
-        self.query = (self.streaming_df
-            .writeStream
-            .outputMode("append")
-            .format("memory")
-            .trigger(processingTime='5 seconds')
-            #.option("checkpointLocation", None) #"file:///tmp/checkpoint")
-            .queryName(self.query_name)
-            .start())
+        try:
+            self.query = (self.streaming_df
+                .writeStream
+                .outputMode("append")
+                .format("memory")
+                .trigger(processingTime='5 seconds')
+                .queryName(self.query_name)
+                .start())
+        except:
+            # aggregation queries can't use append memory output
+            # try starting query in complete mode instead
+            self.query = (self.streaming_df
+                .writeStream
+                .outputMode("complete")
+                .format("memory")
+                .trigger(processingTime='5 seconds')
+                .queryName(self.query_name)
+                .start())
 
     def open_spark_ui(self, b=None):
         sc = self.spark._sc
