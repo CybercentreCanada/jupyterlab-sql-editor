@@ -213,7 +213,18 @@ class StreamingContext:
         chart2 = widgets.HTML(div[1])
         hbox = widgets.HBox([chart1, chart2])
         accordion = widgets.Accordion(children=[hbox], selected_index=None)
-        accordion.set_title(0, f'Streaming query id: {self.query.id}')
+        
+        id = self.query.id
+        status = self.query.status['message']
+        available = 'No data'
+        if self.query.status['isDataAvailable']:
+            available = 'Data available'
+        active = 'Trigger inactive'
+        if self.query.status['isTriggerActive']:
+            active = 'Trigger active'
+        
+        title = f"{status} / {available} / {active} / id: {self.query.id}"
+        accordion.set_title(0, title)
         display(accordion)
         script = script.replace('<script type="text/javascript">','').replace('</script>', '')
         display(Javascript(script))

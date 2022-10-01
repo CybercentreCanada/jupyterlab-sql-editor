@@ -94,7 +94,7 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
     return ""
 
 
-def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name='deault_streaming_query_name', sql=None):
+def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name='default_streaming_query_name', sql=None):
     query = None
     if df.isStreaming:
         ctx = streaming.get_streaming_ctx(query_name, df=df, sql=sql)
