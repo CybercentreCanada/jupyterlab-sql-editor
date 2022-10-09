@@ -94,10 +94,12 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
     return ""
 
 
-def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name='default_streaming_query_name', sql=None):
+def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name=None, sql=None, streaming_mode="update"):
     query = None
     if df.isStreaming:
-        ctx = streaming.get_streaming_ctx(query_name, df=df, sql=sql)
+        if not query_name:
+            query_name = 'default_streaming_query_name'
+        ctx = streaming.get_streaming_ctx(query_name, df=df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
         display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting)
