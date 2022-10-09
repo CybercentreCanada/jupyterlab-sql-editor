@@ -31,7 +31,7 @@ const FLAG_OPTS = [
 const SPACE = ' ';
 const OPTION_VALUE = `[0-9a-zA-Z/\._]+`;
 const SHORT_OPTS = `-[a-z] ${OPTION_VALUE}`;
-const LONG_OPTS = `--[a-zA-Z]+ ${OPTION_VALUE}`;
+const LONG_OPTS = `--[_a-zA-Z]+ ${OPTION_VALUE}`;
 const COMMANDS = `(?:${SPACE}|${FLAG_OPTS}|${SHORT_OPTS}|${LONG_OPTS})*`;
 const BEGIN = `(?:^|\n)`;
 
