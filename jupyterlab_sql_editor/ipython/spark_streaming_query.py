@@ -58,7 +58,6 @@ class StreamingContext:
         self.start_streaming_query(mode)
 
     def start_streaming_query(self, mode):
-        
         self.query = (self.streaming_df
             .writeStream
             .outputMode(mode)

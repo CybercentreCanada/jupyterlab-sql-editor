@@ -99,9 +99,7 @@ class SparkSql(Base):
             result = result.cache()
             if args.eager:
                 result.count()
-        if args.view and not result.isStreaming:
-            print(f'Created temporary view `{args.view}`')
-            result.createOrReplaceTempView(args.view)
+
         if args.dataframe:
             print(f'Captured dataframe to local variable `{args.dataframe}`')
             self.shell.user_ns.update({args.dataframe: result})
@@ -110,14 +108,6 @@ class SparkSql(Base):
         limit = args.limit
         if limit is None:
             limit = self.limit
-
-        if limit <= 0 or output == 'skip' or output == 'none':
-            print('Query execution skipped')
-            return
-
-        if output == 'schema':
-            result.printSchema()
-            return
 
         display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting, query_name=args.view, sql=sql, streaming_mode=streaming_mode)
 

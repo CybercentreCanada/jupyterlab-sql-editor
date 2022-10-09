@@ -64,6 +64,12 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
     elif output == 'text':
         text = df._jdf.showString(limit, truncate, False)
         displays.append(PlainText(data=text))
+    elif limit <= 0 or output == 'skip' or output == 'none':
+        print('Query execution skipped')
+        return []
+    elif output == 'schema':
+        df.printSchema()
+        return []
     else:
         displays.append(PlainText(data=f"Invalid output option {output}, valid options are grid, json, html, text"))
     end = time()
@@ -96,15 +102,20 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
 
 def display_df(df, output="grid", limit=20, truncate=512, show_nonprinting=False, query_name=None, sql=None, streaming_mode="update"):
     query = None
-    if df.isStreaming:
-        if not query_name:
-            query_name = 'default_streaming_query_name'
-        ctx = streaming.get_streaming_ctx(query_name, df=df, sql=sql, mode=streaming_mode)
+    start_streaming_query = df.isStreaming and output not in ['skip', 'schema', 'none']
+    if start_streaming_query:
+        streaming_query_name = 'default_streaming_query_name'
+        if query_name:
+            streaming_query_name = query_name
+        ctx = streaming.get_streaming_ctx(streaming_query_name, df=df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
         display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting)
     else:
         display_batch_df(df, output, limit, truncate, show_nonprinting)
+        if query_name:
+            print(f'Created temporary view `{query_name}`')
+            df.createOrReplaceTempView(query_name)
     return query
 
 def display_batch_df(df, output, limit, truncate, show_nonprinting):
