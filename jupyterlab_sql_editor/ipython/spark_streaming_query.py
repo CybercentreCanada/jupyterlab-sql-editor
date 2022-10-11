@@ -23,25 +23,28 @@ def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
     if ctx:
         # check if streaming query is stopped
         if not ctx.is_query_running():
+            print(f'query is not running, restarting streaming query {query_name}')
             should_restart = True
         else:
             if sql:
                 # user provided sql statement, check if user is using the statement
                 if ctx.sql != sql:
+                    print(f'sql statement changed, restarting streaming query {query_name}')
                     should_restart = True
             else:
                 # user provided dataframe, check if user is using the same dataframe
                 if ctx.streaming_df != df:
+                    print(f'different dataframe provided, restarting streaming query {query_name}')
                     should_restart = True
 
         if should_restart:
             ctx.stop_streaming_query()
             ctx.out.clear_output()
-
             ctx = None
 
     # check if we should create a new streaming query
     if not ctx:
+        print(f'starting streaming query {query_name}')
         ctx = StreamingContext(query_name, df, sql, mode)
 
     context_dict[query_name] = ctx
