@@ -43,6 +43,8 @@ class SparkSql(Base):
     @argument('-j', '--jinja', action='store_true', help='Enable Jinja templating support')
     @argument('-b', '--dbt', action='store_true', help='Enable DBT templating support')
     @argument('-t', '--truncate', metavar='max_cell_length', type=int, help='Truncate output')
+    @argument('-m', '--streaming_mode', metavar='update|complete', type=str, default='update',
+              help='The mode of streaming queries.') 
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
@@ -50,6 +52,8 @@ class SparkSql(Base):
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
         output = args.output.lower()
 
+        streaming_mode = args.streaming_mode.lower()
+        
         truncate = 256
         if args.truncate and args.truncate > 0:
             truncate = args.truncate
@@ -95,9 +99,7 @@ class SparkSql(Base):
             result = result.cache()
             if args.eager:
                 result.count()
-        if args.view:
-            print(f'Created temporary view `{args.view}`')
-            result.createOrReplaceTempView(args.view)
+
         if args.dataframe:
             print(f'Captured dataframe to local variable `{args.dataframe}`')
             self.shell.user_ns.update({args.dataframe: result})
@@ -107,15 +109,7 @@ class SparkSql(Base):
         if limit is None:
             limit = self.limit
 
-        if limit <= 0 or output == 'skip' or output == 'none':
-            print('Query execution skipped')
-            return
-
-        if output == 'schema':
-            result.printSchema()
-            return
-
-        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting, sql=sql)
+        display_df(result, output=output, limit=limit, truncate=truncate, show_nonprinting=args.show_nonprinting, query_name=args.view, sql=sql, streaming_mode=streaming_mode)
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == 'all':

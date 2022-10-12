@@ -15,7 +15,7 @@ from bokeh.embed import components
 # global list of streaming contexts, keyed by dataframe object
 context_dict = {}
 
-def get_streaming_ctx(query_name, df=None, sql=None):
+def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
     bokeh.io.output_notebook(hide_banner=True)
     should_restart = False
     ctx = context_dict.get(query_name)
@@ -23,26 +23,29 @@ def get_streaming_ctx(query_name, df=None, sql=None):
     if ctx:
         # check if streaming query is stopped
         if not ctx.is_query_running():
+            print(f'query is not running, restarting streaming query {query_name}')
             should_restart = True
         else:
             if sql:
                 # user provided sql statement, check if user is using the statement
                 if ctx.sql != sql:
+                    print(f'sql statement changed, restarting streaming query {query_name}')
                     should_restart = True
             else:
                 # user provided dataframe, check if user is using the same dataframe
                 if ctx.streaming_df != df:
+                    print(f'different dataframe provided, restarting streaming query {query_name}')
                     should_restart = True
 
         if should_restart:
             ctx.stop_streaming_query()
             ctx.out.clear_output()
-
             ctx = None
 
     # check if we should create a new streaming query
     if not ctx:
-        ctx = StreamingContext(query_name, df, sql)
+        print(f'starting streaming query {query_name}')
+        ctx = StreamingContext(query_name, df, sql, mode)
 
     context_dict[query_name] = ctx
     return ctx
@@ -50,32 +53,21 @@ def get_streaming_ctx(query_name, df=None, sql=None):
 
 class StreamingContext:
 
-    def __init__(self, query_name, df=None, sql=None):
+    def __init__(self, query_name, df=None, sql=None, mode=None):
         self.streaming_df = df
         self.sql = sql
         self.query_name = query_name
         self.spark = SparkSession.builder.getOrCreate()
-        self.start_streaming_query()
+        self.start_streaming_query(mode)
 
-    def start_streaming_query(self):
-        try:
-            self.query = (self.streaming_df
-                .writeStream
-                .outputMode("append")
-                .format("memory")
-                .trigger(processingTime='5 seconds')
-                .queryName(self.query_name)
-                .start())
-        except:
-            # aggregation queries can't use append memory output
-            # try starting query in complete mode instead
-            self.query = (self.streaming_df
-                .writeStream
-                .outputMode("complete")
-                .format("memory")
-                .trigger(processingTime='5 seconds')
-                .queryName(self.query_name)
-                .start())
+    def start_streaming_query(self, mode):
+        self.query = (self.streaming_df
+            .writeStream
+            .outputMode(mode)
+            .format("memory")
+            .trigger(processingTime='5 seconds')
+            .queryName(self.query_name)
+            .start())
 
     def open_spark_ui(self, b=None):
         sc = self.spark._sc
