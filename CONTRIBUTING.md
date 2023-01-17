@@ -135,13 +135,13 @@ However, you'll notice that as your SQL query gets larger the code cell will swi
 https://github.com/krassowski/jupyterlab-lsp/blob/a52d4220ab889d0572091410db7f77fa93652f1c/packages/jupyterlab-lsp/src/features/syntax_highlighting.ts#L90
 
 ```
-		// change the mode if the majority of the code is the foreign code
-        if (coverage > this.settings.composite.foreignCodeThreshold) {
-          editors_with_current_highlight.add(ce_editor);
-          let old_mode = editor.getOption('mode');
-          if (old_mode != mode.mime) {
-            editor.setOption('mode', mode.mime);
-          }
+  // change the mode if the majority of the code is the foreign code
+  if (coverage > this.settings.composite.foreignCodeThreshold) {
+    editors_with_current_highlight.add(ce_editor);
+    let old_mode = editor.getOption('mode');
+    if (old_mode != mode.mime) {
+      editor.setOption('mode', mode.mime);
+    }
 ```
 
 This is why we recommend increasing the `foreignCodeThreshold` to 99%.
