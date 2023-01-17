@@ -1,10 +1,17 @@
-from parser import trino_column_lexer, trino_column_parser
-import json
-from unittest import TestCase
 import unittest
-from pyspark.sql.types import *
+from unittest import TestCase
 
-from jupyterlab_sql_editor.ipython_magic.common.export import SparkTableSchema
+from pyspark.sql.types import (
+    ArrayType,
+    BooleanType,
+    LongType,
+    MapType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
+from trino.parser import trino_column_lexer, trino_column_parser
 
 
 class LexerTest(TestCase):
@@ -12,6 +19,7 @@ class LexerTest(TestCase):
         s = "varchar"
         trino_column_lexer.input(s)
         self.assertEqual(trino_column_lexer.token().type, "VARCHAR")
+
     def test_varchar_size(self):
         s = "varchar(32)"
         trino_column_lexer.input(s)
@@ -129,7 +137,7 @@ class ParserTest(TestCase):
         s = "row(çÖÝ♥ varchar)"
         t = trino_column_parser.parse(s)
         self.assertEqual(t, StructType([StructField("çÖÝ♥", StringType())]))
-    
+
     def test_row_fparen(self):
         s = "row(ab(c)d varchar)"
         t = trino_column_parser.parse(s)
@@ -141,9 +149,7 @@ class ParserTest(TestCase):
         t = trino_column_parser.parse(s)
         self.assertEqual(
             t,
-            StructType(
-                [StructField("x", LongType()), StructField("Abc", TimestampType())]
-            ),
+            StructType([StructField("x", LongType()), StructField("Abc", TimestampType())]),
         )
 
     def test_row_fspace(self):
@@ -171,9 +177,7 @@ class ParserTest(TestCase):
         t = trino_column_parser.parse(s)
         self.assertEqual(
             t,
-            StructType(
-                [StructField("f1", StructType([StructField("ff1", LongType())]))]
-            ),
+            StructType([StructField("f1", StructType([StructField("ff1", LongType())]))]),
         )
 
 

@@ -1,28 +1,28 @@
-import time
 import math
-import os
 import re
 import string
 from html import escape
 from html import escape as html_escape
 
+PRINTABLE = string.ascii_letters + string.digits + string.punctuation + " "
 
-PRINTABLE = string.ascii_letters + string.digits + string.punctuation + ' '
+replchars = re.compile("([^" + re.escape(PRINTABLE) + "])")
 
-replchars = re.compile('([^' + re.escape(PRINTABLE) + '])')
 
-def make_tag(tag_name, show_nonprinting, body='', **kwargs):
+def make_tag(tag_name, show_nonprinting, body="", **kwargs):
     body = str(body)
     if show_nonprinting:
         body = escape_control_chars(escape(body))
-    attributes = ' '.join(map(lambda x: '%s="%s"' % x, kwargs.items()))
+    attributes = " ".join(map(lambda x: '%s="%s"' % x, kwargs.items()))
     if attributes:
-        return f'<{tag_name} {attributes}>{body}</{tag_name}>'
+        return f"<{tag_name} {attributes}>{body}</{tag_name}>"
     else:
-        return f'<{tag_name}>{body}</{tag_name}>'
+        return f"<{tag_name}>{body}</{tag_name}>"
+
 
 def escape_control_chars(text):
     return replchars.sub(replchars_to_hex, text)
+
 
 def render_grid(pdf, limit):
     # It's important to import DataGrid inside this magic function
@@ -30,10 +30,10 @@ def render_grid(pdf, limit):
     # the use of DataGrid in a notebook cell. You get a message
     # Loading widget...
     from ipydatagrid import DataGrid, TextRenderer
+
     # for every order of magnitude in the limit 10, 100, 1000
     # increase view port height by 10, 20, 30 rows
     # and add 3 rows of padding
-
     # limit -> num_display_rows
     # 1         -> 3 + 0
     # 10        -> 3 + 10
@@ -47,16 +47,16 @@ def render_grid(pdf, limit):
 
     return DataGrid(
         pdf,
-        base_row_size=base_row_size, 
-        selection_mode="row", 
+        base_row_size=base_row_size,
+        selection_mode="row",
         layout={"height": layout_height},
-        header_renderer = TextRenderer(text_wrap=True),
-        default_renderer = TextRenderer(text_wrap=True)
+        header_renderer=TextRenderer(text_wrap=True),
+        default_renderer=TextRenderer(text_wrap=True),
     )
 
 
 def replchars_to_hex(match):
-    return r'\x{0:02x}'.format(ord(match.group()))
+    return r"\x{0:02x}".format(ord(match.group()))
 
 
 def recursive_escape(input):
@@ -74,6 +74,7 @@ def recursive_escape(input):
         input[key] = recursive_escape(value)
     return input
 
+
 def rows_to_html(columns, row_data, show_nonprinting):
     html = "<table border='1'>\n"
     # generate table head
@@ -82,7 +83,6 @@ def rows_to_html(columns, row_data, show_nonprinting):
     for row in row_data:
         if show_nonprinting:
             row = [escape_control_chars(str(v)) for v in row]
-        html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(
-            map(lambda x: html_escape(x), row))
+        html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(x), row))
     html += "</table>\n"
     return html

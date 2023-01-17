@@ -1,9 +1,7 @@
-import json
 import logging
-from pyspark.sql.types import *
-from trino.exceptions import TrinoUserError
 
-from jupyterlab_sql_editor.ipython_magic.trino.parser import trino_column_parser, trino_column_lexer
+from pyspark.sql.types import StringType, StructType
+from trino.exceptions import TrinoUserError
 
 from jupyterlab_sql_editor.ipython_magic.common.export import (
     Catalog,
@@ -13,7 +11,7 @@ from jupyterlab_sql_editor.ipython_magic.common.export import (
     SparkTableSchema,
     Table,
 )
-
+from jupyterlab_sql_editor.ipython_magic.trino.parser import trino_column_parser
 
 MAX_RET = 20000
 
@@ -23,9 +21,7 @@ class TrinoConnection(Connection):
         self.cur = cur
 
     def render_table(self, table: Table):
-        full_table_name = (
-            table.catalog_name + "." + table.database_name + "." + table.table_name
-        )
+        full_table_name = table.catalog_name + "." + table.database_name + "." + table.table_name
         columns = self._get_columns(full_table_name)
         return {
             "tableName": table.table_name,
@@ -46,7 +42,7 @@ class TrinoConnection(Connection):
         function_names = []
         for row in rows:
             name = row[0]
-            if not name in function_names:
+            if name not in function_names:
                 function_names.append(name)
         return function_names
 
@@ -93,11 +89,11 @@ class TrinoConnection(Connection):
                 try:
                     column_type = trino_column_parser.parse(row_schema)
                     schema.add(name, column_type)
-                except Exception as e:
+                except Exception:
                     logging.warn(f"failed to parse column with schema {row_schema}")
                     schema.add(name, StringType())
 
-            return SparkTableSchema(schema, quoting_char="\"").convert()
+            return SparkTableSchema(schema, quoting_char='"').convert()
         except TrinoUserError:
             print(f"Failed to get columns for {table_name}")
             return []
