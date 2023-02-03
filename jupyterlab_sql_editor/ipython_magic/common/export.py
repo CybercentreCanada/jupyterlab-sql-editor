@@ -1,12 +1,29 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
 
 import json
 import os
 import time
-import time, sys
+from abc import ABC, abstractmethod
+
 from IPython.display import clear_output
-from pyspark.sql.types import *
+from pyspark.sql.types import (
+    ArrayType,
+    BinaryType,
+    BooleanType,
+    DateType,
+    DecimalType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    LongType,
+    MapType,
+    ShortType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
+
 
 class Connection(ABC):
     @abstractmethod
@@ -34,15 +51,13 @@ class Catalog:
     def __init__(self, connection: Connection, catalog_name) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
-        self.databases: list(Database) = []
+        self.databases: list[Database] = []
 
     def populate_databases(self):
         print(f"Listing tables in {self.catalog_name}")
         database_names = self.connection.get_database_names(self.catalog_name)
         for database_name in database_names:
-            self.databases.append(
-                Database(self.connection, self.catalog_name, database_name)
-            )
+            self.databases.append(Database(self.connection, self.catalog_name, database_name))
 
     def get_tables(self):
         self.populate_databases()
@@ -57,19 +72,12 @@ class Database:
         self.connection = connection
         self.catalog_name = catalog_name
         self.database_name = database_name
-        self.tables: list(Table) = []
+        self.tables: list[Table] = []
 
     def populate_tables(self):
-        table_names = self.connection.get_table_names(
-            self.catalog_name, self.database_name
-        )
-        tables = []
+        table_names = self.connection.get_table_names(self.catalog_name, self.database_name)
         for table_name in table_names:
-            self.tables.append(
-                Table(
-                    self.connection, self.catalog_name, self.database_name, table_name
-                )
-            )
+            self.tables.append(Table(self.connection, self.catalog_name, self.database_name, table_name))
 
     def get_tables(self):
         self.populate_tables()
@@ -77,9 +85,7 @@ class Database:
 
 
 class Table:
-    def __init__(
-        self, connection: Connection, catalog_name, database_name, table_name
-    ) -> None:
+    def __init__(self, connection: Connection, catalog_name, database_name, table_name) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
         self.database_name = database_name
@@ -92,7 +98,7 @@ class Table:
 class FunctionList:
     def __init__(self, connection: Connection) -> None:
         self.connection = connection
-        self.functions: list(Function) = []
+        self.functions: list[Function] = []
 
     def populate_functions(self):
         function_names = self.connection.get_function_names()
@@ -118,9 +124,9 @@ class SchemaExporter:
         self,
         connection: Connection,
         schema_file_name,
-        catalogs: list(Catalog),
+        catalogs: list[Catalog],
         local_catalog: Catalog,
-        display_progress: bool = True
+        display_progress: bool = True,
     ) -> None:
         self.connection = connection
         self.schema_file_name = schema_file_name
@@ -144,9 +150,7 @@ class SchemaExporter:
             block = int(round(bar_length * progress))
 
             clear_output(wait=True)
-            text = "{0}: [{1}] {2:.1f}%".format(
-                message, "#" * block + "-" * (bar_length - block), progress * 100
-            )
+            text = "{0}: [{1}] {2:.1f}%".format(message, "#" * block + "-" * (bar_length - block), progress * 100)
             print(text)
 
     def render_functions(self):
@@ -165,9 +169,7 @@ class SchemaExporter:
         num_tables = len(tables)
         for idx, t in enumerate(tables):
             rendered_tables.append(t.render())
-            self.update_progress(
-                f"Exporting tables from {catalog.catalog_name}", idx / num_tables
-            )
+            self.update_progress(f"Exporting tables from {catalog.catalog_name}", idx / num_tables)
         self.update_progress(f"Exporting tables from {catalog.catalog_name}", 1)
         return rendered_tables
 
@@ -184,9 +186,7 @@ class SchemaExporter:
             file_time = os.path.getmtime(self.schema_file_name)
             current_time = time.time()
             if current_time - file_time > refresh_threshold:
-                print(
-                    f"TTL {refresh_threshold} minutes expired, re-generating schema file: {self.schema_file_name}"
-                )
+                print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {self.schema_file_name}")
                 ttl_expired = True
 
         return (not file_exists) or ttl_expired
@@ -227,7 +227,7 @@ class SparkTableSchema:
 
     # TODO: consider using an alternative abstraction rather than using
     # spark's model.
-    def __init__(self, schema, quoting_char='`') -> None:
+    def __init__(self, schema, quoting_char="`") -> None:
         self.schema = schema
         self.quoting_char = quoting_char
 

@@ -142,6 +142,7 @@ https://github.com/krassowski/jupyterlab-lsp/blob/a52d4220ab889d0572091410db7f77
     if (old_mode != mode.mime) {
       editor.setOption('mode', mode.mime);
     }
+  }
 ```
 
 This is why we recommend increasing the `foreignCodeThreshold` to 99%.
@@ -306,4 +307,3 @@ Launch the Trino server
 ```bash
 bin/launcher start
 ```
-

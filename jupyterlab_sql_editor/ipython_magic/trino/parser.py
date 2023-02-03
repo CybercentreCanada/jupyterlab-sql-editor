@@ -1,12 +1,25 @@
-import ply.yacc as yacc
-from pyspark.sql.types import *
-
 # ------------------------------------------------------------
 # tokenizer for a simple trino column schema expression
 # of the form row(x 1 integer, y varchar(12), z array(varchar))
 # ------------------------------------------------------------
 import ply.lex as lex
-from pyspark.sql.types import *
+import ply.yacc as yacc
+from pyspark.sql.types import (
+    ArrayType,
+    BinaryType,
+    BooleanType,
+    DateType,
+    DecimalType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    LongType,
+    MapType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
 
 scalar_type_map = {
     "boolean": BooleanType(),
@@ -140,8 +153,8 @@ def p_row_field_parts(p):
     row_field_parts : field_part row_field_parts
                     | type
     """
-    if len(p) == 3: 
-        if (p[2]["field_name"] == "" and p[1] == " "):
+    if len(p) == 3:
+        if p[2]["field_name"] == "" and p[1] == " ":
             # we have a type only and we got the first space character, pass over it
             p[0] = p[2]
         else:
@@ -149,7 +162,7 @@ def p_row_field_parts(p):
             name = p[1] + p[2]["field_name"]
             # row_field_parts is carrying the field_type
             p[0] = {"field_name": name, "field_type": p[2]["field_type"]}
-            
+
     elif len(p) == 2:
         # start by recieving the type of the field
         # name is unknown at this point
@@ -170,7 +183,7 @@ def p_field_part(p):
                 | MAP
                 | type
                 | type_name
-                
+
     """
     p[0] = p[1]
 

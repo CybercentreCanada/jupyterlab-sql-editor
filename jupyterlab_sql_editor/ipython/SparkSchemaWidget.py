@@ -1,12 +1,21 @@
-import json
-import pyspark
-from pyspark.sql import SparkSession
-from pyspark.sql.types import *
-
-from ipywidgets import Output
-import time
-from IPython.display import display, display_html, JSON, HTML
-from ipytree import Tree, Node
+from ipytree import Node, Tree
+from pyspark.sql.types import (
+    ArrayType,
+    BinaryType,
+    BooleanType,
+    DateType,
+    DecimalType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    LongType,
+    MapType,
+    ShortType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
 
 icons = {
     "time": "clock",
@@ -48,14 +57,10 @@ class SparkSchemaWidget(Tree):
         elif isinstance(field, ArrayType):
             element = self.get_children(field.elementType, "element")
             nodes = [element]
-            return Node(
-                f"{name}: array", nodes, icon=icons["array"], **self.complex_type
-            )
+            return Node(f"{name}: array", nodes, icon=icons["array"], **self.complex_type)
         elif isinstance(field, StructType):
             nodes = [self.get_children(f, "") for f in field.fields]
-            return Node(
-                f"{name}: struct", nodes, icon=icons["struct"], **self.complex_type
-            )
+            return Node(f"{name}: struct", nodes, icon=icons["struct"], **self.complex_type)
         elif isinstance(field, StringType):
             return Node(f"{name}: string", icon=icons["string"])
         elif isinstance(field, TimestampType):
@@ -80,4 +85,4 @@ class SparkSchemaWidget(Tree):
             return Node(f"{name}: binary", icon=icons["binary"])
 
     def to_tree(self):
-        return tree
+        return self

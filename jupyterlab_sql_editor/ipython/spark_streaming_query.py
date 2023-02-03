@@ -1,19 +1,17 @@
+import os
 
 import bokeh
 import bokeh.io
 import bokeh.plotting
-
-from datetime import datetime as dt
 import dateutil.parser
-import shutil
 import ipywidgets as widgets
-from IPython.display import Javascript
-import os
-from pyspark.sql.session import SparkSession
 from bokeh.embed import components
+from IPython.display import Javascript, display
+from pyspark.sql.session import SparkSession
 
 # global list of streaming contexts, keyed by dataframe object
 context_dict = {}
+
 
 def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
     bokeh.io.output_notebook(hide_banner=True)
@@ -23,18 +21,18 @@ def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
     if ctx:
         # check if streaming query is stopped
         if not ctx.is_query_running():
-            print(f'query is not running, restarting streaming query {query_name}')
+            print(f"query is not running, restarting streaming query {query_name}")
             should_restart = True
         else:
             if sql:
                 # user provided sql statement, check if user is using the statement
                 if ctx.sql != sql:
-                    print(f'sql statement changed, restarting streaming query {query_name}')
+                    print(f"sql statement changed, restarting streaming query {query_name}")
                     should_restart = True
             else:
                 # user provided dataframe, check if user is using the same dataframe
                 if ctx.streaming_df != df:
-                    print(f'different dataframe provided, restarting streaming query {query_name}')
+                    print(f"different dataframe provided, restarting streaming query {query_name}")
                     should_restart = True
 
         if should_restart:
@@ -44,7 +42,7 @@ def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
 
     # check if we should create a new streaming query
     if not ctx:
-        print(f'starting streaming query {query_name}')
+        print(f"starting streaming query {query_name}")
         ctx = StreamingContext(query_name, df, sql, mode)
 
     context_dict[query_name] = ctx
@@ -52,7 +50,6 @@ def get_streaming_ctx(query_name, df=None, sql=None, mode="update"):
 
 
 class StreamingContext:
-
     def __init__(self, query_name, df=None, sql=None, mode=None):
         self.streaming_df = df
         self.sql = sql
@@ -61,18 +58,18 @@ class StreamingContext:
         self.start_streaming_query(mode)
 
     def start_streaming_query(self, mode):
-        self.query = (self.streaming_df
-            .writeStream
-            .outputMode(mode)
+        self.query = (
+            self.streaming_df.writeStream.outputMode(mode)
             .format("memory")
-            .trigger(processingTime='5 seconds')
+            .trigger(processingTime="5 seconds")
             .queryName(self.query_name)
-            .start())
+            .start()
+        )
 
     def open_spark_ui(self, b=None):
         sc = self.spark._sc
         link = sc.uiWebUrl
-        reverse_proxy = os.environ.get('SPARK_UI_URL')
+        reverse_proxy = os.environ.get("SPARK_UI_URL")
         if reverse_proxy:
             link = f"{reverse_proxy}/proxy/{sc.applicationId}"
         self.out.append_display_data(Javascript(f'window.open("{link}/StreamingQuery/");'))
@@ -81,20 +78,20 @@ class StreamingContext:
         file_name = os.path.join(os.path.dirname(__file__), "balls_line.gif")
         with open(file_name, "rb") as f:
             imgdata = f.read()
-        self.spinner_image = widgets.Image(value=imgdata, format="gif",
-            layout = widgets.Layout(min_width='220px', max_width='220px',
-                         min_heigth='20px', max_height='20px'),
+        self.spinner_image = widgets.Image(
+            value=imgdata,
+            format="gif",
+            layout=widgets.Layout(min_width="220px", max_width="220px", min_heigth="20px", max_height="20px"),
         )
 
     def create_stop_button(self):
-        self.stop_button = widgets.Button(icon='stop', button_style='warning', layout=widgets.Layout(width='180px'))
+        self.stop_button = widgets.Button(icon="stop", button_style="warning", layout=widgets.Layout(width="180px"))
         self.stop_button.on_click(self.stop_streaming_query)
 
     def create_spark_ui_button(self):
-        self.open_spark_ui_button = widgets.Button(description='Open Spark UI',
-                                                   icon='star-o',
-                                                   button_style='info',
-                                                   layout=widgets.Layout(width='180px'))
+        self.open_spark_ui_button = widgets.Button(
+            description="Open Spark UI", icon="star-o", button_style="info", layout=widgets.Layout(width="180px")
+        )
         self.open_spark_ui_button.on_click(self.open_spark_ui)
 
     def stop_streaming_query(self, b=None):
@@ -103,15 +100,14 @@ class StreamingContext:
 
     def update_streaming_controls(self):
         if self.is_query_running():
-            self.stop_button.description = 'Stop'
+            self.stop_button.description = "Stop"
             self.spinner_image.layout.visibility = "visible"
         else:
-            self.stop_button.description = 'Stopped'
+            self.stop_button.description = "Stopped"
             self.spinner_image.layout.visibility = "hidden"
 
-
     def query_microbatch(self):
-        microbatch_results = self.spark.sql(f'SELECT * FROM {self.query_name}')
+        microbatch_results = self.spark.sql(f"SELECT * FROM {self.query_name}")
         return microbatch_results
 
     def is_query_running(self):
@@ -119,7 +115,6 @@ class StreamingContext:
             if self.query_name == q.name:
                 return True
         return False
-
 
     def display_streaming_query(self):
         # creating a brand new output, somehow clear_output did not get rid of the JavaScript code
@@ -135,7 +130,7 @@ class StreamingContext:
         self.create_stop_button()
         self.create_spark_ui_button()
         box = widgets.HBox([self.spinner_image, self.stop_button, self.open_spark_ui_button])
-        box.layout.align_items = 'center'
+        box.layout.align_items = "center"
         self.update_streaming_controls()
         self.out.append_display_data(box)
 
@@ -147,11 +142,13 @@ class StreamingContext:
         return value
 
     def sum_duration(self, duration):
-        return (self.get_duration_value(duration, "addBatch") +
-                self.get_duration_value(duration, "getBatch") +
-                self.get_duration_value(duration, "latestOffset") +
-                self.get_duration_value(duration, "queryPlanning") +
-                self.get_duration_value(duration, "walCommit"))
+        return (
+            self.get_duration_value(duration, "addBatch")
+            + self.get_duration_value(duration, "getBatch")
+            + self.get_duration_value(duration, "latestOffset")
+            + self.get_duration_value(duration, "queryPlanning")
+            + self.get_duration_value(duration, "walCommit")
+        )
 
     def display_streaming_metrics(self):
         timestamp = []
@@ -173,28 +170,33 @@ class StreamingContext:
             avgInput = sum(inputRate) / len(inputRate)
             avgDuration = sum(duration) / len(duration)
 
-
         # create a new plot with a title and axis labels
-        p1 = bokeh.plotting.figure(width=400, height=250,
-                    background_fill_color="#fafafa",
-                    toolbar_location=None,
-                    title=f"Input vs Processing Rate (avg {avgInput:.0f} row/s vs {avgProcessed:.0f} row/s)",
-                   x_axis_type='datetime',
-                   x_axis_label='time',
-                   y_axis_label='row / s')
+        p1 = bokeh.plotting.figure(
+            width=400,
+            height=250,
+            background_fill_color="#fafafa",
+            toolbar_location=None,
+            title=f"Input vs Processing Rate (avg {avgInput:.0f} row/s vs {avgProcessed:.0f} row/s)",
+            x_axis_type="datetime",
+            x_axis_label="time",
+            y_axis_label="row / s",
+        )
         # add a line renderer with legend and line thickness to the plot
-        p1.line(timestamp, inputRate, color='red', legend_label='input', line_width=2)
-        p1.line(timestamp, processedRate, legend_label='processing', line_width=2)
+        p1.line(timestamp, inputRate, color="red", legend_label="input", line_width=2)
+        p1.line(timestamp, processedRate, legend_label="processing", line_width=2)
         p1.legend.location = "top_left"
 
         # create a new plot with a title and axis labels
-        p2 = bokeh.plotting.figure(width=400, height=250,
-                    background_fill_color="#fafafa",
-                    toolbar_location=None,
-                    title=f"Batch execution time (avg {avgDuration:.0f} ms)",
-                   x_axis_type='datetime',
-                   x_axis_label='time',
-                   y_axis_label='time (ms)')
+        p2 = bokeh.plotting.figure(
+            width=400,
+            height=250,
+            background_fill_color="#fafafa",
+            toolbar_location=None,
+            title=f"Batch execution time (avg {avgDuration:.0f} ms)",
+            x_axis_type="datetime",
+            x_axis_label="time",
+            y_axis_label="time (ms)",
+        )
         # add a line renderer with legend and line thickness to the plot
         p2.line(timestamp, duration, line_width=2)
 
@@ -205,19 +207,17 @@ class StreamingContext:
         chart2 = widgets.HTML(div[1])
         hbox = widgets.HBox([chart1, chart2])
         accordion = widgets.Accordion(children=[hbox], selected_index=None)
-        
-        id = self.query.id
-        status = self.query.status['message']
-        available = 'No data'
-        if self.query.status['isDataAvailable']:
-            available = 'Data available'
-        active = 'Trigger inactive'
-        if self.query.status['isTriggerActive']:
-            active = 'Trigger active'
-        
+
+        status = self.query.status["message"]
+        available = "No data"
+        if self.query.status["isDataAvailable"]:
+            available = "Data available"
+        active = "Trigger inactive"
+        if self.query.status["isTriggerActive"]:
+            active = "Trigger active"
+
         title = f"{status} / {available} / {active} / id: {self.query.id}"
         accordion.set_title(0, title)
         display(accordion)
-        script = script.replace('<script type="text/javascript">','').replace('</script>', '')
+        script = script.replace('<script type="text/javascript">', "").replace("</script>", "")
         display(Javascript(script))
-

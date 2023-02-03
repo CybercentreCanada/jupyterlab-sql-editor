@@ -1,13 +1,8 @@
-import json
-import pyspark
-from pyspark.sql import SparkSession
-from pyspark.sql.types import *
-
 from jupyterlab_sql_editor.ipython_magic.common.export import (
+    Catalog,
+    Connection,
     Function,
     SchemaExporter,
-    Connection,
-    Catalog,
     SparkTableSchema,
     Table,
 )
@@ -75,14 +70,11 @@ class SparkConnection(Connection):
         if database_name:
             rows = self.spark.sql(f"SHOW TABLES IN {database_name}").collect()
         else:
-            rows = self.spark.sql(f"SHOW TABLES").collect()
+            rows = self.spark.sql("SHOW TABLES").collect()
         for r in rows:
             # depending if iceberg catalogs are use you might get results
             # with either a database or namespace column
-            if (
-                getattr(r, "database", "") == database_name
-                or getattr(r, "namespace", "") == database_name
-            ):
+            if getattr(r, "database", "") == database_name or getattr(r, "namespace", "") == database_name:
                 table_names.append(r["tableName"])
         return table_names
 
@@ -151,4 +143,5 @@ def update_local_database(spark, schema_file_name):
     connection = SparkConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
     exp = SchemaExporter(connection, schema_file_name, None, local_catalog, display_progress=False)
+    exp.update_local_schema()
     exp.update_local_schema()

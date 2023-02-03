@@ -14,9 +14,7 @@ logging.basicConfig(
 )
 
 
-NODE_LOCATION = (
-    shutil.which("node") or shutil.which("node.exe") or shutil.which("node.cmd")
-)
+NODE_LOCATION = shutil.which("node") or shutil.which("node.exe") or shutil.which("node.cmd")
 NODE = str(pathlib.Path(NODE_LOCATION).resolve())
 
 
@@ -35,9 +33,7 @@ def main():
     logging.info("main function called")
     logging.info(f"node location: {NODE}")
     logging.info(f"path to script: {PATH_TO_BIN_JS}")
-    process = subprocess.Popen(
-        [NODE, PATH_TO_BIN_JS, *sys.argv[1:]], stdin=sys.stdin, stdout=sys.stdout
-    )
+    process = subprocess.Popen([NODE, PATH_TO_BIN_JS, *sys.argv[1:]], stdin=sys.stdin, stdout=sys.stdout)
     logging.info(f"node process started with pid: {process.pid}")
     sys.exit(process.wait())
 
