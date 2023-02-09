@@ -142,27 +142,12 @@ class Trino(Base):
         output = args.output.lower()
 
         if output not in VALID_OUTPUTS:
-            print(f"Invalid output option {args.output}. The valid options are {self.valid_outputs}.")
+            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
         if output == "sql":
             return self.display_sql(sql)
-        elif output == "json":
-            # Determine the resulting column names
-            self.cur.execute(f"SHOW STATS FOR ({sql})")
-            # Assume a maximum possible number of columns of 100000
-            results = self.cur.fetchmany(100000)
-            column_names = []
-            for idx, row in enumerate(results):
-                if row[0]:
-                    column_names.append(row[0])
-            # Cast every column to JSON
-            select_exprs = []
-            for column_name in column_names:
-                select_exprs.append(f'CAST({column_name} AS JSON) AS "{column_name}"')
-            select = ",".join(select_exprs)
-            sql = f"select {select} from ({sql}) limit {limit+1}"
-        elif args.raw is not True:
+        elif not args.raw:
             sql = f"{sql} limit {limit+1}"
 
         self.cur.execute(sql)
@@ -199,18 +184,11 @@ class Trino(Base):
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_grid(pdf, limit))
         elif output == "json":
-            json_array = []
-            for row in results:
-                python_obj = {}
-                for idx, column_name in enumerate(columns):
-                    python_val = None
-                    if row[idx]:
-                        python_val = json.loads(row[idx])
-                    python_obj[column_name] = python_val
-                json_array.append(python_obj)
+            json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
+            json_dict = json.loads(json_string)
             if args.show_nonprinting:
-                recursive_escape(json_array)
-            display(JSON(json_array))
+                recursive_escape(json_dict)
+            display(JSON(json_dict))
         elif output == "html":
             html = rows_to_html(columns, results, args.show_nonprinting)
             display(HTML(make_tag("table", False, html)))
