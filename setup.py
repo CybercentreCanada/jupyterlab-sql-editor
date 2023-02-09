@@ -12,13 +12,10 @@ HERE = Path(__file__).parent.resolve()
 # The name of the project
 name = "jupyterlab_sql_editor"
 
-lab_path = (HERE / name.replace("-", "_") / "labextension")
+lab_path = HERE / name.replace("-", "_") / "labextension"
 
 # Representative files that should exist after a successful build
-ensured_targets = [
-    str(lab_path / "package.json"),
-    str(lab_path / "static/style.js")
-]
+ensured_targets = [str(lab_path / "package.json"), str(lab_path / "static/style.js")]
 
 labext_name = "jupyterlab-sql-editor"
 
@@ -47,14 +44,7 @@ setup_args = dict(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
-    install_requires=[
-        'trino',
-        'ipydatagrid',
-        'Jinja2',
-        'ipytree',
-        'ply',
-        'dbt-core'
-    ],
+    install_requires=["trino", "ipydatagrid", "Jinja2", "ipytree", "ply", "dbt-core", "jupyter-events>=0.6.1"],
     zip_safe=False,
     include_package_data=True,
     python_requires=">=3.6",
@@ -70,9 +60,8 @@ setup_args = dict(
         "trino",
         "dataframe",
         "cccs",
-        "canada"
+        "canada",
     ],
-
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
@@ -100,18 +89,14 @@ setup_args = dict(
 )
 
 try:
-    from jupyter_packaging import (
-        wrap_installers,
-        npm_builder,
-        get_data_files
-    )
-    post_develop = npm_builder(
-        build_cmd="install:extension", source_dir="src", build_dir=lab_path
-    )
+    from jupyter_packaging import get_data_files, npm_builder, wrap_installers
+
+    post_develop = npm_builder(build_cmd="install:extension", source_dir="src", build_dir=lab_path)
     setup_args["cmdclass"] = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
     setup_args["data_files"] = get_data_files(data_files_spec)
 except ImportError as e:
     import logging
+
     logging.basicConfig(format="%(levelname)s: %(message)s")
     logging.warning("Build tool `jupyter-packaging` is missing. Install it with pip or conda.")
     if not ("--name" in sys.argv or "--version" in sys.argv):
