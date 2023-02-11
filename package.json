@@ -53,7 +53,7 @@
     "json-schema": "^0.4.0",
     "@jupyterlab/application": "^3.2.9",
     "@jupyterlab/apputils": "^3.2.9",
-    "@jupyterlab/builder": "^3.2.9",
+    "@jupyterlab/builder": "^3.6.1",
     "@jupyterlab/codemirror-extension": "^3.2.9",
     "@jupyterlab/docmanager": "^3.2.9",
     "@jupyterlab/fileeditor": "^3.2.9",
