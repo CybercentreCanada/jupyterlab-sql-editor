@@ -3,6 +3,10 @@ import re
 import string
 from html import escape
 from html import escape as html_escape
+from os import environ, listdir
+from os.path import isdir, join
+
+from ipydatagrid import DataGrid, TextRenderer
 
 PRINTABLE = string.ascii_letters + string.digits + string.punctuation + " "
 
@@ -29,7 +33,6 @@ def render_grid(pdf, limit):
     # If you import it at the top of the file it will interfere with
     # the use of DataGrid in a notebook cell. You get a message
     # Loading widget...
-    from ipydatagrid import DataGrid, TextRenderer
 
     # for every order of magnitude in the limit 10, 100, 1000
     # increase view port height by 10, 20, 30 rows
@@ -86,3 +89,16 @@ def rows_to_html(columns, row_data, show_nonprinting):
         html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(x), row))
     html += "</table>\n"
     return html
+
+
+def find_nvm_lib_dirs():
+    NVM_VERSIONS_SUBPATH = "/versions/node/"
+    nvm_dir = environ["NVM_DIR"]
+    dirs = []
+    if nvm_dir:
+        dirs = [
+            f"{nvm_dir}{NVM_VERSIONS_SUBPATH}{d}/lib"
+            for d in listdir(nvm_dir + NVM_VERSIONS_SUBPATH)
+            if isdir(join(nvm_dir + NVM_VERSIONS_SUBPATH, d))
+        ]
+    return dirs

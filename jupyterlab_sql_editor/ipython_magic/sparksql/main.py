@@ -7,6 +7,8 @@ import sys
 from jupyter_lsp.specs.config import load_config_schema
 from jupyter_lsp.types import LanguageServerManagerAPI
 
+from jupyterlab_sql_editor.ipython.common import find_nvm_lib_dirs
+
 logging.basicConfig(
     format="%(asctime)s %(message)s",
     filename="/tmp/sparksql-language-server-entrypoint.log",
@@ -22,7 +24,8 @@ mgr = LanguageServerManagerAPI()
 
 # If jupyterlab-lsp has difficulty finding your sql-language-server
 # installation, specify additional node_modules paths
-mgr.extra_node_roots = ["/usr/local/lib/"]
+mgr.node_roots = ["/usr/local/lib/"]
+mgr.node_roots.extend(find_nvm_lib_dirs())
 
 NODE_MODULE = KEY = "sql-language-server"
 SCRIPTS = ["dist", "bin", "cli.js"]
