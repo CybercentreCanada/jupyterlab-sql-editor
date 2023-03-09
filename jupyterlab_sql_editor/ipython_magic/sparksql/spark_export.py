@@ -144,4 +144,3 @@ def update_local_database(spark, schema_file_name):
     local_catalog = Catalog(connection, "spark_catalog")
     exp = SchemaExporter(connection, schema_file_name, None, local_catalog, display_progress=False)
     exp.update_local_schema()
-    exp.update_local_schema()
