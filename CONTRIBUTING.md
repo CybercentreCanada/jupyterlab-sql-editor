@@ -77,7 +77,7 @@ c = get_config()
 
 # pre-load the sparksql magic
 c.InteractiveShellApp.extensions = [
-    'ipython_magic.trino', 'ipython_magic.sparksql'
+    'jupyterlab_sql_editor.ipython_magic.trino', 'jupyterlab_sql_editor.ipython_magic.sparksql'
 ]
 
 # pre-configure the SparkSql magic.
