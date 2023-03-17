@@ -1,7 +1,9 @@
 import os
+from importlib import reload
 from time import time
 
-from dbt.main import handle_and_check, parse_args
+import dbt.events
+import dbt.main
 from IPython.core.magic import (
     line_cell_magic,
     line_magic,
@@ -186,7 +188,7 @@ class SparkSql(Base):
             "--model",
             "__sparksql__stage_file__",
         ] + self.dbt_args
-        results, succeeded = handle_and_check(dbt_compile_args)
+        results, succeeded = self.invoke_dbt(dbt_compile_args)
         os.remove(stage_file_path)
         if succeeded:
             compiled_file_path = self.dbt_project_dir + "/" + results.results[0].node.compiled_path
@@ -195,12 +197,33 @@ class SparkSql(Base):
             return compiled_sql
         return ""
 
+    @staticmethod
+    def import_dbt():
+        # reset dbt logging to prevent duplicate log entries.
+        reload(dbt.main)
+        reload(dbt.events)
+        logger = dbt.events.AdapterLogger("Spark")
+        while logger.hasHandlers():
+            logger.removeHandler(logger.handlers[0])
+        return True
+
+    def invoke_dbt(self, args):
+        if self.import_dbt():
+            return dbt.main.handle_and_check(args)
+        return None
+
+    def get_dbt_project_dir(self, args):
+        if self.import_dbt():
+            parsed = dbt.main.parse_args(args)
+            return parsed.project_dir
+        return None
+
     @line_magic
     def dbt(self, line=None):
         self.dbt_args = line.split()
-        self.dbt_project_dir = parse_args(["debug"] + self.dbt_args).project_dir
+        self.dbt_project_dir = self.get_dbt_project_dir(["debug"] + self.dbt_args)
         if not self.dbt_project_dir:
             print("dbt project directory not specified")
             return
         os.chdir(self.dbt_project_dir)
-        handle_and_check(["debug"] + self.dbt_args)
+        self.invoke_dbt(["debug"] + self.dbt_args)
