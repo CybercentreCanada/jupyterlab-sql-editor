@@ -1,3 +1,4 @@
+import logging
 import os
 from importlib import reload
 from time import time
@@ -202,7 +203,7 @@ class SparkSql(Base):
         # reset dbt logging to prevent duplicate log entries.
         reload(dbt.main)
         reload(dbt.events)
-        logger = dbt.events.AdapterLogger("Spark")
+        logger = logging.getLogger("configured_std_out")
         while logger.hasHandlers():
             logger.removeHandler(logger.handlers[0])
         return True
