@@ -1,9 +1,9 @@
 import logging
 import os
-from importlib import reload, util
+from importlib import reload
 from time import time
 
-import dbt.logger
+import dbt.events
 import dbt.main
 from IPython.core.magic import (
     line_cell_magic,
@@ -200,13 +200,9 @@ class SparkSql(Base):
 
     @staticmethod
     def import_dbt():
-        if not util.find_spec("dbt.main"):
-            print("dbt is not installed\npip install dbt-core")
-            return False
-
         # reset dbt logging to prevent duplicate log entries.
         reload(dbt.main)
-        reload(dbt.logger)
+        reload(dbt.events)
         logger = logging.getLogger("configured_std_out")
         while logger.hasHandlers():
             logger.removeHandler(logger.handlers[0])
