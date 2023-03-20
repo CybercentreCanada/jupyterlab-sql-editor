@@ -13,6 +13,13 @@ from IPython.core.magic import (
 )
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from pyspark.sql import SparkSession
+from pyspark.sql.utils import (
+    AnalysisException,
+    IllegalArgumentException,
+    ParseException,
+    QueryExecutionException,
+    StreamingQueryException,
+)
 from traitlets import List, Unicode
 
 from jupyterlab_sql_editor.ipython.sparkdf import display_df
@@ -23,6 +30,13 @@ from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
 )
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "grid", "schema", "skip", "none"]
+PYSPARK_ERROR_TYPES = (
+    AnalysisException,
+    IllegalArgumentException,
+    ParseException,
+    QueryExecutionException,
+    StreamingQueryException,
+)
 
 
 @magics_class
@@ -82,6 +96,14 @@ class SparkSql(Base):
         default="update",
         help="The mode of streaming queries.",
     )
+    @argument(
+        "-x",
+        "--lean-exceptions",
+        metavar="lean_exceptions",
+        type=bool,
+        default=False,
+        help="Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries",
+    )
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
@@ -123,7 +145,14 @@ class SparkSql(Base):
         # we detect these use case by checking for an empty list of columns (no return schema)
         # we treat these use cases differently than a SELECT that returns rows of data
         start = time()
-        result = self.spark.sql(sql)
+        try:
+            result = self.spark.sql(sql)
+        except PYSPARK_ERROR_TYPES as exc:
+            if args.lean_exceptions:
+                self.print_pyspark_error(exc)
+                return
+            else:
+                raise exc
         end = time()
         if len(result.columns) == 0:
             elapsed = end - start
@@ -166,6 +195,23 @@ class SparkSql(Base):
         if refresh_arg != "none":
             print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]")
         return False
+
+    @staticmethod
+    def print_pyspark_error(exc):
+        """
+        To revisit with PySpark 3.4.0
+        See: https://github.com/apache/spark/commit/b8100b5b3fd82c0ee79c4f35a14a2bbfbe03ef43
+        """
+        if isinstance(exc, AnalysisException):
+            print(f"AnalysisException: {exc.desc.splitlines()[0]}")
+        elif isinstance(exc, ParseException):
+            print(f"ParseException: {exc.desc}")
+        elif isinstance(exc, StreamingQueryException):
+            print(f"StreamingQueryException: {exc.cause.getMessage() if exc.cause else exc.desc}")
+        elif isinstance(exc, QueryExecutionException):
+            print(f"QueryExecutionException: {exc.desc}")
+        elif isinstance(exc, IllegalArgumentException):
+            print(f"IllegalArgumentException: {exc.desc}")
 
     @staticmethod
     def get_instantiated_spark_session():
