@@ -169,13 +169,7 @@ class Trino(Base):
             print("Query execution skipped")
             return
 
-        def format_cell(v):
-            v = str(v) if v else "null"
-            if output != "json" and len(v) > truncate:
-                v = v[:truncate] + "..."
-            return v
-
-        results = list(map(lambda row: [format_cell(v) for v in row], results[:limit]))
+        results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
 
         if output == "grid":
             pdf = pd.DataFrame.from_records(results, columns=columns)
@@ -205,6 +199,13 @@ class Trino(Base):
         if refresh_arg != "none":
             print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]")
         return False
+
+    @staticmethod
+    def format_cell(v, output="html", truncate=256):
+        v = str(v) if v is not None else "null"
+        if output != "json" and len(v) > truncate:
+            v = v[:truncate] + "..."
+        return v
 
     @staticmethod
     def render_text(rows, columns):
