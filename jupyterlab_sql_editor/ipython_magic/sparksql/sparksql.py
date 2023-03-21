@@ -99,9 +99,7 @@ class SparkSql(Base):
     @argument(
         "-x",
         "--lean-exceptions",
-        metavar="lean_exceptions",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries",
     )
     def sparksql(self, line=None, cell=None, local_ns=None):
