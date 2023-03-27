@@ -93,7 +93,7 @@ class Trino(Base):
                     For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.",
     )
     @argument("-c", "--catalog", metavar="catalogname", default=None, type=str, help="Trino catalog to use")
-    @argument("-m", "--schema", metavar="schemaname", type=str, help="Trino schema to use")
+    @argument("-m", "--schema", metavar="schemaname", default=None, type=str, help="Trino schema to use")
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     def trino(self, line=None, cell=None, local_ns=None):

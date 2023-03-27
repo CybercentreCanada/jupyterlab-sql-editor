@@ -87,6 +87,7 @@ class SparkSql(Base):
     )
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-b", "--dbt", action="store_true", help="Enable DBT templating support")
+    @argument("--database", metavar="databasename", default=None, type=str, help="Spark database to use")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     @argument(
         "-m",
@@ -123,6 +124,9 @@ class SparkSql(Base):
         if self.spark is None:
             print("Active spark session is not found")
             return
+
+        if args.database:
+            self.spark.sql(f"USE {args.database}")
 
         catalog_array = self.get_catalog_array()
         if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
