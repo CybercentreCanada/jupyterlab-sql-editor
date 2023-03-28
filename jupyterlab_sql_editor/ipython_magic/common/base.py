@@ -81,6 +81,9 @@ class Base(Magics):
         super().__init__(shell, **kwargs)
         self.user_ns = {}
 
+    def display_results():
+        pass
+
     @staticmethod
     def bind_variables(query, user_ns):
         template = Template(query, undefined=ExplainUndefined)
@@ -109,18 +112,18 @@ class Base(Magics):
         self.user_ns = self.shell.user_ns.copy()
         self.user_ns.update(local_ns)
 
-    @staticmethod
-    def should_update_schema(schema_file_name, refresh_threshold):
-        file_exists = os.path.isfile(schema_file_name)
-        ttl_expired = False
-        if file_exists:
-            file_time = os.path.getmtime(schema_file_name)
-            current_time = time.time()
-            if current_time - file_time > (refresh_threshold * 60):
-                print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {schema_file_name}")
-                ttl_expired = True
+    # @staticmethod
+    # def should_update_schema(schema_file_name, refresh_threshold):
+    #     file_exists = os.path.isfile(schema_file_name)
+    #     ttl_expired = False
+    #     if file_exists:
+    #         file_time = os.path.getmtime(schema_file_name)
+    #         current_time = time.time()
+    #         if current_time - file_time > (refresh_threshold * 60):
+    #             print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {schema_file_name}")
+    #             ttl_expired = True
 
-        return (not file_exists) or ttl_expired
+    #     return (not file_exists) or ttl_expired
 
     def display_sql(self, sql):
         def _jupyterlab_repr_html_(self):

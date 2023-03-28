@@ -109,11 +109,36 @@ class Trino(Base):
         catalog = args.catalog
         if not catalog:
             catalog = self.catalog
-        print(catalog)
+
         schema = args.schema
         if not schema:
             schema = self.schema
-        print(schema)
+
+        limit = args.limit
+        if limit is None:
+            limit = self.limit
+
+        catalog_array = self.get_catalog_array()
+        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
+            return
+
+        output = args.output.lower()
+        if output not in VALID_OUTPUTS:
+            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
+            return
+
+        if limit <= 0 or output == "skip" or output == "none":
+            print("Query execution skipped")
+            return
+
+        sql = self.get_sql_statement(cell, args.sql, args.jinja)
+        if not sql:
+            return
+
+        if output == "sql":
+            return self.display_sql(sql)
+        elif not args.raw:
+            sql = f"{sql} limit {limit+1}"
 
         self.conn = trino.dbapi.connect(
             host=self.host,
@@ -126,71 +151,48 @@ class Trino(Base):
             verify=self.verify,
         )
         self.cur = self.conn.cursor()
-
-        catalog_array = self.get_catalog_array()
-        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
-            return
-
-        sql = self.get_sql_statement(cell, args.sql, args.jinja)
-        if not sql:
-            return
-
-        limit = args.limit
-        if limit is None:
-            limit = self.limit
-
-        output = args.output.lower()
-
-        if output not in VALID_OUTPUTS:
-            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
-            return
-
-        if output == "sql":
-            return self.display_sql(sql)
-        elif not args.raw:
-            sql = f"{sql} limit {limit+1}"
-
         self.cur.execute(sql)
         results = self.cur.fetchmany(limit + 1)
-
         columns = list(map(lambda d: d[0], self.cur.description))
 
-        more_results = False
         if len(results) > limit:
-            more_results = True
+            print("Only showing top %d row(s)" % limit)
             results = results[:limit]
-
-        if args.dataframe:
-            print(f"Saved results to pandas dataframe named `{args.dataframe}`")
-            pdf = pd.DataFrame.from_records(results, columns=columns)
-            self.shell.user_ns.update({args.dataframe: pdf})
-
-        if limit <= 0 or output == "skip" or output == "none":
-            print("Query execution skipped")
-            return
 
         results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
 
+        self.display_results(
+            results=results,
+            dataframe=args.dataframe,
+            columns=columns,
+            output=output,
+            limit=limit,
+            show_nonprinting=args.show_nonprinting,
+        )
+
+    def display_results(self, results, dataframe, columns, output, limit=20, show_nonprinting=False):
+        if dataframe:
+            print(f"Saved results to pandas dataframe named `{dataframe}`")
+            pdf = pd.DataFrame.from_records(results, columns=columns)
+            self.shell.user_ns.update({dataframe: pdf})
+
         if output == "grid":
             pdf = pd.DataFrame.from_records(results, columns=columns)
-            if args.show_nonprinting:
+            if show_nonprinting:
                 for c in pdf.columns:
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_grid(pdf, limit))
         elif output == "json":
             json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
             json_dict = json.loads(json_string)
-            if args.show_nonprinting:
+            if show_nonprinting:
                 recursive_escape(json_dict)
             display(JSON(json_dict))
         elif output == "html":
-            html = rows_to_html(columns, results, args.show_nonprinting)
+            html = rows_to_html(columns, results, show_nonprinting)
             display(HTML(make_tag("table", False, html)))
         elif output == "text":
             print(self.render_text(results, columns))
-
-        if more_results:
-            print("Only showing top %d row(s)" % limit)
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == "all":
