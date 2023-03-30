@@ -172,9 +172,12 @@ class SparkSql(Base):
             if args.eager:
                 results.count()
 
+        if args.dataframe:
+            print(f"Captured dataframe to local variable `{args.dataframe}`")
+            self.shell.user_ns.update({args.dataframe: results})
+
         self.display_results(
             results=results,
-            dataframe=args.dataframe,
             output=output,
             limit=limit,
             truncate=truncate,
@@ -219,7 +222,6 @@ class SparkSql(Base):
     def display_results(
         self,
         results,
-        dataframe,
         output="grid",
         limit=20,
         truncate=512,
@@ -228,10 +230,6 @@ class SparkSql(Base):
         sql=None,
         streaming_mode="update",
     ):
-        if dataframe:
-            print(f"Captured dataframe to local variable `{dataframe}`")
-            self.shell.user_ns.update({dataframe: results})
-
         # TODO: Revisit this
         display_df(
             df=results,

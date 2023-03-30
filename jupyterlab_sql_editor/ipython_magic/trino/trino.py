@@ -161,21 +161,20 @@ class Trino(Base):
 
         results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
 
+        if args.dataframe:
+            print(f"Saved results to pandas dataframe named `{args.dataframe}`")
+            pdf = pd.DataFrame.from_records(results, columns=columns)
+            self.shell.user_ns.update({args.dataframe: pdf})
+
         self.display_results(
             results=results,
-            dataframe=args.dataframe,
             columns=columns,
             output=output,
             limit=limit,
             show_nonprinting=args.show_nonprinting,
         )
 
-    def display_results(self, results, dataframe, columns, output, limit=20, show_nonprinting=False):
-        if dataframe:
-            print(f"Saved results to pandas dataframe named `{dataframe}`")
-            pdf = pd.DataFrame.from_records(results, columns=columns)
-            self.shell.user_ns.update({dataframe: pdf})
-
+    def display_results(self, results, columns, output, limit=20, show_nonprinting=False):
         if output == "grid":
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if show_nonprinting:
