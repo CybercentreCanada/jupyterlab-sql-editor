@@ -116,6 +116,10 @@ class SparkSql(Base):
         if args.truncate and args.truncate > 0:
             truncate = args.truncate
 
+        limit = args.limit
+        if limit is None:
+            limit = self.limit
+
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are [sql|json|text|html|grid|skip|none].")
             return
@@ -148,7 +152,7 @@ class SparkSql(Base):
         # we treat these use cases differently than a SELECT that returns rows of data
         start = time()
         try:
-            result = self.spark.sql(sql)
+            results = self.spark.sql(sql)
         except PYSPARK_ERROR_TYPES as exc:
             if args.lean_exceptions:
                 self.print_pyspark_error(exc)
@@ -156,7 +160,7 @@ class SparkSql(Base):
             else:
                 raise exc
         end = time()
-        if len(result.columns) == 0:
+        if len(results.columns) == 0:
             elapsed = end - start
             print(f"Execution time: {elapsed:.2f} seconds")
             return
@@ -164,20 +168,16 @@ class SparkSql(Base):
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"
             print(f"Cached dataframe with {load_type} load")
-            result = result.cache()
+            results = results.cache()
             if args.eager:
-                result.count()
+                results.count()
 
         if args.dataframe:
             print(f"Captured dataframe to local variable `{args.dataframe}`")
-            self.shell.user_ns.update({args.dataframe: result})
+            self.shell.user_ns.update({args.dataframe: results})
 
-        limit = args.limit
-        if limit is None:
-            limit = self.limit
-
-        display_df(
-            result,
+        self.display_results(
+            results=results,
             output=output,
             limit=limit,
             truncate=truncate,
@@ -218,6 +218,29 @@ class SparkSql(Base):
     @staticmethod
     def get_instantiated_spark_session():
         return SparkSession._instantiatedSession
+
+    def display_results(
+        self,
+        results,
+        output="grid",
+        limit=20,
+        truncate=512,
+        show_nonprinting=False,
+        query_name=None,
+        sql=None,
+        streaming_mode="update",
+    ):
+        # TODO: Revisit this
+        display_df(
+            df=results,
+            output=output,
+            limit=limit,
+            truncate=truncate,
+            show_nonprinting=show_nonprinting,
+            query_name=query_name,
+            sql=sql,
+            streaming_mode=streaming_mode,
+        )
 
     def get_dbt_sql_statement(self, cell, sql_argument):
         sql = cell

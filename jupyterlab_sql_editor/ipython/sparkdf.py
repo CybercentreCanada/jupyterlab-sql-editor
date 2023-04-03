@@ -56,7 +56,11 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
         has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
         displays.append(render_grid(pdf, limit))
     elif output == "json":
-        results = df.select(F.to_json(F.struct(F.col("*"))).alias("json_str")).take(limit + 1)
+        results = (
+            df.select([F.col(c).cast("string") for c in df.columns])
+            .select(F.to_json(F.struct(F.col("*"))).alias("json_str"))
+            .take(limit + 1)
+        )
         if len(results) > limit:
             has_more_data = True
         json_array = [json.loads(r.json_str) for r in results[:limit]]
