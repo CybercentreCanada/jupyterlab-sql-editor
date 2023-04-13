@@ -56,14 +56,13 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
         has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
         displays.append(render_grid(pdf, limit))
     elif output == "json":
-        results = (
-            df.select([F.col(c).cast("string") for c in df.columns])
-            .select(F.to_json(F.struct(F.col("*"))).alias("json_str"))
-            .take(limit + 1)
-        )
+        json_array = []
+        results = df.limit(limit + 1).toJSON().map(lambda j: json.loads(j)).collect()
         if len(results) > limit:
             has_more_data = True
-        json_array = [json.loads(r.json_str) for r in results[:limit]]
+        # cast values to str for display
+        for row in results:
+            json_array.append(cast_values_to_str(row))
         if show_nonprinting:
             recursive_escape(json_array)
         displays.append(JSON(json_array))
@@ -191,6 +190,24 @@ def to_html(df, max_num_rows, truncate, show_nonprinting):
     if has_more_data:
         html += "only showing top %d %s\n" % (max_num_rows, "row" if max_num_rows == 1 else "rows")
     return has_more_data, html
+
+
+def cast_values_to_str(data):
+    result = dict()
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, dict):
+                result[key] = cast_values_to_str(value)
+            elif isinstance(value, list):
+                json_array = []
+                for v in value:
+                    json_array.append(cast_values_to_str(v))
+                result[key] = json_array
+            else:
+                result[key] = str(value)
+    else:
+        return str(data)
+    return result
 
 
 def to_pandas(df, max_num_rows, truncate, show_nonprinting):
