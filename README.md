@@ -87,7 +87,7 @@ Suivre les instructions d'installation dans [CONTRIBUTING](./CONTRIBUTING.md)
 |`-c` `--cache`|Cache dataframe|
 |`-e` `--eager`|Cache dataframe with eager load|
 |`-v VIEW` `--view VIEW`|Create or replace a temporary view named `VIEW`|
-|`-o sql\|json\|html\|grid\|text\|schema\|skip\|none` `--output sql\|json\|html\|grid\|text\|schema\|skip\|none`|Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)|
+|`-o sql\|json\|html\|aggrid\|grid\|text\|schema\|skip\|none` `--output sql\|json\|html\|aggrid\|grid\|text\|schema\|skip\|none`|Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)|
 |`-s` `--show-nonprinting`|Replace none printable characters with their ascii codes (`LF` -> `\x0a`)|
 |`-j` `--jinja`|Enable Jinja templating support|
 |`-b` `--dbt`|Enable DBT templating support|
@@ -119,3 +119,4 @@ Many thanks to the contributors of these projects / Merci à tous les contribute
 - [cryeo/sparksql-magic](https://github.com/cryeo/sparksql-magic)
 - [trino-python-client](https://github.com/trinodb/trino-python-client)
 - [bloomberg/ipydatagrid](https://github.com/bloomberg/ipydatagrid)
+- [widgetti/ipyaggrid](https://github.com/widgetti/ipyaggrid)

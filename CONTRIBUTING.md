@@ -103,6 +103,9 @@ InteractiveShell.ast_node_interactivity = 'all'
 
 ```
 
+## Configure AG Grid's license key
+
+You can configure AG Grid (the widget that shows up when you use --output aggrid) to use your license key by setting the AG_GRID_LICENSE_KEY environment variable. It'll be accessed through Python's os.environ.get.
 
 
 # How it works
