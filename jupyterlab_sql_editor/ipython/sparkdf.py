@@ -4,7 +4,6 @@ import os
 from time import time
 
 import pandas as pd
-import pyspark.sql.functions as F
 from IPython import get_ipython
 from IPython.display import HTML, JSON, TextDisplayObject, display
 from ipywidgets import Output
@@ -16,6 +15,7 @@ import jupyterlab_sql_editor.ipython.spark_streaming_query as streaming
 from jupyterlab_sql_editor.ipython.common import (
     escape_control_chars,
     recursive_escape,
+    render_ag_grid,
     render_grid,
     rows_to_html,
 )
@@ -55,6 +55,9 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
     if output == "grid":
         has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
         displays.append(render_grid(pdf, limit))
+    elif output == "aggrid":
+        has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
+        displays.append(render_ag_grid(pdf))
     elif output == "json":
         json_array = []
         results = df.limit(limit + 1).toJSON().map(lambda j: json.loads(j)).collect()
