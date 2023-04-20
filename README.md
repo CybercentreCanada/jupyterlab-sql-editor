@@ -103,7 +103,7 @@ Parameter usage example:
 |`-c NAME` `--catalog NAME`|Trino catalog to use.|
 |`-s NAME` `--schema NAME`|Trino schema to use.|
 |`-l LIMIT` `--limit LIMIT`|The maximum number of rows to display. A value of zero is equivalent to `--output skip`|
-|`-r all\|local\|none` `--refresh all\|local\|none`|Force the regeneration of the schema cache file. The `local` option will only update tables/views created in the local Spark context.|
+|`-r all\|none` `--refresh all\|none`|Force the regeneration of the schema cache file.|
 |`-d NAME` `--dataframe NAME`|Capture dataframe in a local variable named `NAME`.|
 |`-o sql\|json\|html\|grid\|text\|schema\|skip\|none` `--output sql\|json\|html\|grid\|text\|schema\|skip\|none`|Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements).|
 |`-s` `--show-nonprinting`|Replace none printable characters with their ascii codes (`LF` -> `\x0a`).|
