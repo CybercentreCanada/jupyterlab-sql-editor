@@ -65,10 +65,10 @@ class Trino(Base):
     @argument(
         "-r",
         "--refresh",
-        metavar="all|local|none",
+        metavar="all|none",
         type=str,
         default="none",
-        help="Force the regeneration of the schema cache file. The `local` option will only update tables/views created in the local Spark context.",
+        help="Force the regeneration of the schema cache file.",
     )
     @argument("-d", "--dataframe", metavar="name", type=str, help="Capture results in pandas dataframe")
     @argument(
