@@ -14,6 +14,7 @@ from pyspark.sql.session import SparkSession
 
 import jupyterlab_sql_editor.ipython.spark_streaming_query as streaming
 from jupyterlab_sql_editor.ipython.common import (
+    cast_unsafe_ints_to_str,
     escape_control_chars,
     recursive_escape,
     render_grid,
@@ -45,7 +46,7 @@ class PlainText(TextDisplayObject):
         return self.data
 
 
-def display_spark_df(df, output, limit, truncate, show_nonprinting):
+def display_spark_df(df, output, limit, truncate, show_nonprinting, args):
     """
     Execute the query of the dataframe and time the execution.
     """
@@ -57,15 +58,19 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
         displays.append(render_grid(pdf, limit))
     elif output == "json":
         json_array = []
-        results = df.limit(limit + 1).toJSON().map(lambda j: json.loads(j)).collect()
-        if len(results) > limit:
+        warnings = []
+        results = df.toJSON().map(lambda j: json.loads(j)).take(limit)
+        if df.count() > limit:
             has_more_data = True
-        # cast values to str for display
+        # cast unsafe ints to str for display
         for row in results:
-            json_array.append(cast_values_to_str(row))
+            json_array.append(cast_unsafe_ints_to_str(row, warnings))
+        # add warnings to displays
+        for warning in warnings:
+            displays.append(warning)
         if show_nonprinting:
             recursive_escape(json_array)
-        displays.append(JSON(json_array))
+        displays.append(JSON(json_array, expanded=args.expand))
     elif output == "html":
         has_more_data, html_text = to_html(df, limit, truncate, show_nonprinting)
         displays.append(HTML(html_text))
@@ -73,7 +78,7 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting):
         text = df._jdf.showString(limit, truncate, False)
         displays.append(PlainText(data=text))
     elif limit <= 0 or output == "skip" or output == "none":
-        print("Query execution skipped")
+        displays.append("Query execution skipped")
         return []
     elif output == "schema":
         df.printSchema()
@@ -119,6 +124,7 @@ def display_df(
     query_name=None,
     sql=None,
     streaming_mode="update",
+    args=None,
 ):
     query = None
     start_streaming_query = df.isStreaming and output not in ["skip", "schema", "none"]
@@ -129,16 +135,16 @@ def display_df(
         ctx = streaming.get_streaming_ctx(streaming_query_name, df=df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
-        display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting)
+        display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting, args)
     else:
-        display_batch_df(df, output, limit, truncate, show_nonprinting)
+        display_batch_df(df, output, limit, truncate, show_nonprinting, args)
         if query_name:
             print(f"Created temporary view `{query_name}`")
             df.createOrReplaceTempView(query_name)
     return query
 
 
-def display_batch_df(df, output, limit, truncate, show_nonprinting):
+def display_batch_df(df, output, limit, truncate, show_nonprinting, args):
     """
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     """
@@ -156,7 +162,7 @@ def display_batch_df(df, output, limit, truncate, show_nonprinting):
         display_link()
         try:
             displays = display_spark_df(
-                df, output=output, limit=limit, truncate=truncate, show_nonprinting=show_nonprinting
+                df, output=output, limit=limit, truncate=truncate, show_nonprinting=show_nonprinting, args=args
             )
         except Exception:
             execution_succeeded = False
@@ -190,24 +196,6 @@ def to_html(df, max_num_rows, truncate, show_nonprinting):
     if has_more_data:
         html += "only showing top %d %s\n" % (max_num_rows, "row" if max_num_rows == 1 else "rows")
     return has_more_data, html
-
-
-def cast_values_to_str(data):
-    result = dict()
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if isinstance(value, dict):
-                result[key] = cast_values_to_str(value)
-            elif isinstance(value, list):
-                json_array = []
-                for v in value:
-                    json_array.append(cast_values_to_str(v))
-                result[key] = json_array
-            else:
-                result[key] = str(value)
-    else:
-        return str(data)
-    return result
 
 
 def to_pandas(df, max_num_rows, truncate, show_nonprinting):

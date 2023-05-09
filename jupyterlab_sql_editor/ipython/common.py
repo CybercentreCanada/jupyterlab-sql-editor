@@ -12,6 +12,10 @@ PRINTABLE = string.ascii_letters + string.digits + string.punctuation + " "
 
 replchars = re.compile("([^" + re.escape(PRINTABLE) + "])")
 
+JS_MAX_SAFE_INTEGER = 9007199254740991
+
+JS_MIN_SAFE_INTEGER = -9007199254740991
+
 
 def make_tag(tag_name, show_nonprinting, body="", **kwargs):
     body = str(body)
@@ -102,3 +106,25 @@ def find_nvm_lib_dirs():
             if isdir(join(nvm_dir + NVM_VERSIONS_SUBPATH, d))
         ]
     return dirs
+
+
+def cast_unsafe_ints_to_str(data, warnings=[]):
+    result = dict()
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            result[key] = cast_unsafe_ints_to_str(value, warnings)
+    elif isinstance(data, list):
+        json_array = []
+        for v in data:
+            json_array.append(cast_unsafe_ints_to_str(v, warnings))
+        return json_array
+    elif isinstance(data, int):
+        if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
+            return data
+        else:
+            warnings.append(f"int {data} was cast to string to avoid loss of precision.")
+            return str(data)
+    else:
+        return data
+    return result

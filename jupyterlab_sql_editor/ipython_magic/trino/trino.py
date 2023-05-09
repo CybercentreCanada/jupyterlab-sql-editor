@@ -9,6 +9,7 @@ from IPython.display import HTML, JSON, display
 from traitlets import Bool, Instance, Int, Unicode, Union
 
 from jupyterlab_sql_editor.ipython.common import (
+    cast_unsafe_ints_to_str,
     escape_control_chars,
     make_tag,
     recursive_escape,
@@ -96,6 +97,7 @@ class Trino(Base):
     @argument("-m", "--schema", metavar="schemaname", default=None, type=str, help="Trino schema to use")
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
+    @argument("--expand", action="store_true", help="Expand json results")
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
@@ -172,9 +174,10 @@ class Trino(Base):
             output=output,
             limit=limit,
             show_nonprinting=args.show_nonprinting,
+            args=args,
         )
 
-    def display_results(self, results, columns, output, limit=20, show_nonprinting=False):
+    def display_results(self, results, columns, output, limit=20, show_nonprinting=False, args=None):
         if output == "grid":
             pdf = pd.DataFrame.from_records(results, columns=columns)
             if show_nonprinting:
@@ -182,11 +185,16 @@ class Trino(Base):
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_grid(pdf, limit))
         elif output == "json":
+            json_array = []
+            warnings = []
             json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
             json_dict = json.loads(json_string)
+            # cast unsafe ints to str for display
+            for row in json_dict:
+                json_array.append(cast_unsafe_ints_to_str(row, warnings))
             if show_nonprinting:
                 recursive_escape(json_dict)
-            display(JSON(json_dict))
+            display(warnings, JSON(json_dict, expanded=args.expand))
         elif output == "html":
             html = rows_to_html(columns, results, show_nonprinting)
             display(HTML(make_tag("table", False, html)))
@@ -203,8 +211,8 @@ class Trino(Base):
 
     @staticmethod
     def format_cell(v, output="html", truncate=256):
-        v = str(v) if v is not None else "null"
         if output != "json" and len(v) > truncate:
+            v = str(v) if v is not None else "null"
             v = v[:truncate] + "..."
         return v
 
