@@ -193,8 +193,8 @@ class Trino(Base):
             for row in json_dict:
                 json_array.append(cast_unsafe_ints_to_str(row, warnings))
             if show_nonprinting:
-                recursive_escape(json_dict)
-            display(warnings, JSON(json_dict, expanded=args.expand))
+                recursive_escape(json_array)
+            display(warnings, JSON(json_array, expanded=args.expand))
         elif output == "html":
             html = rows_to_html(columns, results, show_nonprinting)
             display(HTML(make_tag("table", False, html)))
