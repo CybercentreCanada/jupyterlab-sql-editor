@@ -103,6 +103,7 @@ class SparkSql(Base):
         action="store_true",
         help="Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries",
     )
+    @argument("--expand", action="store_true", help="Expand json results")
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
@@ -185,6 +186,7 @@ class SparkSql(Base):
             query_name=args.view,
             sql=sql,
             streaming_mode=streaming_mode,
+            args=args,
         )
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
@@ -229,6 +231,7 @@ class SparkSql(Base):
         query_name=None,
         sql=None,
         streaming_mode="update",
+        args=None,
     ):
         # TODO: Revisit this
         display_df(
@@ -240,6 +243,7 @@ class SparkSql(Base):
             query_name=query_name,
             sql=sql,
             streaming_mode=streaming_mode,
+            args=args,
         )
 
     def get_dbt_sql_statement(self, cell, sql_argument):
