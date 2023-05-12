@@ -29,7 +29,7 @@ from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
     update_local_database,
 )
 
-VALID_OUTPUTS = ["sql", "text", "json", "html", "grid", "schema", "skip", "none"]
+VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "schema", "skip", "none"]
 PYSPARK_ERROR_TYPES = (
     AnalysisException,
     IllegalArgumentException,
@@ -74,7 +74,7 @@ class SparkSql(Base):
     @argument(
         "-o",
         "--output",
-        metavar="sql|json|html|grid|text|schema|skip|none",
+        metavar="sql|json|html|aggrid|grid|text|schema|skip|none",
         type=str,
         default="html",
         help="Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)",
@@ -122,7 +122,7 @@ class SparkSql(Base):
             limit = self.limit
 
         if output not in VALID_OUTPUTS:
-            print(f"Invalid output option {args.output}. The valid options are [sql|json|text|html|grid|skip|none].")
+            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
         self.spark = self.get_instantiated_spark_session()

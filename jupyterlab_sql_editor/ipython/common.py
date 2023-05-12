@@ -6,7 +6,10 @@ from html import escape as html_escape
 from os import environ, listdir
 from os.path import isdir, join
 
+from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
+
+DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
 
 PRINTABLE = string.ascii_letters + string.digits + string.punctuation + " "
 
@@ -59,6 +62,31 @@ def render_grid(pdf, limit):
         layout={"height": layout_height},
         header_renderer=TextRenderer(text_wrap=True),
         default_renderer=TextRenderer(text_wrap=True),
+    )
+
+
+def render_ag_grid(pdf):
+    grid_options = {
+        "columnDefs": [
+            {"headerName": c, "field": c, "sortable": True, "enableRowGroup": True, "autoHeight": True}
+            for c in pdf.columns
+        ],
+        "defaultColDef": DEFAULT_COLUMN_DEF,
+        "enableRangeSelection": True,
+        "suppressColumnVirtualisation": True,
+        "animateRows": True,
+    }
+
+    ag_grid_license_key = environ.get("AG_GRID_LICENSE_KEY")
+
+    return Grid(
+        grid_data=pdf,
+        grid_options=grid_options,
+        quick_filter=True,
+        theme="ag-theme-balham",
+        columns_fit="auto",
+        index=False,
+        license=ag_grid_license_key if ag_grid_license_key else "",
     )
 
 
