@@ -123,3 +123,12 @@ dmypy.json
 
 # OSX files
 .DS_Store
+
+# yarn
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
