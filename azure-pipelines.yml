@@ -28,7 +28,7 @@ stages:
         versionSpec: '$(python.version)'
       displayName: 'Use Python $(python.version)'
     - script: |
-        pip install wheel build jupyterlab cookiecutter nodejs jupyter-packaging
+        pip install wheel build jupyterlab==3.6.1 cookiecutter nodejs jupyter-packaging
       displayName: 'Install deps'
     - script: |
         pip install -ve .
