@@ -218,9 +218,9 @@ class Trino(Base):
 
     @staticmethod
     def format_cell(v, output="html", truncate=256):
-        if output != "json" and len(v) > truncate:
-            v = str(v) if v is not None else "null"
-            v = v[:truncate] + "..."
+        if output != "json" and isinstance(v, str):
+            if len(v) > truncate:
+                v = v[:truncate] + "..."
         return v
 
     @staticmethod
