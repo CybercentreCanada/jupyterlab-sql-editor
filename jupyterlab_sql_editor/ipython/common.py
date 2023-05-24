@@ -118,7 +118,7 @@ def rows_to_html(columns, row_data, show_nonprinting):
     for row in row_data:
         if show_nonprinting:
             row = [escape_control_chars(str(v)) for v in row]
-        html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(x), row))
+        html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(str(x)), row))
     html += "</table>\n"
     return html
 
