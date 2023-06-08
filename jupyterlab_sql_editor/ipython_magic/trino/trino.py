@@ -13,6 +13,7 @@ from jupyterlab_sql_editor.ipython.common import (
     escape_control_chars,
     make_tag,
     recursive_escape,
+    render_ag_grid,
     render_grid,
     rows_to_html,
 )
@@ -21,7 +22,7 @@ from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
 )
 
-VALID_OUTPUTS = ["sql", "text", "json", "json_cmt", "html", "grid", "skip", "none"]
+VALID_OUTPUTS = ["sql", "text", "json", "json_cmt", "html", "aggrid", "grid", "skip", "none"]
 
 
 @magics_class
@@ -197,6 +198,12 @@ class Trino(Base):
                 for c in pdf.columns:
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_grid(pdf, limit))
+        elif output == "aggrid":
+            pdf = pd.DataFrame.from_records(results, columns=columns)
+            if show_nonprinting:
+                for c in pdf.columns:
+                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
+            display(render_ag_grid(pdf))
         elif output == "json":
             json_array = []
             warnings = []
