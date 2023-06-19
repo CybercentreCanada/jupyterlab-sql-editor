@@ -247,7 +247,8 @@ class Trino(Base):
                         current_row_as_dictionary[top_level_column] = results[row_index][column_index]
                 my_dictionary_list.append(current_row_as_dictionary)
             # Sets the new reconstructed dictionary rows to json_dict because I don't want to change the variable reference
-            json_dict = my_dictionary_list
+            # The loading and dumping will convert DateTime objects to something JSON serializable
+            json_dict = json.loads(json.dumps(my_dictionary_list, indent=4, sort_keys=True, default=str))
 
             # cast unsafe ints to str for display
             for row in json_dict:
