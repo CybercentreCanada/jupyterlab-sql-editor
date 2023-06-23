@@ -218,8 +218,7 @@ class Trino(Base):
         elif output == "json_cmt":
             json_array = []
             warnings = []
-            json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
-            json_dict = json.loads(json_string)
+            json_dict = pd.DataFrame.from_records(results, columns=columns).to_dict(orient="records")
 
             # Returns this list which should contain the dictionaries (rows) of the query
             my_dictionary_list = []
@@ -235,16 +234,7 @@ class Trino(Base):
                     # is found in the top_level_column value within the loop
                     # We are essentially pairing up the values from the raw "results" variable passed to us with the column
                     # names that we can extract from the pandas dataframe
-                    if type(results[row_index][column_index]) is list:
-                        current_row_as_dictionary[top_level_column] = [
-                            self.__convert_dictionary(element) for element in results[row_index][column_index]
-                        ]
-                    elif type(results[row_index][column_index]) is trino.client.NamedRowTuple:
-                        current_row_as_dictionary[top_level_column] = self.__convert_dictionary(
-                            results[row_index][column_index]
-                        )
-                    else:
-                        current_row_as_dictionary[top_level_column] = results[row_index][column_index]
+                    current_row_as_dictionary[top_level_column] = self.__convert_dictionary(results[row_index][column_index])
                 my_dictionary_list.append(current_row_as_dictionary)
             # Sets the new reconstructed dictionary rows to json_dict because I don't want to change the variable reference
             # The loading and dumping will convert DateTime objects to something JSON serializable
@@ -337,3 +327,4 @@ class Trino(Base):
         link = "http://localhost"
         app_name = "name"
         display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {app_name}</a>"""))
+
