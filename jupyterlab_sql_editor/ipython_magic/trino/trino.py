@@ -180,10 +180,10 @@ class Trino(Base):
 
     def __convert_dictionary(self, value):
         # If it's a list, go in each element as they could be of some other type, and continue processing it
-        if type(value) is list:
+        if isinstance(value, list):
             return [self.__convert_dictionary(element) for element in value]
         # If it's a NamedRowTuple (weird Trino tuple), create a dictionary, extract the name from the NRT as the key, and process value
-        elif type(value) is trino.client.NamedRowTuple:
+        elif isinstance(value, trino.client.NamedRowTuple):
             temp_dict = {}
             for kk, v in zip(value._names, value):
                 temp_dict[kk] = self.__convert_dictionary(v)
