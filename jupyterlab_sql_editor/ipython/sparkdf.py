@@ -63,7 +63,7 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting, args):
         json_array = []
         warnings = []
         results = df.toJSON().map(lambda j: json.loads(j)).take(limit)
-        if df.count() > limit:
+        if len(results) > limit:
             has_more_data = True
         # cast unsafe ints to str for display
         for row in results:

@@ -154,6 +154,7 @@ class SparkSql(Base):
         start = time()
         try:
             results = self.spark.sql(sql)
+            df = self.spark.createDataFrame(results.take(limit + 1), schema=results.schema)
         except PYSPARK_ERROR_TYPES as exc:
             if args.lean_exceptions:
                 self.print_pyspark_error(exc)
@@ -178,7 +179,7 @@ class SparkSql(Base):
             self.shell.user_ns.update({args.dataframe: results})
 
         self.display_results(
-            results=results,
+            results=df,
             output=output,
             limit=limit,
             truncate=truncate,
