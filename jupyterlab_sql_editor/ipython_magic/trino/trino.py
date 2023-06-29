@@ -9,13 +9,13 @@ from IPython.display import HTML, JSON, display
 from traitlets import Bool, Instance, Int, Unicode, Union
 
 from jupyterlab_sql_editor.ipython.common import (
-    cast_unsafe_ints_to_str,
     escape_control_chars,
     make_tag,
     recursive_escape,
     render_ag_grid,
     render_grid,
     rows_to_html,
+    sanitize_results,
 )
 from jupyterlab_sql_editor.ipython_magic.common.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
@@ -192,16 +192,21 @@ class Trino(Base):
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_ag_grid(pdf))
         elif output == "json":
-            json_array = []
+            safe_array = []
             warnings = []
-            json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
-            json_dict = json.loads(json_string)
-            # cast unsafe ints to str for display
-            for row in json_dict:
-                json_array.append(cast_unsafe_ints_to_str(row, warnings))
+            # sanitize results for display
+            for row in results:
+                safe_array.append(sanitize_results(row, warnings))
             if show_nonprinting:
-                recursive_escape(json_array)
-            display(warnings, JSON(json_array, expanded=args.expand))
+                recursive_escape(safe_array)
+            if warnings:
+                display(warnings)
+            display(
+                JSON(
+                    json.loads(pd.DataFrame.from_records(safe_array, columns=columns).to_json(orient="records")),
+                    expanded=True,
+                ),
+            )
         elif output == "html":
             html = rows_to_html(columns, results, show_nonprinting)
             display(HTML(make_tag("table", False, html)))
