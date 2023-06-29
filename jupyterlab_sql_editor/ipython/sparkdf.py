@@ -13,12 +13,12 @@ from pyspark.sql.session import SparkSession
 
 import jupyterlab_sql_editor.ipython.spark_streaming_query as streaming
 from jupyterlab_sql_editor.ipython.common import (
-    cast_unsafe_ints_to_str,
     escape_control_chars,
     recursive_escape,
     render_ag_grid,
     render_grid,
     rows_to_html,
+    sanitize_results,
 )
 from jupyterlab_sql_editor.ipython.SparkSchemaWidget import SparkSchemaWidget
 
@@ -63,11 +63,11 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting, args):
         json_array = []
         warnings = []
         results = df.toJSON().map(lambda j: json.loads(j)).take(limit)
-        if df.count() > limit:
+        if len(results) > limit:
             has_more_data = True
         # cast unsafe ints to str for display
         for row in results:
-            json_array.append(cast_unsafe_ints_to_str(row, warnings))
+            json_array.append(sanitize_results(row, warnings))
         # add warnings to displays
         for warning in warnings:
             displays.append(warning)

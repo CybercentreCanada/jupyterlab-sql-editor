@@ -9,20 +9,20 @@ from IPython.display import HTML, JSON, display
 from traitlets import Bool, Instance, Int, Unicode, Union
 
 from jupyterlab_sql_editor.ipython.common import (
-    cast_unsafe_ints_to_str,
     escape_control_chars,
     make_tag,
     recursive_escape,
     render_ag_grid,
     render_grid,
     rows_to_html,
+    sanitize_results,
 )
 from jupyterlab_sql_editor.ipython_magic.common.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
 )
 
-VALID_OUTPUTS = ["sql", "text", "json", "json_cmt", "html", "aggrid", "grid", "skip", "none"]
+VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "skip", "none"]
 
 
 @magics_class
@@ -75,7 +75,7 @@ class Trino(Base):
     @argument(
         "-o",
         "--output",
-        metavar="sql|json|json_cmt|html|aggrid|grid|text|skip|none",
+        metavar="sql|json|html|aggrid|grid|text|skip|none",
         type=str,
         default="html",
         help="Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements)",
@@ -178,19 +178,6 @@ class Trino(Base):
             args=args,
         )
 
-    def __convert_dictionary(self, value):
-        # If it's a list, go in each element as they could be of some other type, and continue processing it
-        if isinstance(value, list):
-            return [self.__convert_dictionary(element) for element in value]
-        # If it's a NamedRowTuple (weird Trino tuple), create a dictionary, extract the name from the NRT as the key, and process value
-        elif isinstance(value, trino.client.NamedRowTuple):
-            temp_dict = {}
-            for kk, v in zip(value._names, value):
-                temp_dict[kk] = self.__convert_dictionary(v)
-            return temp_dict
-        else:
-            return value
-
     def display_results(self, results, columns, output, limit=20, show_nonprinting=False, args=None):
         if output == "grid":
             pdf = pd.DataFrame.from_records(results, columns=columns)
@@ -205,47 +192,21 @@ class Trino(Base):
                     pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
             display(render_ag_grid(pdf))
         elif output == "json":
-            json_array = []
+            safe_array = []
             warnings = []
-            json_string = pd.DataFrame.from_records(results, columns=columns).to_json(orient="records")
-            json_dict = json.loads(json_string)
-            # cast unsafe ints to str for display
-            for row in json_dict:
-                json_array.append(cast_unsafe_ints_to_str(row, warnings))
+            # sanitize results for display
+            for row in results:
+                safe_array.append(sanitize_results(row, warnings))
             if show_nonprinting:
-                recursive_escape(json_array)
-            display(warnings, JSON(json_array, expanded=args.expand))
-        elif output == "json_cmt":
-            json_array = []
-            warnings = []
-            json_dict = pd.DataFrame.from_records(results, columns=columns).to_dict(orient="records")
-
-            # Returns this list which should contain the dictionaries (rows) of the query
-            my_dictionary_list = []
-            # Iterate through the rows returned (json_dict {list}) and process the columns
-            for row_index, dictionary_entries in enumerate(json_dict):
-                # Goes through each column for a given row, checks the type, and processes them into a dictionary
-                current_row_as_dictionary = {}
-                for (
-                    column_index,
-                    top_level_column,
-                ) in enumerate(dictionary_entries.keys()):
-                    # results[row_index][column_index] returns the row and current column's values. The key or column name
-                    # is found in the top_level_column value within the loop
-                    # We are essentially pairing up the values from the raw "results" variable passed to us with the column
-                    # names that we can extract from the pandas dataframe
-                    current_row_as_dictionary[top_level_column] = self.__convert_dictionary(results[row_index][column_index])
-                my_dictionary_list.append(current_row_as_dictionary)
-            # Sets the new reconstructed dictionary rows to json_dict because I don't want to change the variable reference
-            # The loading and dumping will convert DateTime objects to something JSON serializable
-            json_dict = json.loads(json.dumps(my_dictionary_list, indent=4, sort_keys=True, default=str))
-
-            # cast unsafe ints to str for display
-            for row in json_dict:
-                json_array.append(cast_unsafe_ints_to_str(row, warnings))
-            if show_nonprinting:
-                recursive_escape(json_array)
-            display(warnings, JSON(json_array, expanded=args.expand))
+                recursive_escape(safe_array)
+            if warnings:
+                display(warnings)
+            display(
+                JSON(
+                    json.loads(pd.DataFrame.from_records(safe_array, columns=columns).to_json(orient="records")),
+                    expanded=True,
+                ),
+            )
         elif output == "html":
             html = rows_to_html(columns, results, show_nonprinting)
             display(HTML(make_tag("table", False, html)))
@@ -262,7 +223,7 @@ class Trino(Base):
 
     @staticmethod
     def format_cell(v, output="html", truncate=256):
-        if output != "json" and output != "json_cmt" and isinstance(v, str):
+        if output != "json" and isinstance(v, str):
             if len(v) > truncate:
                 v = v[:truncate] + "..."
         return v
@@ -327,4 +288,3 @@ class Trino(Base):
         link = "http://localhost"
         app_name = "name"
         display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {app_name}</a>"""))
-

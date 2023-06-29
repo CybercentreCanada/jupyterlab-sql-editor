@@ -8,6 +8,7 @@ from os.path import isdir, join
 
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
+from trino.client import NamedRowTuple
 
 DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
 
@@ -136,16 +137,16 @@ def find_nvm_lib_dirs():
     return dirs
 
 
-def cast_unsafe_ints_to_str(data, warnings=[]):
+def sanitize_results(data, warnings=[]):
     result = dict()
 
     if isinstance(data, dict):
         for key, value in data.items():
-            result[key] = cast_unsafe_ints_to_str(value, warnings)
+            result[key] = sanitize_results(value, warnings)
     elif isinstance(data, list):
         json_array = []
         for v in data:
-            json_array.append(cast_unsafe_ints_to_str(v, warnings))
+            json_array.append(sanitize_results(v, warnings))
         return json_array
     elif isinstance(data, int):
         if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
@@ -153,6 +154,9 @@ def cast_unsafe_ints_to_str(data, warnings=[]):
         else:
             warnings.append(f"int {data} was cast to string to avoid loss of precision.")
             return str(data)
+    elif isinstance(data, NamedRowTuple):
+        for key, value in zip(data._names, data):
+            result[key] = sanitize_results(value, warnings)
     else:
         return data
     return result
