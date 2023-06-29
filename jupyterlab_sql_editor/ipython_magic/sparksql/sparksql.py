@@ -153,8 +153,8 @@ class SparkSql(Base):
         # we treat these use cases differently than a SELECT that returns rows of data
         start = time()
         try:
-            results = self.spark.sql(sql)
-            df = self.spark.createDataFrame(results.take(limit + 1), schema=results.schema)
+            df = self.spark.sql(sql)
+            results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
         except PYSPARK_ERROR_TYPES as exc:
             if args.lean_exceptions:
                 self.print_pyspark_error(exc)
@@ -179,7 +179,7 @@ class SparkSql(Base):
             self.shell.user_ns.update({args.dataframe: results})
 
         self.display_results(
-            results=df,
+            results=results,
             output=output,
             limit=limit,
             truncate=truncate,
