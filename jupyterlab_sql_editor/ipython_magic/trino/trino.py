@@ -204,7 +204,7 @@ class Trino(Base):
             display(
                 JSON(
                     json.loads(pd.DataFrame.from_records(safe_array, columns=columns).to_json(orient="records")),
-                    expanded=True,
+                    expanded=args.expand,
                 ),
             )
         elif output == "html":
