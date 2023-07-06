@@ -176,7 +176,7 @@ class SparkSql(Base):
 
         if args.dataframe:
             print(f"Captured dataframe to local variable `{args.dataframe}`")
-            self.shell.user_ns.update({args.dataframe: results})
+            self.shell.user_ns.update({args.dataframe: df})
 
         self.display_results(
             results=results,
