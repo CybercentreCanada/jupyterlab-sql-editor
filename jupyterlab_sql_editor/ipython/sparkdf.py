@@ -119,6 +119,7 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
 
 
 def display_df(
+    original_df,
     df,
     output="grid",
     limit=20,
@@ -135,7 +136,7 @@ def display_df(
         streaming_query_name = "default_streaming_query_name"
         if query_name:
             streaming_query_name = query_name
-        ctx = streaming.get_streaming_ctx(streaming_query_name, df=df, sql=sql, mode=streaming_mode)
+        ctx = streaming.get_streaming_ctx(streaming_query_name, df=original_df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
         display_batch_df(ctx.query_microbatch(), output, limit, truncate, show_nonprinting, args)
@@ -143,7 +144,7 @@ def display_df(
         display_batch_df(df, output, limit, truncate, show_nonprinting, args)
         if query_name:
             print(f"Created temporary view `{query_name}`")
-            df.createOrReplaceTempView(query_name)
+            original_df.createOrReplaceTempView(query_name)
     return query
 
 

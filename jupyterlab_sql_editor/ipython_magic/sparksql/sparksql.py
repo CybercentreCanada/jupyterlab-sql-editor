@@ -179,6 +179,7 @@ class SparkSql(Base):
             self.shell.user_ns.update({args.dataframe: df})
 
         self.display_results(
+            original_df=df,
             results=results,
             output=output,
             limit=limit,
@@ -224,6 +225,7 @@ class SparkSql(Base):
 
     def display_results(
         self,
+        original_df,
         results,
         output="grid",
         limit=20,
@@ -236,6 +238,7 @@ class SparkSql(Base):
     ):
         # TODO: Revisit this
         display_df(
+            original_df=original_df,
             df=results,
             output=output,
             limit=limit,
