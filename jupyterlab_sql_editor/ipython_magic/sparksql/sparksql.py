@@ -118,7 +118,7 @@ class SparkSql(Base):
             truncate = args.truncate
 
         limit = args.limit
-        if limit is None:
+        if limit is None or limit <= 0:
             limit = self.limit
 
         if output not in VALID_OUTPUTS:
@@ -154,6 +154,9 @@ class SparkSql(Base):
         start = time()
         try:
             df = self.spark.sql(sql)
+            if output == "schema":
+                df.printSchema()
+                return
             results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
         except PYSPARK_ERROR_TYPES as exc:
             if args.lean_exceptions:
@@ -162,10 +165,11 @@ class SparkSql(Base):
             else:
                 raise exc
         end = time()
-        if len(results.columns) == 0:
-            elapsed = end - start
-            print(f"Execution time: {elapsed:.2f} seconds")
-            return
+        print(f"Execution time: {end - start:.2f} seconds")
+
+        # The text output already has it's own message coming from Spark
+        if results.count() > limit and not (output == "skip" or output == "none" or output == "text"):
+            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
 
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"

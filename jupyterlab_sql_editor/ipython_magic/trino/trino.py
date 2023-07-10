@@ -1,5 +1,6 @@
 import json
 import os
+from time import time
 
 import pandas as pd
 import trino
@@ -118,7 +119,7 @@ class Trino(Base):
             schema = self.schema
 
         limit = args.limit
-        if limit is None:
+        if limit is None or limit <= 0:
             limit = self.limit
 
         catalog_array = self.get_catalog_array()
@@ -128,10 +129,6 @@ class Trino(Base):
         output = args.output.lower()
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
-            return
-
-        if limit <= 0 or output == "skip" or output == "none":
-            print("Query execution skipped")
             return
 
         sql = self.get_sql_statement(cell, args.sql, args.jinja)
@@ -154,12 +151,15 @@ class Trino(Base):
             verify=self.verify,
         )
         self.cur = self.conn.cursor()
+        start = time()
         self.cur.execute(sql)
         results = self.cur.fetchmany(limit + 1)
         columns = list(map(lambda d: d[0], self.cur.description))
+        end = time()
+        print(f"Execution time: {end - start:.2f} seconds")
 
-        if len(results) > limit:
-            print("Only showing top %d row(s)" % limit)
+        if len(results) > limit and not (output == "skip" or output == "none"):
+            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}\n")
             results = results[:limit]
 
         results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
@@ -212,6 +212,8 @@ class Trino(Base):
             display(HTML(make_tag("table", False, html)))
         elif output == "text":
             print(self.render_text(results, columns))
+        elif output == "skip" or output == "none":
+            display("Display of results skipped")
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == "all":
