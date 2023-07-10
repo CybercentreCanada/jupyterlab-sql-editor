@@ -51,20 +51,16 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting, args):
     Execute the query of the dataframe and time the execution.
     """
     displays = []
-    start = time()
-    has_more_data = False
     if output == "grid":
-        has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
+        pdf = to_pandas(df, limit, truncate, show_nonprinting)
         displays.append(render_grid(pdf, limit))
     elif output == "aggrid":
-        has_more_data, pdf = to_pandas(df, limit, truncate, show_nonprinting)
+        pdf = to_pandas(df, limit, truncate, show_nonprinting)
         displays.append(render_ag_grid(pdf))
     elif output == "json":
         json_array = []
         warnings = []
         results = df.toJSON().map(lambda j: json.loads(j)).take(limit)
-        if len(results) > limit:
-            has_more_data = True
         # cast unsafe ints to str for display
         for row in results:
             json_array.append(sanitize_results(row, warnings))
@@ -75,28 +71,13 @@ def display_spark_df(df, output, limit, truncate, show_nonprinting, args):
             recursive_escape(json_array)
         displays.append(JSON(json_array, expanded=args.expand))
     elif output == "html":
-        has_more_data, html_text = to_html(df, limit, truncate, show_nonprinting)
+        html_text = to_html(df, limit, truncate, show_nonprinting)
         displays.append(HTML(html_text))
     elif output == "text":
         text = df._jdf.showString(limit, truncate, False)
         displays.append(PlainText(data=text))
-    elif limit <= 0 or output == "skip" or output == "none":
-        displays.append("Query execution skipped")
-        return []
-    elif output == "schema":
-        df.printSchema()
-        return []
-    else:
-        displays.append(PlainText(data=f"Invalid output option {output}, valid options are grid, json, html, text"))
-    end = time()
-    elapsed = end - start
-    if has_more_data:
-        message = "only showing top %d %s\n" % (
-            limit,
-            "row" if limit == 1 else "rows",
-        )
-        displays.append(PlainText(data=message))
-    displays.append(PlainText(data=f"Execution time: {elapsed:.2f} seconds"))
+    elif output == "skip" or output == "none":
+        displays.append(PlainText(data="Display of results skipped"))
     return displays
 
 
@@ -194,12 +175,9 @@ def to_html(df, max_num_rows, truncate, show_nonprinting):
     rows = list(_load_from_socket(sock_info, BatchedSerializer(PickleSerializer())))
     columns = rows[0]
     row_data = rows[1:]
-    has_more_data = len(row_data) > max_num_rows
     row_data = row_data[:max_num_rows]
     html = rows_to_html(columns, row_data, show_nonprinting)
-    if has_more_data:
-        html += "only showing top %d %s\n" % (max_num_rows, "row" if max_num_rows == 1 else "rows")
-    return has_more_data, html
+    return html
 
 
 def to_pandas(df, max_num_rows, truncate, show_nonprinting):
@@ -211,11 +189,10 @@ def to_pandas(df, max_num_rows, truncate, show_nonprinting):
     rows = list(_load_from_socket(sock_info, BatchedSerializer(PickleSerializer())))
     head = rows[0]
     row_data = rows[1:]
-    has_more_data = len(row_data) > max_num_rows
     row_data = row_data[:max_num_rows]
     pdf = pd.DataFrame(columns=head)
     for i, row in enumerate(row_data):
         if show_nonprinting:
             row = [escape_control_chars(str(v)) for v in row]
         pdf.loc[i] = row
-    return has_more_data, pdf
+    return pdf
