@@ -159,7 +159,7 @@ class Trino(Base):
         print(f"Execution time: {end - start:.2f} seconds")
 
         if len(results) > limit and not (output == "skip" or output == "none"):
-            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}\n")
+            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
             results = results[:limit]
 
         results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
