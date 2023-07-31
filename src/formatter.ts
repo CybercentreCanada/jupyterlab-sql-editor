@@ -3,7 +3,7 @@ import { INotebookTracker, Notebook } from '@jupyterlab/notebook';
 import { IEditorTracker } from '@jupyterlab/fileeditor';
 import { showErrorMessage } from '@jupyterlab/apputils';
 import { format } from 'sql-formatter';
-import { RegExpForeignCodeExtractor } from '@krassowski/jupyterlab-lsp';
+import { RegExpForeignCodeExtractor } from '@jupyter-lsp/jupyterlab-lsp';
 import { Constants } from './constants';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { cellMagicExtractor, markerExtractor } from './utils';

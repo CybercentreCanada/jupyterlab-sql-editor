@@ -1,4 +1,4 @@
-import { RegExpForeignCodeExtractor } from '@krassowski/jupyterlab-lsp';
+import { RegExpForeignCodeExtractor } from '@jupyter-lsp/jupyterlab-lsp';
 import { Mode } from 'codemirror';
 import { ICodeMirror } from '@jupyterlab/codemirror';
 
