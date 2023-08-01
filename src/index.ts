@@ -3,7 +3,7 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { ILSPCodeExtractorsManager } from '@krassowski/jupyterlab-lsp';
+import { ILSPCodeExtractorsManager } from '@jupyter-lsp/jupyterlab-lsp';
 import { ICodeMirror } from '@jupyterlab/codemirror'
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IEditorTracker } from '@jupyterlab/fileeditor';

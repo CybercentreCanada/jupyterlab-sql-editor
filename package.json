@@ -56,6 +56,7 @@
     "watch:labextension": "jupyter labextension watch ."
   },
   "dependencies": {
+    "@jupyter-lsp/jupyterlab-lsp": "^4.2.0",
     "@jupyterlab/application": "3.6.1",
     "@jupyterlab/apputils": "3.6.1",
     "@jupyterlab/cells": "3.6.1",
@@ -65,14 +66,13 @@
     "@jupyterlab/logconsole": "3.6.1",
     "@jupyterlab/notebook": "3.6.1",
     "@jupyterlab/settingregistry": "3.6.1",
-    "@krassowski/jupyterlab-lsp": "^3.10.2",
     "@types/codemirror": "^5.60.5",
     "codemirror": "~5.61.0",
     "npm-run-all": "^4.1.5",
     "sql-formatter": "6.1.2"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "3.6.1",
+    "@jupyterlab/builder": "^3.6.5",
     "@types/node": "~18.11.9",
     "@typescript-eslint/eslint-plugin": "^4.8.1",
     "@typescript-eslint/parser": "^4.8.1",
@@ -102,7 +102,7 @@
     "outputDir": "jupyterlab_sql_editor/labextension",
     "schemaDir": "schema",
     "sharedPackages": {
-      "@krassowski/jupyterlab-lsp": {
+      "@jupyter-lsp/jupyterlab-lsp": {
         "bundled": false,
         "singleton": true
       }
