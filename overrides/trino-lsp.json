@@ -3,7 +3,7 @@
         "language_servers": {
             "trino-language-server": {
                 "serverSettings": {
-                    "sqlLanguageServer.connections": [
+                    "personalConfig.connections": [
                         {
                             "name": "trino-conf",
                             "adapter": "json",
