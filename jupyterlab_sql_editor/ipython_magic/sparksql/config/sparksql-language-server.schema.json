@@ -1,0 +1,14 @@
+{
+    "title": "Sparksql Language Server Configuration",
+    "type": "object",
+    "properties": {
+      "sqlLanguageServer.connections": {
+        "type": "array",
+        "default": [],
+        "items": {
+          "type": "object"
+        },
+        "description": "Connections for sql-language-server."
+      }
+    }
+  }

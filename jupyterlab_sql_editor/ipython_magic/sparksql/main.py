@@ -27,7 +27,8 @@ mgr = LanguageServerManagerAPI()
 mgr.node_roots = ["/usr/local/lib/"]
 mgr.node_roots.extend(find_nvm_lib_dirs())
 
-NODE_MODULE = KEY = "sql-language-server"
+NODE_MODULE = "sql-language-server"
+KEY = "sparksql-language-server"
 SCRIPTS = ["dist", "bin", "cli.js"]
 PATH_TO_BIN_JS = mgr.find_node_module(NODE_MODULE, *SCRIPTS)
 
