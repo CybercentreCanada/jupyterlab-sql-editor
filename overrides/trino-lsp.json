@@ -7,8 +7,7 @@
                         {
                             "name": "trino-conf",
                             "adapter": "json",
-                            "filename": "/home/jovyan/.local/trinodb.schema.json",
-                            "jupyterLabMode": true
+                            "filename": "/home/jovyan/.local/trinodb.schema.json"
                         }
                     ]
                 }

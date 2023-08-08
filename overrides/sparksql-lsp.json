@@ -7,8 +7,7 @@
                         {
                             "name": "pyspark-conf",
                             "adapter": "json",
-                            "filename": "/home/jovyan/.local/sparkdb.schema.json",
-                            "jupyterLabMode": true
+                            "filename": "/home/jovyan/.local/sparkdb.schema.json"
                         }
                     ]
                 }
