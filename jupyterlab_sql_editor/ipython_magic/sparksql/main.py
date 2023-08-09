@@ -1,10 +1,10 @@
+import json
 import logging
 import pathlib
 import shutil
 import subprocess
 import sys
 
-from jupyter_lsp.specs.config import load_config_schema
 from jupyter_lsp.types import LanguageServerManagerAPI
 
 from jupyterlab_sql_editor.ipython.common import find_nvm_lib_dirs
@@ -27,6 +27,7 @@ mgr = LanguageServerManagerAPI()
 mgr.node_roots = ["/usr/local/lib/"]
 mgr.node_roots.extend(find_nvm_lib_dirs())
 
+CONFIG = pathlib.Path(__file__).parent.parent
 NODE_MODULE = KEY = "sql-language-server"
 SCRIPTS = ["dist", "bin", "cli.js"]
 PATH_TO_BIN_JS = mgr.find_node_module(NODE_MODULE, *SCRIPTS)
@@ -50,7 +51,7 @@ def load(app):
             "languages": ["sparksql"],
             "display_name": "Spark language server",
             "mime_types": ["application/sparksql", "application/x-sparksql"],
-            "config_schema": load_config_schema(KEY),
+            "config_schema": json.loads((CONFIG / "{}.schema.json".format(KEY)).read_text(encoding="utf-8")),
         }
     }
 
