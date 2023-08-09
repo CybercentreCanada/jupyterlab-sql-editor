@@ -3,7 +3,7 @@
         "language_servers": {
             "sparksql-language-server": {
                 "serverSettings": {
-                    "personalConfig.connections": [
+                    "sqlLanguageServer.connections": [
                         {
                             "name": "pyspark-conf",
                             "adapter": "json",
