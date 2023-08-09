@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-sql-editor",
-  "version": "0.1.71-alpha.6",
+  "version": "0.1.71-alpha.7",
   "description": "SQL editor support for formatting, syntax highlighting and code completion of SQL in cell magic, line magic, python string and file editor.",
   "keywords": [
     "jupyter",
@@ -22,8 +22,7 @@
   "files": [
     "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
     "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
-    "schema/*.json",
-    "jupyterlab_sql_editor/ipython_magic/*.json"
+    "schema/*.json"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

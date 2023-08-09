@@ -26,6 +26,7 @@ data_files_spec = [
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "sparksql-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "syntax_highlighting.json"),
     ("jupyterlab_sql_editor/ipython/", str("jupyterlab_sql_editor/ipython/"), "*.gif"),
+    ("jupyterlab_sql_editor/ipython_magic/", str("jupyterlab_sql_editor/ipython_magic/"), "*.json"),
 ]
 
 long_description = (HERE / "README.md").read_text()
