@@ -3,8 +3,12 @@ import os
 from importlib import reload
 from time import time
 
-import dbt.events
-import dbt.main
+try:
+    import dbt.events
+    import dbt.main
+except ImportError:
+    pass
+
 from IPython.core.magic import (
     line_cell_magic,
     line_magic,
@@ -284,8 +288,12 @@ class SparkSql(Base):
     @staticmethod
     def import_dbt():
         # reset dbt logging to prevent duplicate log entries.
-        reload(dbt.main)
-        reload(dbt.events)
+        try:
+            reload(dbt.main)
+            reload(dbt.events)
+        except Exception:
+            print("Error reloading dbt modules")
+            return False
         logger = logging.getLogger("configured_std_out")
         while logger.hasHandlers():
             logger.removeHandler(logger.handlers[0])

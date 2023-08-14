@@ -52,7 +52,6 @@ setup_args = dict(
         "Jinja2",
         "ipytree",
         "ply",
-        "dbt-core",
         "jupyter-events>=0.6.1",
     ],
     zip_safe=False,

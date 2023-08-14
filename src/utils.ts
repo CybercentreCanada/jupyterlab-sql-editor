@@ -20,20 +20,12 @@ function end(language: string) {
 // or in the short form
 // -d df
 // some options do not require any values, they act more as a flag
-const FLAG_OPTS = [
-    '-c', '--cache', //          Cache dataframe
-    '-e', '--eager',  //          Cache dataframe with eager load
-    '-s', '--show-nonprinting',
-    '-x', '--raw',
-    '-j', '--jinja',
-    '-b', '--dbt',
-].join('|')
 const SPACE = ' ';
-const OPTION_VALUE = `[0-9a-zA-Z/\._]+`;
-const SHORT_OPTS = `-[a-z] ${OPTION_VALUE}`;
-const LONG_OPTS = `--[_a-zA-Z]+ ${OPTION_VALUE}`;
-const COMMANDS = `(?:${SPACE}|${FLAG_OPTS}|${SHORT_OPTS}|${LONG_OPTS})*`;
-const BEGIN = `(?:^|\n)`;
+const OPTION_VALUE = '[0-9a-zA-Z\\._]+';
+const SHORT_OPTS = '-[a-z]';
+const LONG_OPTS = '--[_a-zA-Z]+';
+const COMMANDS = `(?:${SPACE}|${SHORT_OPTS} ${OPTION_VALUE}|${LONG_OPTS} ${OPTION_VALUE}|${SHORT_OPTS}|${LONG_OPTS})*`;
+const BEGIN = '(?:^|\n)';
 
 export function sqlCodeMirrorModesFor(
   language: string,
@@ -81,7 +73,7 @@ export function cellMagicExtractor(
 ): RegExpForeignCodeExtractor {
   return new RegExpForeignCodeExtractor({
     language: language,
-    pattern: `${BEGIN}${cell_magic(language)}${COMMANDS}\n([^]*)`,
+    pattern: `^${cell_magic(language)}.*?\n([\\S\\s]*)`,
     foreign_capture_groups: [1],
     is_standalone: true,
     file_extension: language
@@ -91,7 +83,7 @@ export function cellMagicExtractor(
 export function markerExtractor(language: string): RegExpForeignCodeExtractor {
   return new RegExpForeignCodeExtractor({
     language: language,
-    pattern: `${start(language)}.*?\n([^]*?)${end(language)}`,
+    pattern: `${start(language)}.*?\n([\\S\\s]*)${end(language)}`,
     foreign_capture_groups: [1],
     is_standalone: true,
     file_extension: language
@@ -103,7 +95,7 @@ export function markerExtractor(language: string): RegExpForeignCodeExtractor {
  * @param c
  * @param language
  */
-export function registerCodeMirrorFor(c: ICodeMirror, language: string) {
+export function registerCodeMirrorFor(c: ICodeMirror, language: string): void {
   c.CodeMirror.defineMode(
     language,
     (config: CodeMirror.EditorConfiguration, modeOptions?: any) => {
