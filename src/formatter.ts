@@ -228,7 +228,7 @@ export class JupyterLabCodeFormatter {
     this.setupContextMenu();
   }
 
-  setFormatter(sqlFormatter: SqlFormatter) {
+  setFormatter(sqlFormatter: SqlFormatter): void {
     this.notebookCodeFormatter.setFormatter(sqlFormatter);
     this.fileEditorCodeFormatter.setFormatter(sqlFormatter);
   }
@@ -252,13 +252,13 @@ export class JupyterLabCodeFormatter {
       isVisible: () => {
         return this.notebookCodeFormatter.applicable();
       },
-      label: 'Format Sql Cell'
+      label: 'Format SQL Cell'
     });
     this.app.commands.addCommand(Constants.FORMAT_COMMAND_DOCUMENT, {
       execute: async () => {
         await this.fileEditorCodeFormatter.formatAction();
       },
-      label: 'Format Sql Document'
+      label: 'Format SQL Document'
     });
   }
 }

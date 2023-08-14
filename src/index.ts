@@ -4,7 +4,7 @@ import {
 } from '@jupyterlab/application';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { ILSPCodeExtractorsManager } from '@jupyter-lsp/jupyterlab-lsp';
-import { ICodeMirror } from '@jupyterlab/codemirror'
+import { ICodeMirror } from '@jupyterlab/codemirror';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { IEditorTracker } from '@jupyterlab/fileeditor';
 import {
@@ -15,8 +15,7 @@ import {
   cellMagicExtractor,
   markerExtractor,
   lineMagicExtractor,
-  sqlCodeMirrorModesFor,
-  registerCodeMirrorFor
+  sqlCodeMirrorModesFor
 } from './utils';
 import { Constants } from './constants';
 import { KeywordCase } from 'sql-formatter';
@@ -77,9 +76,6 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
     // 'python'
   );
 
-  registerCodeMirrorFor(c, 'sparksql');
-  registerCodeMirrorFor(c, 'trino');
-
   // The following is already done by default implementation so not redoing here
   // c.CodeMirror.defineMIME('text/x-ipython', 'ipython');
   // c.CodeMirror.modeInfo.push({
@@ -91,7 +87,7 @@ function codeMirrorWithSqlSyntaxHighlightSupport(c: ICodeMirror) {
 }
 
 /**
- * Initialization data for the jupyterlab_jc extension.
+ * Initialization data for the jupyterlab-sql-editor extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: 'jupyterlab-sql-editor:plugin',
