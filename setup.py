@@ -25,7 +25,7 @@ data_files_spec = [
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "trino-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "sparksql-lsp.json"),
     ("share/jupyter/lab/settings/overrides.d", str("overrides"), "syntax_highlighting.json"),
-    ("jupyterlab_sql_editor/ipython/", str("jupyterlab_sql_editor/ipython/"), "*.gif"),
+    ("jupyterlab_sql_editor/ipython_magic/sparksql/", str("jupyterlab_sql_editor/ipython_magic/sparksql/"), "*.gif"),
     ("jupyterlab_sql_editor/ipython_magic/", str("jupyterlab_sql_editor/ipython_magic/"), "*.json"),
 ]
 

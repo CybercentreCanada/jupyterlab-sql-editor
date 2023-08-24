@@ -1,4 +1,4 @@
-from jupyterlab_sql_editor.ipython_magic.common.export import (
+from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
     Connection,
     Function,

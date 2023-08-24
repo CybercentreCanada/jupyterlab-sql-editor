@@ -3,8 +3,7 @@ import re
 import string
 from html import escape
 from html import escape as html_escape
-from os import environ, listdir
-from os.path import isdir, join
+from os import environ
 
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
@@ -21,19 +20,87 @@ JS_MAX_SAFE_INTEGER = 9007199254740991
 JS_MIN_SAFE_INTEGER = -9007199254740991
 
 
+def render_text(rows, columns, truncate):
+    string_builder = ""
+    num_cols = len(columns)
+    # We set a minimum column width at '3'
+    minimum_col_width = 3
+
+    # Initialise the width of each column to a minimum value
+    col_widths = [minimum_col_width for i in range(num_cols)]
+
+    # Compute the width of each column
+    for i, column in enumerate(columns):
+        col_widths[i] = max(col_widths[i], len(column))
+    for row in rows:
+        for i, cell in enumerate(row):
+            # 3 for the 3 dots after truncating
+            col_widths[i] = max(col_widths[i], max(len(str(cell)), truncate + 3))
+
+    padded_columns = []
+    for i, column in enumerate(columns):
+        new_name = column.ljust(col_widths[i], " ")
+        padded_columns.append(new_name)
+
+    padded_rows = []
+    for row in rows:
+        new_row = []
+        for i, cell in enumerate(row):
+            cell_value = format_value(str(cell), False, truncate)
+            new_val = cell_value.ljust(col_widths[i], " ")
+            new_row.append(new_val)
+        padded_rows.append(new_row)
+
+    # Create SeparateLine
+    sep = "+"
+    for width in col_widths:
+        for i in range(width):
+            sep += "-"
+        sep += "+"
+    sep += "\n"
+
+    string_builder = sep
+    string_builder += "|"
+    for column in padded_columns:
+        string_builder += column + "|"
+    string_builder += "\n"
+
+    # data
+    string_builder += sep
+    for row in padded_rows:
+        string_builder += "|"
+        for cell in row:
+            string_builder += cell + "|"
+        string_builder += "\n"
+    string_builder += sep
+    return string_builder
+
+
+def recursive_escape(input):
+    # check whether it's a dict, list, tuple, or scalar
+    if isinstance(input, dict):
+        items = input.items()
+    elif isinstance(input, (list, tuple)):
+        items = enumerate(input)
+    else:
+        # just a value, split and return
+        return format_value(str(input))
+
+    # now call ourself for every value and replace in the input
+    for key, value in items:
+        input[key] = recursive_escape(value)
+    return input
+
+
 def make_tag(tag_name, show_nonprinting, body="", **kwargs):
     body = str(body)
     if show_nonprinting:
-        body = escape_control_chars(escape(body))
+        body = format_value(escape(body))
     attributes = " ".join(map(lambda x: '%s="%s"' % x, kwargs.items()))
     if attributes:
         return f"<{tag_name} {attributes}>{body}</{tag_name}>"
     else:
         return f"<{tag_name}>{body}</{tag_name}>"
-
-
-def escape_control_chars(text):
-    return replchars.sub(replchars_to_hex, text)
 
 
 def render_grid(pdf, limit):
@@ -95,46 +162,16 @@ def replchars_to_hex(match):
     return r"\x{0:02x}".format(ord(match.group()))
 
 
-def recursive_escape(input):
-    # check whether it's a dict, list, tuple, or scalar
-    if isinstance(input, dict):
-        items = input.items()
-    elif isinstance(input, (list, tuple)):
-        items = enumerate(input)
-    else:
-        # just a value, split and return
-        return escape_control_chars(str(input))
-
-    # now call ourself for every value and replace in the input
-    for key, value in items:
-        input[key] = recursive_escape(value)
-    return input
-
-
-def rows_to_html(columns, row_data, show_nonprinting):
+def rows_to_html(columns, row_data, show_nonprinting, truncate):
     html = "<table border='1'>\n"
     # generate table head
     html += "<tr><th>%s</th></tr>\n" % "</th><th>".join(map(lambda x: html_escape(x), columns))
     # generate table rows
     for row in row_data:
-        if show_nonprinting:
-            row = [escape_control_chars(str(v)) for v in row]
+        row = [format_value(str(v), show_nonprinting, truncate) for v in row]
         html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(str(x)), row))
     html += "</table>\n"
     return html
-
-
-def find_nvm_lib_dirs():
-    NVM_VERSIONS_SUBPATH = "/versions/node/"
-    nvm_dir = environ["NVM_DIR"]
-    dirs = []
-    if nvm_dir:
-        dirs = [
-            f"{nvm_dir}{NVM_VERSIONS_SUBPATH}{d}/lib"
-            for d in listdir(nvm_dir + NVM_VERSIONS_SUBPATH)
-            if isdir(join(nvm_dir + NVM_VERSIONS_SUBPATH, d))
-        ]
-    return dirs
 
 
 def sanitize_results(data, warnings=[]):
@@ -160,3 +197,13 @@ def sanitize_results(data, warnings=[]):
     else:
         return data
     return result
+
+
+def format_value(text, show_nonprinting=False, truncate=0):
+    formatted_value = text
+    if isinstance(formatted_value, str):
+        if show_nonprinting:
+            formatted_value = replchars.sub(replchars_to_hex, formatted_value)
+        if truncate > 0 and len(formatted_value) > truncate:
+            formatted_value = formatted_value[:truncate] + "..."
+    return formatted_value

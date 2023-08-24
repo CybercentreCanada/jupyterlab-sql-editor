@@ -26,12 +26,12 @@ from pyspark.sql.utils import (
 )
 from traitlets import List, Unicode
 
-from jupyterlab_sql_editor.ipython.sparkdf import display_df
-from jupyterlab_sql_editor.ipython_magic.common.base import Base
+from jupyterlab_sql_editor.ipython_magic.base import Base
 from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
     update_database_schema,
     update_local_database,
 )
+from jupyterlab_sql_editor.ipython_magic.sparksql.sparkdf import display_df
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "schema", "skip", "none"]
 PYSPARK_ERROR_TYPES = (
@@ -117,8 +117,8 @@ class SparkSql(Base):
 
         streaming_mode = args.streaming_mode.lower()
 
-        truncate = 256
-        if args.truncate and args.truncate > 0:
+        truncate = 0
+        if args.truncate:
             truncate = args.truncate
 
         limit = args.limit
@@ -171,8 +171,7 @@ class SparkSql(Base):
         end = time()
         print(f"Execution time: {end - start:.2f} seconds")
 
-        # The text output already has it's own message coming from Spark
-        if results.count() > limit and not (output == "skip" or output == "none" or output == "text"):
+        if results.count() > limit and not (output == "skip" or output == "none"):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
 
         if args.cache or args.eager:
@@ -186,11 +185,10 @@ class SparkSql(Base):
             print(f"Captured dataframe to local variable `{args.dataframe}`")
             self.shell.user_ns.update({args.dataframe: df})
 
-        self.display_results(
+        display_df(
             original_df=df,
-            results=results,
+            df=results,
             output=output,
-            limit=limit,
             truncate=truncate,
             show_nonprinting=args.show_nonprinting,
             query_name=args.view,
@@ -230,33 +228,6 @@ class SparkSql(Base):
     @staticmethod
     def get_instantiated_spark_session():
         return SparkSession._instantiatedSession
-
-    def display_results(
-        self,
-        original_df,
-        results,
-        output="grid",
-        limit=20,
-        truncate=512,
-        show_nonprinting=False,
-        query_name=None,
-        sql=None,
-        streaming_mode="update",
-        args=None,
-    ):
-        # TODO: Revisit this
-        display_df(
-            original_df=original_df,
-            df=results,
-            output=output,
-            limit=limit,
-            truncate=truncate,
-            show_nonprinting=show_nonprinting,
-            query_name=query_name,
-            sql=sql,
-            streaming_mode=streaming_mode,
-            args=args,
-        )
 
     def get_dbt_sql_statement(self, cell, sql_argument):
         sql = cell

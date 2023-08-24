@@ -3,7 +3,7 @@ import logging
 from pyspark.sql.types import StringType, StructType
 from trino.exceptions import TrinoUserError
 
-from jupyterlab_sql_editor.ipython_magic.common.export import (
+from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
     Connection,
     Function,
