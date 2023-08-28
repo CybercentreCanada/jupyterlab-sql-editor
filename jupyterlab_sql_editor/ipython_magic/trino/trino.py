@@ -1,4 +1,3 @@
-import json
 import os
 from time import time
 
@@ -6,22 +5,14 @@ import pandas as pd
 import trino
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from IPython.display import HTML, JSON, display
+from IPython.display import display
 from traitlets import Bool, Instance, Int, Unicode, Union
 
-from jupyterlab_sql_editor.ipython.common import (
-    escape_control_chars,
-    make_tag,
-    recursive_escape,
-    render_ag_grid,
-    render_grid,
-    rows_to_html,
-    sanitize_results,
-)
-from jupyterlab_sql_editor.ipython_magic.common.base import Base
+from jupyterlab_sql_editor.ipython_magic.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
 )
+from jupyterlab_sql_editor.outputters.outputters import _display_results
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "skip", "none"]
 
@@ -106,8 +97,8 @@ class Trino(Base):
         args = parse_argstring(self.trino, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
-        truncate = 256
-        if args.truncate and args.truncate > 0:
+        truncate = 0
+        if args.truncate:
             truncate = args.truncate
 
         catalog = args.catalog
@@ -162,58 +153,21 @@ class Trino(Base):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
             results = results[:limit]
 
-        results = list(map(lambda row: [self.format_cell(v, output, truncate) for v in row], results[:limit]))
-
         if args.dataframe:
             print(f"Saved results to pandas dataframe named `{args.dataframe}`")
             pdf = pd.DataFrame.from_records(results, columns=columns)
             self.shell.user_ns.update({args.dataframe: pdf})
 
-        self.display_results(
-            results=results,
-            columns=columns,
+        if output == "skip" or output == "none":
+            display("Display of results skipped")
+
+        _display_results(
+            pdf=pd.DataFrame.from_records(results, columns=columns),
             output=output,
-            limit=limit,
             show_nonprinting=args.show_nonprinting,
+            truncate=truncate,
             args=args,
         )
-
-    def display_results(self, results, columns, output, limit=20, show_nonprinting=False, args=None):
-        if output == "grid":
-            pdf = pd.DataFrame.from_records(results, columns=columns)
-            if show_nonprinting:
-                for c in pdf.columns:
-                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
-            display(render_grid(pdf, limit))
-        elif output == "aggrid":
-            pdf = pd.DataFrame.from_records(results, columns=columns)
-            if show_nonprinting:
-                for c in pdf.columns:
-                    pdf[c] = pdf[c].apply(lambda v: escape_control_chars(str(v)))
-            display(render_ag_grid(pdf))
-        elif output == "json":
-            safe_array = []
-            warnings = []
-            # sanitize results for display
-            for row in results:
-                safe_array.append(sanitize_results(row, warnings))
-            if show_nonprinting:
-                recursive_escape(safe_array)
-            if warnings:
-                display(warnings)
-            display(
-                JSON(
-                    json.loads(pd.DataFrame.from_records(safe_array, columns=columns).to_json(orient="records")),
-                    expanded=args.expand,
-                ),
-            )
-        elif output == "html":
-            html = rows_to_html(columns, results, show_nonprinting)
-            display(HTML(make_tag("table", False, html)))
-        elif output == "text":
-            print(self.render_text(results, columns))
-        elif output == "skip" or output == "none":
-            display("Display of results skipped")
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == "all":
@@ -222,71 +176,3 @@ class Trino(Base):
         if refresh_arg != "none":
             print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]")
         return False
-
-    @staticmethod
-    def format_cell(v, output="html", truncate=256):
-        if output != "json" and isinstance(v, str):
-            if len(v) > truncate:
-                v = v[:truncate] + "..."
-        return v
-
-    @staticmethod
-    def render_text(rows, columns):
-        string_builder = ""
-        num_cols = len(columns)
-        # We set a minimum column width at '3'
-        minimum_col_width = 3
-
-        # Initialise the width of each column to a minimum value
-        col_widths = [minimum_col_width for i in range(num_cols)]
-
-        # Compute the width of each column
-        for i, column in enumerate(columns):
-            col_widths[i] = max(col_widths[i], len(column))
-        for row in rows:
-            for i, cell in enumerate(row):
-                col_widths[i] = max(col_widths[i], len(str(cell)))
-
-        padded_columns = []
-        for i, column in enumerate(columns):
-            new_name = column.ljust(col_widths[i], " ")
-            padded_columns.append(new_name)
-
-        padded_rows = []
-        for row in rows:
-            new_row = []
-            for i, cell in enumerate(row):
-                cell_value = str(cell)
-                new_val = cell_value.ljust(col_widths[i], " ")
-                new_row.append(new_val)
-            padded_rows.append(new_row)
-
-        # Create SeparateLine
-        sep = "+"
-        for width in col_widths:
-            for i in range(width):
-                sep += "-"
-            sep += "+"
-        sep += "\n"
-
-        string_builder = sep
-        string_builder += "|"
-        for column in padded_columns:
-            string_builder += column + "|"
-        string_builder += "\n"
-
-        # data
-        string_builder += sep
-        for row in padded_rows:
-            string_builder += "|"
-            for cell in row:
-                string_builder += cell + "|"
-            string_builder += "\n"
-        string_builder += sep
-        return string_builder
-
-    @staticmethod
-    def display_link():
-        link = "http://localhost"
-        app_name = "name"
-        display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {app_name}</a>"""))

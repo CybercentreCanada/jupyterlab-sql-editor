@@ -81,9 +81,6 @@ class Base(Magics):
         super().__init__(shell, **kwargs)
         self.user_ns = {}
 
-    def display_results():
-        pass
-
     @staticmethod
     def bind_variables(query, user_ns):
         template = Template(query, undefined=ExplainUndefined)

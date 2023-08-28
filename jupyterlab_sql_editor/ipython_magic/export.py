@@ -8,20 +8,30 @@ from abc import ABC, abstractmethod
 from IPython.display import clear_output
 from pyspark.sql.types import (
     ArrayType,
+    AtomicType,
     BinaryType,
     BooleanType,
+    ByteType,
+    DataType,
     DateType,
+    DayTimeIntervalType,
     DecimalType,
     DoubleType,
     FloatType,
+    FractionalType,
     IntegerType,
+    IntegralType,
     LongType,
     MapType,
+    NullType,
+    NumericType,
     ShortType,
     StringType,
     StructField,
     StructType,
+    TimestampNTZType,
     TimestampType,
+    UserDefinedType,
 )
 
 
@@ -224,7 +234,6 @@ class SchemaExporter:
 
 
 class SparkTableSchema:
-
     # TODO: consider using an alternative abstraction rather than using
     # spark's model.
     def __init__(self, schema, quoting_char="`") -> None:
@@ -232,6 +241,16 @@ class SparkTableSchema:
         self.quoting_char = quoting_char
 
     _FIELD_TYPES = {
+        AtomicType: "atomic",
+        ByteType: "byte",
+        DataType: "data",
+        DayTimeIntervalType: "daytime_interval",
+        FractionalType: "fractional",
+        IntegralType: "integral",
+        NullType: "null",
+        NumericType: "numeric",
+        TimestampNTZType: "timestamp_ntz",
+        UserDefinedType: "udf",
         StringType: "string",
         ArrayType: "array",
         TimestampType: "timestamp",

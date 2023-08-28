@@ -7,7 +7,7 @@ import sys
 
 from jupyter_lsp.types import LanguageServerManagerAPI
 
-from jupyterlab_sql_editor.ipython.common import find_nvm_lib_dirs
+from jupyterlab_sql_editor.ipython_magic.util import find_nvm_lib_dirs
 
 logging.basicConfig(
     format="%(asctime)s %(message)s",
