@@ -188,6 +188,7 @@ class SparkSql(Base):
         display_df(
             original_df=df,
             df=results,
+            limit=limit,
             output=output,
             truncate=truncate,
             show_nonprinting=args.show_nonprinting,

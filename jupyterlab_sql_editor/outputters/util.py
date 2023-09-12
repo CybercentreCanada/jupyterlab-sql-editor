@@ -29,13 +29,22 @@ def render_text(rows, columns, truncate):
     # Initialise the width of each column to a minimum value
     col_widths = [minimum_col_width for i in range(num_cols)]
 
+    # Truncate results
+    truncated_rows = []
+    for row in rows:
+        new_row = []
+        for i, cell in enumerate(row):
+            cell_value = format_value(str(cell), False, truncate)
+            new_row.append(cell_value)
+        truncated_rows.append(new_row)
+
     # Compute the width of each column
     for i, column in enumerate(columns):
         col_widths[i] = max(col_widths[i], len(column))
-    for row in rows:
+    for row in truncated_rows:
         for i, cell in enumerate(row):
             # 3 for the 3 dots after truncating
-            col_widths[i] = max(col_widths[i], max(len(str(cell)), truncate + 3))
+            col_widths[i] = max(col_widths[i], len(str(cell)))
 
     padded_columns = []
     for i, column in enumerate(columns):
@@ -43,11 +52,10 @@ def render_text(rows, columns, truncate):
         padded_columns.append(new_name)
 
     padded_rows = []
-    for row in rows:
+    for row in truncated_rows:
         new_row = []
         for i, cell in enumerate(row):
-            cell_value = format_value(str(cell), False, truncate)
-            new_val = cell_value.ljust(col_widths[i], " ")
+            new_val = cell.ljust(col_widths[i], " ")
             new_row.append(new_val)
         padded_rows.append(new_row)
 

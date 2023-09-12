@@ -78,10 +78,10 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
     display(JSON(safe_array, expanded=expanded))
 
 
-def html(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
+def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
     html = rows_to_html(df.columns.values.tolist(), df.values.tolist(), show_nonprinting, truncate)
     display(HTML(make_tag("table", False, html)))
 
 
-def text(df: pd.DataFrame, truncate=0) -> None:
+def text(df: pd.DataFrame, truncate=256) -> None:
     print(render_text(df.values.tolist(), df.columns.values.tolist(), truncate))
