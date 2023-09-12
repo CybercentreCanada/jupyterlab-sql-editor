@@ -7,6 +7,7 @@ from os import environ
 
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
+from pyspark.sql.types import Row
 from trino.client import NamedRowTuple
 
 DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
@@ -199,6 +200,9 @@ def sanitize_results(data, warnings=[]):
         else:
             warnings.append(f"int {data} was cast to string to avoid loss of precision.")
             return str(data)
+    elif isinstance(data, Row):
+        for key, value in data.asDict().items():
+            result[key] = sanitize_results(value, warnings)
     elif isinstance(data, NamedRowTuple):
         for key, value in zip(data._names, data):
             result[key] = sanitize_results(value, warnings)
