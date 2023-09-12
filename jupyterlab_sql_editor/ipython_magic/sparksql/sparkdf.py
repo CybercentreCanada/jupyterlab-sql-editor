@@ -49,13 +49,14 @@ def display_link():
 
 
 def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
-    display_df(df, df.limit(limit))
+    display_df(df, df, limit)
     return ""
 
 
 def display_df(
     original_df,
     df,
+    limit=20,
     output="grid",
     truncate=0,
     show_nonprinting=False,
@@ -73,16 +74,16 @@ def display_df(
         ctx = streaming.get_streaming_ctx(streaming_query_name, df=original_df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
-        display_batch_df(ctx.query_microbatch(), output, truncate, show_nonprinting, args)
+        display_batch_df(ctx.query_microbatch(), limit, output, truncate, show_nonprinting, args)
     else:
-        display_batch_df(df, output, truncate, show_nonprinting, args)
+        display_batch_df(df, limit, output, truncate, show_nonprinting, args)
         if query_name:
             print(f"Created temporary view `{query_name}`")
             original_df.createOrReplaceTempView(query_name)
     return query
 
 
-def display_batch_df(df, output, truncate, show_nonprinting, args):
+def display_batch_df(df, limit, output, truncate, show_nonprinting, args):
     """
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     """
@@ -94,7 +95,11 @@ def display_batch_df(df, output, truncate, show_nonprinting, args):
     if output not in ["skip", "none"]:
         try:
             _display_results(
-                df.toPandas(), output=output, truncate=truncate, show_nonprinting=show_nonprinting, args=args
+                df.limit(limit).toPandas(),
+                output=output,
+                truncate=truncate,
+                show_nonprinting=show_nonprinting,
+                args=args,
             )
         except Exception:
             raise
