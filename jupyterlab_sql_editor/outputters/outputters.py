@@ -1,4 +1,3 @@
-import json
 import re
 import string
 from typing import List
@@ -55,7 +54,6 @@ def grid(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
 
 
 def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format="iso") -> None:
-    json_rows = []
     safe_array = []
     warnings: List[str] = []
 
@@ -63,19 +61,22 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
     if date_format not in valid_date_formats:
         raise ValueError(f"jjson: status must be one of {valid_date_formats}.")
 
-    for i in range(len(df)):
-        d = json.loads(df.iloc[i, :].to_json(date_format=date_format))
-        json_rows.append(d)
-
     # sanitize results for display
-    for row in json_rows:
+    for row in df.to_dict(orient="records"):
         safe_array.append(sanitize_results(row, warnings))
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
         display(warnings)
 
-    display(JSON(safe_array, expanded=expanded))
+    display(
+        JSON(
+            pd.DataFrame.from_records(safe_array, columns=df.columns).to_json(
+                orient="records", date_format=date_format
+            ),
+            expanded=expanded,
+        )
+    )
 
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
