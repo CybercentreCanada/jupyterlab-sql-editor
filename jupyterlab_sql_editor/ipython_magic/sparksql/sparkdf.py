@@ -58,7 +58,7 @@ def display_df(
     df,
     limit=20,
     output="grid",
-    truncate=0,
+    truncate=256,
     show_nonprinting=False,
     query_name=None,
     sql=None,
