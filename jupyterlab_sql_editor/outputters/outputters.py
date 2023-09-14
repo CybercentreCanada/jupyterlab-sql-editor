@@ -43,12 +43,14 @@ def _display_results(pdf: pd.DataFrame, output: str, show_nonprinting: bool, tru
 
 def aggrid(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
     for c in df.columns:
+        df[c] = df[c].apply(lambda v: sanitize_results(v))
         df[c] = df[c].apply(lambda v: format_value(str(v), show_nonprinting, truncate))
     display(render_ag_grid(df))
 
 
 def grid(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
     for c in df.columns:
+        df[c] = df[c].apply(lambda v: sanitize_results(v))
         df[c] = df[c].apply(lambda v: format_value(str(v), show_nonprinting, truncate))
     display(render_grid(df, df.size))
 
@@ -63,7 +65,7 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
 
     # sanitize results for display
     for row in df.to_dict(orient="records"):
-        safe_array.append(sanitize_results(row, warnings))
+        safe_array.append(sanitize_results(row, warnings, True))
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
@@ -80,9 +82,9 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
 
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
-    html = rows_to_html(df.columns.values.tolist(), df.values.tolist(), show_nonprinting, truncate)
+    html = rows_to_html(sanitize_results(df.values.tolist()), df.columns.values.tolist(), show_nonprinting, truncate)
     display(HTML(make_tag("table", False, html)))
 
 
 def text(df: pd.DataFrame, truncate=256) -> None:
-    print(render_text(df.values.tolist(), df.columns.values.tolist(), truncate))
+    print(render_text(sanitize_results(df.values.tolist()), df.columns.values.tolist(), truncate))

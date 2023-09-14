@@ -171,19 +171,19 @@ def replchars_to_hex(match):
     return r"\x{0:02x}".format(ord(match.group()))
 
 
-def rows_to_html(columns, row_data, show_nonprinting, truncate):
+def rows_to_html(rows, columns, show_nonprinting, truncate):
     html = "<table border='1'>\n"
     # generate table head
     html += "<tr><th>%s</th></tr>\n" % "</th><th>".join(map(lambda x: html_escape(x), columns))
     # generate table rows
-    for row in row_data:
+    for row in rows:
         row = [format_value(str(v), show_nonprinting, truncate) for v in row]
         html += "<tr><td>%s</td></tr>\n" % "</td><td>".join(map(lambda x: html_escape(str(x)), row))
     html += "</table>\n"
     return html
 
 
-def sanitize_results(data, warnings=[]):
+def sanitize_results(data, warnings=[], safe_js_ints=False):
     result = dict()
 
     if isinstance(data, dict):
@@ -194,7 +194,7 @@ def sanitize_results(data, warnings=[]):
         for v in data:
             json_array.append(sanitize_results(v, warnings))
         return json_array
-    elif isinstance(data, int):
+    elif safe_js_ints and isinstance(data, int):
         if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
             return data
         else:
