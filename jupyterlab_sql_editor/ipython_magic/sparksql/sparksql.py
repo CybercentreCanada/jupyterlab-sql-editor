@@ -117,7 +117,7 @@ class SparkSql(Base):
 
         streaming_mode = args.streaming_mode.lower()
 
-        truncate = 0
+        truncate = 256
         if args.truncate:
             truncate = args.truncate
 

@@ -41,14 +41,14 @@ def _display_results(pdf: pd.DataFrame, output: str, show_nonprinting: bool, tru
         text(pdf, truncate)
 
 
-def aggrid(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
+def aggrid(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
     for c in df.columns:
         df[c] = df[c].apply(lambda v: sanitize_results(v))
         df[c] = df[c].apply(lambda v: format_value(str(v), show_nonprinting, truncate))
     display(render_ag_grid(df))
 
 
-def grid(df: pd.DataFrame, show_nonprinting=False, truncate=0) -> None:
+def grid(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
     for c in df.columns:
         df[c] = df[c].apply(lambda v: sanitize_results(v))
         df[c] = df[c].apply(lambda v: format_value(str(v), show_nonprinting, truncate))

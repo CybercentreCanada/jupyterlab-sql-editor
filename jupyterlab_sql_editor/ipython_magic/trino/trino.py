@@ -97,7 +97,7 @@ class Trino(Base):
         args = parse_argstring(self.trino, line)
         output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
 
-        truncate = 0
+        truncate = 256
         if args.truncate:
             truncate = args.truncate
 
