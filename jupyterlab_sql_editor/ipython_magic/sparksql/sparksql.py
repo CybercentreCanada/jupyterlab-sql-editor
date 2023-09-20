@@ -171,8 +171,10 @@ class SparkSql(Base):
         end = time()
         print(f"Execution time: {end - start:.2f} seconds")
 
-        if results.count() > limit and not (output == "skip" or output == "none"):
-            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+        if not (output == "skip" or output == "none"):
+            pdf = results.toPandas()
+            if len(pdf) > limit:
+                print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
 
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"
@@ -188,6 +190,7 @@ class SparkSql(Base):
         display_df(
             original_df=df,
             df=results,
+            pdf=pdf,
             limit=limit,
             output=output,
             truncate=truncate,
