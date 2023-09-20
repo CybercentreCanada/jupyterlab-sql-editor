@@ -56,6 +56,7 @@ def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
 def display_df(
     original_df,
     df,
+    pdf,
     limit=20,
     output="grid",
     truncate=256,
@@ -76,14 +77,14 @@ def display_df(
         ctx.display_streaming_query()
         display_batch_df(ctx.query_microbatch(), limit, output, truncate, show_nonprinting, args)
     else:
-        display_batch_df(df, limit, output, truncate, show_nonprinting, args)
+        display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args)
         if query_name:
             print(f"Created temporary view `{query_name}`")
             original_df.createOrReplaceTempView(query_name)
     return query
 
 
-def display_batch_df(df, limit, output, truncate, show_nonprinting, args):
+def display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args):
     """
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     """
@@ -95,7 +96,7 @@ def display_batch_df(df, limit, output, truncate, show_nonprinting, args):
     if output not in ["skip", "none"]:
         try:
             _display_results(
-                df.limit(limit).toPandas(),
+                pdf[:limit],
                 output=output,
                 truncate=truncate,
                 show_nonprinting=show_nonprinting,
