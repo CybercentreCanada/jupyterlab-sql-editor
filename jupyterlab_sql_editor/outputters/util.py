@@ -194,6 +194,8 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
         for v in data:
             json_array.append(sanitize_results(v, warnings))
         return json_array
+    elif isinstance(data, (bytearray, bytes)):
+        return data.hex(" ").upper().split().__str__()
     elif safe_js_ints and isinstance(data, int):
         if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
             return data
