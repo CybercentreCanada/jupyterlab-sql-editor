@@ -161,6 +161,7 @@ def render_ag_grid(pdf):
         grid_options=grid_options,
         quick_filter=True,
         theme="ag-theme-balham",
+        dark_theme="ag-theme-balham-dark",
         columns_fit="auto",
         index=False,
         license=ag_grid_license_key if ag_grid_license_key else "",

@@ -46,7 +46,7 @@ setup_args = dict(
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(),
     install_requires=[
-        "cccs-ipyaggrid",
+        "cccs-ipyaggrid>=0.5.3",
         "ipydatagrid",
         "ipytree",
         "Jinja2",
