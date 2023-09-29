@@ -1,21 +1,21 @@
+import datetime
+import itertools
 import math
 import re
 import string
-from collections import Counter
 from html import escape
 from html import escape as html_escape
 from os import environ
-from typing import List, Optional, Type
-from warnings import catch_warnings, simplefilter
+from typing import Any, Callable, List, Optional, Type, Union, cast
 
-import numpy as np
 import pandas as pd
-import pyspark
 import pyspark.sql.types as pt
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
-from pandas.core.dtypes.common import is_timedelta64_dtype
+from pandas.core.series import Series as PandasSeriesLike
+from pyspark.errors.exceptions.base import PySparkException
 from pyspark.sql.types import (
+    ArrayType,
     BooleanType,
     ByteType,
     DataType,
@@ -25,10 +25,13 @@ from pyspark.sql.types import (
     IntegerType,
     IntegralType,
     LongType,
+    MapType,
     ShortType,
+    StructType,
     TimestampNTZType,
     TimestampType,
-    cast,
+    UserDefinedType,
+    _create_row,
 )
 from trino.client import NamedRowTuple
 
@@ -134,6 +137,13 @@ def make_tag(tag_name, show_nonprinting, body="", **kwargs):
         return f"<{tag_name}>{body}</{tag_name}>"
 
 
+# PySpark 3.5.0 copy
+class UnsupportedOperationException(PySparkException):
+    """
+    Unsupported operation exception thrown from Spark with an error class.
+    """
+
+
 def _get_local_timezone() -> str:
     """Get local timezone using pytz with environment variable, or dateutil.
 
@@ -182,7 +192,9 @@ def _to_corrected_pandas_type(dt: DataType) -> Optional[Type]:
         return None
 
 
-def _check_series_convert_timestamps_localize(s, from_timezone: Optional[str], to_timezone: Optional[str]):
+def _check_series_convert_timestamps_localize(
+    s: "PandasSeriesLike", from_timezone: Optional[str], to_timezone: Optional[str]
+) -> "PandasSeriesLike":
     """
     Convert timestamp to timezone-naive in the specified timezone or local timezone
 
@@ -199,34 +211,29 @@ def _check_series_convert_timestamps_localize(s, from_timezone: Optional[str], t
     pandas.Series
         `pandas.Series` where if it is a timestamp, has been converted to tz-naive
     """
-    from pandas.api.types import (  # type: ignore[attr-defined]
-        is_datetime64_dtype,
-        is_datetime64tz_dtype,
-    )
+    import pandas as pd
+    from pandas.api.types import is_datetime64_dtype  # type: ignore[attr-defined]
 
     from_tz = from_timezone or _get_local_timezone()
     to_tz = to_timezone or _get_local_timezone()
     # TODO: handle nested timestamps, such as ArrayType(TimestampType())?
-    if is_datetime64tz_dtype(s.dtype):
+    if isinstance(s.dtype, pd.DatetimeTZDtype):
         return s.dt.tz_convert(to_tz).dt.tz_localize(None)
     elif is_datetime64_dtype(s.dtype) and from_tz != to_tz:
         # `s.dt.tz_localize('tzlocal()')` doesn't work properly when including NaT.
-        try:
-            return cast(
-                "PandasSeriesLike",
-                s.apply(
-                    lambda ts: ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
-                    if ts is not pd.NaT
-                    else pd.NaT
-                ),
-            )
-        except Exception as exc:
-            print(f"{from_tz} {to_tz} {exc}")
+        return cast(
+            "PandasSeriesLike",
+            s.apply(
+                lambda ts: ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
+                if ts is not pd.NaT
+                else pd.NaT
+            ),
+        )
     else:
         return s
 
 
-def _check_series_convert_timestamps_local_tz(s, timezone: str):
+def _check_series_convert_timestamps_local_tz(s: "PandasSeriesLike", timezone: str) -> "PandasSeriesLike":
     """
     Convert timestamp to timezone-naive in the specified timezone or local timezone
 
@@ -244,76 +251,388 @@ def _check_series_convert_timestamps_local_tz(s, timezone: str):
     return _check_series_convert_timestamps_localize(s, None, timezone)
 
 
-# spark
-def to_pandas(df: pyspark.sql.DataFrame, sparkSession) -> pd.DataFrame:
-    jconf = sparkSession._jconf
-    timezone = jconf.sessionLocalTimeZone()
+def _dedup_names(names: List[str]) -> List[str]:
+    if len(set(names)) == len(names):
+        return names
+    else:
 
-    # Below is toPandas without Arrow optimization.
-    pdf = pd.DataFrame.from_records(df.collect(), columns=df.columns)
-    column_counter = Counter(df.columns)
+        def _gen_dedup(_name: str) -> Callable[[], str]:
+            _i = itertools.count()
+            return lambda: f"{_name}_{next(_i)}"
 
-    corrected_dtypes: List[Optional[Type]] = [None] * len(df.schema)
-    for index, field in enumerate(df.schema):
-        # We use `iloc` to access columns with duplicate column names.
-        if column_counter[field.name] > 1:
-            pandas_col = pdf.iloc[:, index]
-        else:
-            pandas_col = pdf[field.name]
+        def _gen_identity(_name: str) -> Callable[[], str]:
+            return lambda: _name
 
-        pandas_type = _to_corrected_pandas_type(field.dataType)
+        gen_new_name = {
+            name: _gen_dedup(name) if len(list(group)) > 1 else _gen_identity(name)
+            for name, group in itertools.groupby(sorted(names))
+        }
+        return [gen_new_name[name]() for name in names]
+
+
+def _create_converter_to_pandas(
+    data_type: DataType,
+    nullable: bool = True,
+    *,
+    timezone: Optional[str] = None,
+    struct_in_pandas: Optional[str] = None,
+    error_on_duplicated_field_names: bool = True,
+    timestamp_utc_localized: bool = True,
+    ndarray_as_list: bool = False,
+) -> Callable[["pd.Series"], "pd.Series"]:
+    """
+    Create a converter of pandas Series that is created from Spark's Python objects,
+    or `pyarrow.Table.to_pandas` method.
+
+    Parameters
+    ----------
+    data_type : :class:`DataType`
+        The data type corresponding to the pandas Series to be converted.
+    nullable : bool, optional
+        Whether the column is nullable or not. (default ``True``)
+    timezone : str, optional
+        The timezone to convert from. If there is a timestamp type, it's required.
+    struct_in_pandas : str, optional
+        How to handle struct type. If there is a struct type, it's required.
+        When ``row``, :class:`Row` object will be used.
+        When ``dict``, :class:`dict` will be used. If there are duplicated field names,
+        The fields will be suffixed, like `a_0`, `a_1`.
+        Must be one of: ``row``, ``dict``.
+    error_on_duplicated_field_names : bool, optional
+        Whether raise an exception when there are duplicated field names.
+        (default ``True``)
+    timestamp_utc_localized : bool, optional
+        Whether the timestamp values are localized to UTC or not.
+        The timestamp values from Arrow are localized to UTC,
+        whereas the ones from `df.collect()` are localized to the local timezone.
+    ndarray_as_list : bool, optional
+        Whether `np.ndarray` is converted to a list or not (default ``False``).
+
+    Returns
+    -------
+    The converter of `pandas.Series`
+    """
+    import numpy as np
+    import pandas as pd
+
+    pandas_type = _to_corrected_pandas_type(data_type)
+
+    if pandas_type is not None:
         # SPARK-21766: if an integer field is nullable and has null values, it can be
         # inferred by pandas as a float column. If we convert the column with NaN back
         # to integer type e.g., np.int16, we will hit an exception. So we use the
         # pandas-inferred float type, rather than the corrected type from the schema
         # in this case.
-        if pandas_type is not None and not (
-            isinstance(field.dataType, IntegralType) and field.nullable and pandas_col.isnull().any()
-        ):
-            corrected_dtypes[index] = pandas_type
-        # Ensure we fall back to nullable numpy types.
-        if isinstance(field.dataType, IntegralType) and pandas_col.isnull().any():
-            corrected_dtypes[index] = np.float64
-        if isinstance(field.dataType, BooleanType) and pandas_col.isnull().any():
-            corrected_dtypes[index] = object
+        if isinstance(data_type, IntegralType) and nullable:
 
-    new_df = pd.DataFrame()
-    for index, t in enumerate(corrected_dtypes):
-        column_name = df.schema[index].name
+            def correct_dtype(pser: pd.Series) -> pd.Series:
+                if pser.isnull().any():
+                    return pser.astype(np.float64, copy=False)
+                else:
+                    return pser.astype(pandas_type, copy=False)
 
-        # We use `iloc` to access columns with duplicate column names.
-        if column_counter[column_name] > 1:
-            series = pdf.iloc[:, index]
+        elif isinstance(data_type, BooleanType) and nullable:
+
+            def correct_dtype(pser: pd.Series) -> pd.Series:
+                if pser.isnull().any():
+                    return pser.astype(object, copy=False)
+                else:
+                    return pser.astype(pandas_type, copy=False)
+
+        elif isinstance(data_type, TimestampType):
+            assert timezone is not None
+
+            def correct_dtype(pser: pd.Series) -> pd.Series:
+                if not isinstance(pser.dtype, pd.DatetimeTZDtype):
+                    pser = pser.astype(pandas_type, copy=False, errors="ignore")
+                return _check_series_convert_timestamps_local_tz(pser, timezone=cast(str, timezone))
+
         else:
-            series = pdf[column_name]
 
-        # No need to cast for non-empty series for timedelta. The type is already correct.
-        should_check_timedelta = is_timedelta64_dtype(t) and len(pdf) == 0
+            def correct_dtype(pser: pd.Series) -> pd.Series:
+                return pser.astype(pandas_type, copy=False)
 
-        if (t is not None and not is_timedelta64_dtype(t)) or should_check_timedelta:
-            series = series.astype(t, copy=False, errors="ignore")
+        return correct_dtype
 
-        with catch_warnings():
-            from pandas.errors import PerformanceWarning
+    def _converter(
+        dt: DataType, _struct_in_pandas: Optional[str], _ndarray_as_list: bool
+    ) -> Optional[Callable[[Any], Any]]:
+        if isinstance(dt, ArrayType):
+            _element_conv = _converter(dt.elementType, _struct_in_pandas, _ndarray_as_list)
 
-            simplefilter(action="ignore", category=PerformanceWarning)
-            # `insert` API makes copy of data,
-            # we only do it for Series of duplicate column names.
-            # `pdf.iloc[:, index] = pdf.iloc[:, index]...` doesn't always work
-            # because `iloc` could return a view or a copy depending by context.
-            if column_counter[column_name] > 1:
-                new_df.insert(index, column_name, series, allow_duplicates=True)
+            if _ndarray_as_list:
+                if _element_conv is None:
+
+                    def convert_array_ndarray_as_list(value: Any) -> Any:
+                        # In Arrow Python UDF, ArrayType is converted to `np.ndarray`
+                        # whereas a list is expected.
+                        return list(value)
+
+                else:
+
+                    def convert_array_ndarray_as_list(value: Any) -> Any:
+                        # In Arrow Python UDF, ArrayType is converted to `np.ndarray`
+                        # whereas a list is expected.
+                        return [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
+
+                return convert_array_ndarray_as_list
             else:
-                new_df[column_name] = series
+                if _element_conv is None:
+                    return None
 
-    if timezone is None:
-        return new_df
+                def convert_array_ndarray_as_ndarray(value: Any) -> Any:
+                    if isinstance(value, np.ndarray):
+                        # `pyarrow.Table.to_pandas` uses `np.ndarray`.
+                        return np.array(
+                            [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
+                        )
+                    else:
+                        # otherwise, `list` should be used.
+                        return [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
+
+                return convert_array_ndarray_as_ndarray
+
+        elif isinstance(dt, MapType):
+            _key_conv = _converter(dt.keyType, _struct_in_pandas, _ndarray_as_list)
+            _value_conv = _converter(dt.valueType, _struct_in_pandas, _ndarray_as_list)
+
+            if _key_conv is None and _value_conv is None:
+
+                def convert_map(value: Any) -> Any:
+                    # `pyarrow.Table.to_pandas` uses `list` of key-value tuple.
+                    # otherwise, `dict` should be used.
+                    return dict(value)
+
+            else:
+
+                def convert_map(value: Any) -> Any:
+                    if isinstance(value, list):
+                        # `pyarrow.Table.to_pandas` uses `list` of key-value tuple.
+                        return {
+                            (_key_conv(k) if _key_conv is not None and k is not None else k): (
+                                _value_conv(v) if _value_conv is not None and v is not None else v
+                            )
+                            for k, v in value
+                        }
+                    else:
+                        # otherwise, `dict` should be used.
+                        return {
+                            (_key_conv(k) if _key_conv is not None and k is not None else k): (
+                                _value_conv(v) if _value_conv is not None and v is not None else v
+                            )
+                            for k, v in value.items()
+                        }
+
+            return convert_map
+
+        elif isinstance(dt, StructType):
+            assert _struct_in_pandas is not None
+
+            field_names = dt.names
+
+            if error_on_duplicated_field_names and len(set(field_names)) != len(field_names):
+                raise UnsupportedOperationException(
+                    error_class="DUPLICATED_FIELD_NAME_IN_ARROW_STRUCT",
+                    message_parameters={"field_names": str(field_names)},
+                )
+
+            dedup_field_names = _dedup_names(field_names)
+
+            field_convs = [_converter(f.dataType, _struct_in_pandas, _ndarray_as_list) for f in dt.fields]
+
+            if _struct_in_pandas == "row":
+                if all(conv is None for conv in field_convs):
+
+                    def convert_struct_as_row(value: Any) -> Any:
+                        if isinstance(value, dict):
+                            # `pyarrow.Table.to_pandas` uses `dict`.
+                            _values = [value.get(name, None) for i, name in enumerate(dedup_field_names)]
+                            return _create_row(field_names, _values)
+                        else:
+                            # otherwise, `Row` should be used.
+                            return _create_row(field_names, value)
+
+                else:
+
+                    def convert_struct_as_row(value: Any) -> Any:
+                        if isinstance(value, dict):
+                            # `pyarrow.Table.to_pandas` uses `dict`.
+                            _values = [
+                                conv(v) if conv is not None and v is not None else v
+                                for conv, v in zip(
+                                    field_convs,
+                                    (value.get(name, None) for name in dedup_field_names),
+                                )
+                            ]
+                            return _create_row(field_names, _values)
+                        else:
+                            # otherwise, `Row` should be used.
+                            _values = [
+                                conv(v) if conv is not None and v is not None else v
+                                for conv, v in zip(field_convs, value)
+                            ]
+                            return _create_row(field_names, _values)
+
+                return convert_struct_as_row
+
+            elif _struct_in_pandas == "dict":
+                if all(conv is None for conv in field_convs):
+
+                    def convert_struct_as_dict(value: Any) -> Any:
+                        if isinstance(value, dict):
+                            # `pyarrow.Table.to_pandas` uses `dict`.
+                            return {name: value.get(name, None) for name in dedup_field_names}
+                        else:
+                            # otherwise, `Row` should be used.
+                            return dict(zip(dedup_field_names, value))
+
+                else:
+
+                    def convert_struct_as_dict(value: Any) -> Any:
+                        if isinstance(value, dict):
+                            # `pyarrow.Table.to_pandas` uses `dict`.
+                            return {
+                                name: conv(v) if conv is not None and v is not None else v
+                                for name, conv, v in zip(
+                                    dedup_field_names,
+                                    field_convs,
+                                    (value.get(name, None) for name in dedup_field_names),
+                                )
+                            }
+                        else:
+                            # otherwise, `Row` should be used.
+                            return {
+                                name: conv(v) if conv is not None and v is not None else v
+                                for name, conv, v in zip(dedup_field_names, field_convs, value)
+                            }
+
+                return convert_struct_as_dict
+
+            else:
+                raise ValueError(f"Unknown value for `struct_in_pandas`: {_struct_in_pandas}")
+
+        elif isinstance(dt, TimestampType):
+            assert timezone is not None
+
+            local_tz: Union[datetime.tzinfo, str] = (
+                datetime.timezone.utc if timestamp_utc_localized else _get_local_timezone()
+            )
+
+            def convert_timestamp(value: Any) -> Any:
+                if isinstance(value, datetime.datetime) and value.tzinfo is not None:
+                    ts = pd.Timestamp(value)
+                else:
+                    ts = pd.Timestamp(value).tz_localize(local_tz)
+                return ts.tz_convert(timezone).tz_localize(None)
+
+            return convert_timestamp
+
+        elif isinstance(dt, TimestampNTZType):
+
+            def convert_timestamp_ntz(value: Any) -> Any:
+                return pd.Timestamp(value)
+
+            return convert_timestamp_ntz
+
+        elif isinstance(dt, UserDefinedType):
+            udt: UserDefinedType = dt
+
+            conv = _converter(udt.sqlType(), _struct_in_pandas="row", _ndarray_as_list=True)
+
+            if conv is None:
+
+                def convert_udt(value: Any) -> Any:
+                    if hasattr(value, "__UDT__"):
+                        assert isinstance(value.__UDT__, type(udt))
+                        return value
+                    else:
+                        return udt.deserialize(value)
+
+            else:
+
+                def convert_udt(value: Any) -> Any:
+                    if hasattr(value, "__UDT__"):
+                        assert isinstance(value.__UDT__, type(udt))
+                        return value
+                    else:
+                        return udt.deserialize(conv(value))  # type: ignore[misc]
+
+            return convert_udt
+
+        else:
+            return None
+
+    conv = _converter(data_type, struct_in_pandas, ndarray_as_list)
+    if conv is not None:
+        return lambda pser: pser.apply(  # type: ignore[return-value]
+            lambda x: conv(x) if x is not None else None  # type: ignore[misc]
+        )
     else:
-        for field in df.schema:
-            # TODO: handle nested timestamps, such as ArrayType(TimestampType())?
-            if isinstance(field.dataType, TimestampType):
-                new_df[field.name] = _check_series_convert_timestamps_local_tz(new_df[field.name], timezone)
-        return new_df
+        return lambda pser: pser
+
+
+def to_pandas(df, jconf) -> pd.DataFrame:
+    """
+    Returns the contents of this :class:`DataFrame` as Pandas ``pandas.DataFrame``.
+
+    This is only available if Pandas is installed and available.
+
+    .. versionadded:: 1.3.0
+
+    .. versionchanged:: 3.4.0
+        Supports Spark Connect.
+
+    Notes
+    -----
+    This method should only be used if the resulting Pandas ``pandas.DataFrame`` is
+    expected to be small, as all the data is loaded into the driver's memory.
+
+    Usage with ``spark.sql.execution.arrow.pyspark.enabled=True`` is experimental.
+
+    Examples
+    --------
+    >>> df.toPandas()  # doctest: +SKIP
+        age   name
+    0    2  Alice
+    1    5    Bob
+    """
+    from pyspark.sql.dataframe import DataFrame
+
+    assert isinstance(df, DataFrame)
+
+    timezone = jconf.sessionLocalTimeZone()
+
+    # Below is toPandas without Arrow optimization.
+    rows = df.collect()
+    if len(rows) > 0:
+        pdf = pd.DataFrame.from_records(rows, index=range(len(rows)), columns=df.columns)  # type: ignore[arg-type]
+    else:
+        pdf = pd.DataFrame(columns=df.columns)
+
+    if len(pdf.columns) > 0:
+        timezone = jconf.sessionLocalTimeZone()
+        # struct_in_pandas = jconf.pandasStructHandlingMode()
+        struct_in_pandas = "legacy"
+
+        return pd.concat(
+            [
+                _create_converter_to_pandas(
+                    field.dataType,
+                    field.nullable,
+                    timezone=timezone,
+                    struct_in_pandas=("row" if struct_in_pandas == "legacy" else struct_in_pandas),
+                    error_on_duplicated_field_names=False,
+                    timestamp_utc_localized=False,
+                )(pser)
+                for (_, pser), field in zip(pdf.items(), df.schema.fields)
+            ],
+            axis="columns",
+        )
+    else:
+        return pdf
+
+
+# End of PySpark 3.5.0 copy
 
 
 def render_grid(pdf, limit):
@@ -365,6 +684,7 @@ def render_ag_grid(pdf):
         grid_options=grid_options,
         quick_filter=True,
         theme="ag-theme-balham",
+        dark_theme="ag-theme-balham-dark",
         columns_fit="auto",
         index=False,
         license=ag_grid_license_key if ag_grid_license_key else "",
