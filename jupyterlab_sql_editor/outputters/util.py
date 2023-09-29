@@ -1,13 +1,35 @@
 import math
 import re
 import string
+from collections import Counter
 from html import escape
 from html import escape as html_escape
 from os import environ
+from typing import List, Optional, Type
+from warnings import catch_warnings, simplefilter
 
+import numpy as np
+import pandas as pd
+import pyspark
+import pyspark.sql.types as pt
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
-from pyspark.sql.types import Row
+from pandas.core.dtypes.common import is_timedelta64_dtype
+from pyspark.sql.types import (
+    BooleanType,
+    ByteType,
+    DataType,
+    DayTimeIntervalType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    IntegralType,
+    LongType,
+    ShortType,
+    TimestampNTZType,
+    TimestampType,
+    cast,
+)
 from trino.client import NamedRowTuple
 
 DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
@@ -112,6 +134,188 @@ def make_tag(tag_name, show_nonprinting, body="", **kwargs):
         return f"<{tag_name}>{body}</{tag_name}>"
 
 
+def _get_local_timezone() -> str:
+    """Get local timezone using pytz with environment variable, or dateutil.
+
+    If there is a 'TZ' environment variable, pass it to pandas to use pytz and use it as timezone
+    string, otherwise use the special word 'dateutil/:' which means that pandas uses dateutil and
+    it reads system configuration to know the system local timezone.
+
+    See also:
+    - https://github.com/pandas-dev/pandas/blob/0.19.x/pandas/tslib.pyx#L1753
+    - https://github.com/dateutil/dateutil/blob/2.6.1/dateutil/tz/tz.py#L1338
+    """
+    import os
+
+    return os.environ.get("TZ", "dateutil/:")
+
+
+def _to_corrected_pandas_type(dt: DataType) -> Optional[Type]:
+    """
+    When converting Spark SQL records to Pandas `pandas.DataFrame`, the inferred data type
+    may be wrong. This method gets the corrected data type for Pandas if that type may be
+    inferred incorrectly.
+    """
+    import numpy as np
+
+    if type(dt) == ByteType:
+        return np.int8
+    elif type(dt) == ShortType:
+        return np.int16
+    elif type(dt) == IntegerType:
+        return np.int32
+    elif type(dt) == LongType:
+        return np.int64
+    elif type(dt) == FloatType:
+        return np.float32
+    elif type(dt) == DoubleType:
+        return np.float64
+    elif type(dt) == BooleanType:
+        return bool
+    elif type(dt) == TimestampType:
+        return np.datetime64
+    elif type(dt) == TimestampNTZType:
+        return np.datetime64
+    elif type(dt) == DayTimeIntervalType:
+        return np.timedelta64
+    else:
+        return None
+
+
+def _check_series_convert_timestamps_localize(s, from_timezone: Optional[str], to_timezone: Optional[str]):
+    """
+    Convert timestamp to timezone-naive in the specified timezone or local timezone
+
+    Parameters
+    ----------
+    s : pandas.Series
+    from_timezone : str
+        the timezone to convert from. if None then use local timezone
+    to_timezone : str
+        the timezone to convert to. if None then use local timezone
+
+    Returns
+    -------
+    pandas.Series
+        `pandas.Series` where if it is a timestamp, has been converted to tz-naive
+    """
+    from pandas.api.types import (  # type: ignore[attr-defined]
+        is_datetime64_dtype,
+        is_datetime64tz_dtype,
+    )
+
+    from_tz = from_timezone or _get_local_timezone()
+    to_tz = to_timezone or _get_local_timezone()
+    # TODO: handle nested timestamps, such as ArrayType(TimestampType())?
+    if is_datetime64tz_dtype(s.dtype):
+        return s.dt.tz_convert(to_tz).dt.tz_localize(None)
+    elif is_datetime64_dtype(s.dtype) and from_tz != to_tz:
+        # `s.dt.tz_localize('tzlocal()')` doesn't work properly when including NaT.
+        try:
+            return cast(
+                "PandasSeriesLike",
+                s.apply(
+                    lambda ts: ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
+                    if ts is not pd.NaT
+                    else pd.NaT
+                ),
+            )
+        except Exception as exc:
+            print(f"{from_tz} {to_tz} {exc}")
+    else:
+        return s
+
+
+def _check_series_convert_timestamps_local_tz(s, timezone: str):
+    """
+    Convert timestamp to timezone-naive in the specified timezone or local timezone
+
+    Parameters
+    ----------
+    s : pandas.Series
+    timezone : str
+        the timezone to convert to. if None then use local timezone
+
+    Returns
+    -------
+    pandas.Series
+        `pandas.Series` where if it is a timestamp, has been converted to tz-naive
+    """
+    return _check_series_convert_timestamps_localize(s, None, timezone)
+
+
+# spark
+def to_pandas(df: pyspark.sql.DataFrame, sparkSession) -> pd.DataFrame:
+    jconf = sparkSession._jconf
+    timezone = jconf.sessionLocalTimeZone()
+
+    # Below is toPandas without Arrow optimization.
+    pdf = pd.DataFrame.from_records(df.collect(), columns=df.columns)
+    column_counter = Counter(df.columns)
+
+    corrected_dtypes: List[Optional[Type]] = [None] * len(df.schema)
+    for index, field in enumerate(df.schema):
+        # We use `iloc` to access columns with duplicate column names.
+        if column_counter[field.name] > 1:
+            pandas_col = pdf.iloc[:, index]
+        else:
+            pandas_col = pdf[field.name]
+
+        pandas_type = _to_corrected_pandas_type(field.dataType)
+        # SPARK-21766: if an integer field is nullable and has null values, it can be
+        # inferred by pandas as a float column. If we convert the column with NaN back
+        # to integer type e.g., np.int16, we will hit an exception. So we use the
+        # pandas-inferred float type, rather than the corrected type from the schema
+        # in this case.
+        if pandas_type is not None and not (
+            isinstance(field.dataType, IntegralType) and field.nullable and pandas_col.isnull().any()
+        ):
+            corrected_dtypes[index] = pandas_type
+        # Ensure we fall back to nullable numpy types.
+        if isinstance(field.dataType, IntegralType) and pandas_col.isnull().any():
+            corrected_dtypes[index] = np.float64
+        if isinstance(field.dataType, BooleanType) and pandas_col.isnull().any():
+            corrected_dtypes[index] = object
+
+    new_df = pd.DataFrame()
+    for index, t in enumerate(corrected_dtypes):
+        column_name = df.schema[index].name
+
+        # We use `iloc` to access columns with duplicate column names.
+        if column_counter[column_name] > 1:
+            series = pdf.iloc[:, index]
+        else:
+            series = pdf[column_name]
+
+        # No need to cast for non-empty series for timedelta. The type is already correct.
+        should_check_timedelta = is_timedelta64_dtype(t) and len(pdf) == 0
+
+        if (t is not None and not is_timedelta64_dtype(t)) or should_check_timedelta:
+            series = series.astype(t, copy=False, errors="ignore")
+
+        with catch_warnings():
+            from pandas.errors import PerformanceWarning
+
+            simplefilter(action="ignore", category=PerformanceWarning)
+            # `insert` API makes copy of data,
+            # we only do it for Series of duplicate column names.
+            # `pdf.iloc[:, index] = pdf.iloc[:, index]...` doesn't always work
+            # because `iloc` could return a view or a copy depending by context.
+            if column_counter[column_name] > 1:
+                new_df.insert(index, column_name, series, allow_duplicates=True)
+            else:
+                new_df[column_name] = series
+
+    if timezone is None:
+        return new_df
+    else:
+        for field in df.schema:
+            # TODO: handle nested timestamps, such as ArrayType(TimestampType())?
+            if isinstance(field.dataType, TimestampType):
+                new_df[field.name] = _check_series_convert_timestamps_local_tz(new_df[field.name], timezone)
+        return new_df
+
+
 def render_grid(pdf, limit):
     # It's important to import DataGrid inside this magic function
     # If you import it at the top of the file it will interfere with
@@ -161,7 +365,6 @@ def render_ag_grid(pdf):
         grid_options=grid_options,
         quick_filter=True,
         theme="ag-theme-balham",
-        dark_theme="ag-theme-balham-dark",
         columns_fit="auto",
         index=False,
         license=ag_grid_license_key if ag_grid_license_key else "",
@@ -203,7 +406,7 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
         else:
             warnings.append(f"int {data} was cast to string to avoid loss of precision.")
             return str(data)
-    elif isinstance(data, Row):
+    elif isinstance(data, pt.Row):
         for key, value in data.asDict().items():
             result[key] = sanitize_results(value, warnings)
     elif isinstance(data, NamedRowTuple):
