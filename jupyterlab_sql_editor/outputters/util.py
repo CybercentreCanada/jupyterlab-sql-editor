@@ -609,10 +609,13 @@ def to_pandas(df, jconf) -> pd.DataFrame:
     else:
         pdf = pd.DataFrame(columns=df.columns)
 
+    # dedup top-level column names
+    pdf.columns = _dedup_names(pdf.columns.values.tolist())
+
     if len(pdf.columns) > 0:
         timezone = jconf.sessionLocalTimeZone()
         # struct_in_pandas = jconf.pandasStructHandlingMode()
-        struct_in_pandas = "legacy"
+        struct_in_pandas = "dict"
 
         return pd.concat(
             [

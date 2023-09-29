@@ -173,7 +173,7 @@ class SparkSql(Base):
         print(f"Execution time: {end - start:.2f} seconds")
 
         if not (output == "skip" or output == "none"):
-            pdf = to_pandas(results)
+            pdf = to_pandas(results, self.spark._jconf)
             if len(pdf) > limit:
                 print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
 
