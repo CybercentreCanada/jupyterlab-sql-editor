@@ -152,30 +152,33 @@ class SparkSql(Base):
         elif output == "sql":
             return self.display_sql(sql)
 
-        # statements like INSERT INTO, USE SCHEMA, CREATE TABLE, DROP TABLE
-        # execute immediatly, they do not require us to perform a .show(), .collect()
-        # we detect these use case by checking for an empty list of columns (no return schema)
-        # we treat these use cases differently than a SELECT that returns rows of data
-        start = time()
-        try:
-            df = self.spark.sql(sql)
-            if output == "schema":
-                df.printSchema()
-                return
-            results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
-        except PYSPARK_ERROR_TYPES as exc:
-            if args.lean_exceptions:
-                self.print_pyspark_error(exc)
-                return
-            else:
-                raise exc
-        end = time()
-        print(f"Execution time: {end - start:.2f} seconds")
+        df = self.spark.sql(sql)
+        if args.dataframe:
+            print(f"Captured dataframe to local variable `{args.dataframe}`")
+            self.shell.user_ns.update({args.dataframe: df})
+
+        if output == "schema":
+            df.printSchema()
+            return
 
         if not (output == "skip" or output == "none"):
-            pdf = to_pandas(results, self.spark._jconf)
-            if len(pdf) > limit:
-                print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+            try:
+                start = time()
+                results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
+                end = time()
+                print(f"Execution time: {end - start:.2f} seconds")
+                pdf = to_pandas(results, self.spark._jconf)
+                if len(pdf) > limit:
+                    print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+            except PYSPARK_ERROR_TYPES as exc:
+                if args.lean_exceptions:
+                    self.print_pyspark_error(exc)
+                    return
+                else:
+                    raise exc
+        else:
+            print("Display and execution of results skipped")
+            return
 
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"
@@ -183,10 +186,6 @@ class SparkSql(Base):
             results = results.cache()
             if args.eager:
                 results.count()
-
-        if args.dataframe:
-            print(f"Captured dataframe to local variable `{args.dataframe}`")
-            self.shell.user_ns.update({args.dataframe: df})
 
         display_df(
             original_df=df,

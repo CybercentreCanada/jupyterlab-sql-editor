@@ -5,7 +5,6 @@ import pandas as pd
 import trino
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from IPython.display import display
 from traitlets import Bool, Instance, Int, Unicode, Union
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
@@ -131,23 +130,27 @@ class Trino(Base):
         elif not args.raw:
             sql = f"{sql} limit {limit+1}"
 
-        self.conn = trino.dbapi.connect(
-            host=self.host,
-            port=self.port,
-            auth=self.auth,
-            user=self.user,
-            catalog=catalog,
-            schema=schema,
-            http_scheme=self.httpScheme,
-            verify=self.verify,
-        )
-        self.cur = self.conn.cursor()
-        start = time()
-        self.cur.execute(sql)
-        results = self.cur.fetchmany(limit + 1)
-        columns = list(map(lambda d: d[0], self.cur.description))
-        end = time()
-        print(f"Execution time: {end - start:.2f} seconds")
+        if not (output == "skip" or output == "none") or args.dataframe:
+            self.conn = trino.dbapi.connect(
+                host=self.host,
+                port=self.port,
+                auth=self.auth,
+                user=self.user,
+                catalog=catalog,
+                schema=schema,
+                http_scheme=self.httpScheme,
+                verify=self.verify,
+            )
+            self.cur = self.conn.cursor()
+            start = time()
+            self.cur.execute(sql)
+            results = self.cur.fetchmany(limit + 1)
+            columns = list(map(lambda d: d[0], self.cur.description))
+            end = time()
+            print(f"Execution time: {end - start:.2f} seconds")
+        else:
+            print("Display and execution of results skipped")
+            return
 
         if len(results) > limit and not (output == "skip" or output == "none"):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
@@ -157,9 +160,6 @@ class Trino(Base):
             print(f"Saved results to pandas dataframe named `{args.dataframe}`")
             pdf = pd.DataFrame.from_records(results, columns=columns)
             self.shell.user_ns.update({args.dataframe: pdf})
-
-        if output == "skip" or output == "none":
-            display("Display of results skipped")
 
         _display_results(
             pdf=pd.DataFrame.from_records(results, columns=columns),
