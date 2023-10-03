@@ -87,7 +87,11 @@ class Database:
     def populate_tables(self):
         table_names = self.connection.get_table_names(self.catalog_name, self.database_name)
         for table_name in table_names:
-            self.tables.append(Table(self.connection, self.catalog_name, self.database_name, table_name))
+            try:
+                self.tables.append(Table(self.connection, self.catalog_name, self.database_name, table_name))
+            except Exception:
+                # Skip problematic tables
+                pass
 
     def get_tables(self):
         self.populate_tables()
@@ -178,8 +182,12 @@ class SchemaExporter:
         tables = catalog.get_tables()
         num_tables = len(tables)
         for idx, t in enumerate(tables):
-            rendered_tables.append(t.render())
-            self.update_progress(f"Exporting tables from {catalog.catalog_name}", idx / num_tables)
+            try:
+                rendered_tables.append(t.render())
+                self.update_progress(f"Exporting tables from {catalog.catalog_name}", idx / num_tables)
+            except Exception:
+                # Just skip problematic tables
+                pass
         self.update_progress(f"Exporting tables from {catalog.catalog_name}", 1)
         return rendered_tables
 
