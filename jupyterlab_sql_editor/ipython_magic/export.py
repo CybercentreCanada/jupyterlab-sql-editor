@@ -186,7 +186,7 @@ class SchemaExporter:
                 rendered_tables.append(t.render())
                 self.update_progress(f"Exporting tables from {catalog.catalog_name}", idx / num_tables)
             except Exception:
-                # Just skip problematic tables
+                # Skip problematic tables
                 pass
         self.update_progress(f"Exporting tables from {catalog.catalog_name}", 1)
         return rendered_tables
