@@ -32,6 +32,7 @@ from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
     update_local_database,
 )
 from jupyterlab_sql_editor.ipython_magic.sparksql.sparkdf import display_df
+from jupyterlab_sql_editor.outputters.util import to_pandas
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "schema", "skip", "none"]
 PYSPARK_ERROR_TYPES = (
@@ -172,7 +173,7 @@ class SparkSql(Base):
         print(f"Execution time: {end - start:.2f} seconds")
 
         if not (output == "skip" or output == "none"):
-            pdf = results.toPandas()
+            pdf = to_pandas(results, self.spark._jconf)
             if len(pdf) > limit:
                 print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
 

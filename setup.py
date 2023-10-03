@@ -51,6 +51,7 @@ setup_args = dict(
         "ipytree",
         "Jinja2",
         "jupyter-events>=0.6.1",
+        "pandas>=1.4.4",
         "ply",
         "trino",
     ],
