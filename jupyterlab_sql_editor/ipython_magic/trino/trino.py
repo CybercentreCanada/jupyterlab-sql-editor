@@ -112,6 +112,18 @@ class Trino(Base):
         if limit is None or limit <= 0:
             limit = self.limit
 
+        self.conn = trino.dbapi.connect(
+            host=self.host,
+            port=self.port,
+            auth=self.auth,
+            user=self.user,
+            catalog=catalog,
+            schema=schema,
+            http_scheme=self.httpScheme,
+            verify=self.verify,
+        )
+        self.cur = self.conn.cursor()
+
         catalog_array = self.get_catalog_array()
         if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
             return
@@ -131,17 +143,6 @@ class Trino(Base):
             sql = f"{sql} limit {limit+1}"
 
         if not (output == "skip" or output == "none") or args.dataframe:
-            self.conn = trino.dbapi.connect(
-                host=self.host,
-                port=self.port,
-                auth=self.auth,
-                user=self.user,
-                catalog=catalog,
-                schema=schema,
-                http_scheme=self.httpScheme,
-                verify=self.verify,
-            )
-            self.cur = self.conn.cursor()
             start = time()
             self.cur.execute(sql)
             results = self.cur.fetchmany(limit + 1)

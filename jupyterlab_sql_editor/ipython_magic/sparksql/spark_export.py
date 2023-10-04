@@ -66,16 +66,20 @@ class SparkConnection(Connection):
 
     def get_table_names(self, catalog_name, database_name):
         table_names = []
-        self.spark.sql(f"USE {catalog_name}")
-        if database_name:
-            rows = self.spark.sql(f"SHOW TABLES IN {database_name}").collect()
-        else:
-            rows = self.spark.sql("SHOW TABLES").collect()
-        for r in rows:
-            # depending if iceberg catalogs are use you might get results
-            # with either a database or namespace column
-            if getattr(r, "database", "") == database_name or getattr(r, "namespace", "") == database_name:
-                table_names.append(r["tableName"])
+        try:
+            self.spark.sql(f"USE {catalog_name}")
+            if database_name:
+                rows = self.spark.sql(f"SHOW TABLES IN {database_name}").collect()
+            else:
+                rows = self.spark.sql("SHOW TABLES").collect()
+            for r in rows:
+                # depending if iceberg catalogs are use you might get results
+                # with either a database or namespace column
+                if getattr(r, "database", "") == database_name or getattr(r, "namespace", "") == database_name:
+                    table_names.append(r["tableName"])
+        except Exception:
+            # Skip problematic database
+            pass
         return table_names
 
     def get_database_names(self, catalog_name):
