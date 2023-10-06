@@ -148,7 +148,7 @@ class Trino(Base):
         parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
         for statement in parsed:
             sql_lim = self._extract_limit_from_query(statement)
-        if not args.raw and not sql_lim:
+        if not args.raw and not sql_lim and parsed[0].get_type() == "SELECT":
             sql = f"{sql} LIMIT {limit+1}"
 
         if not (output == "skip" or output == "none") or args.dataframe:
