@@ -1,10 +1,14 @@
 import os
 from time import time
+from typing import Optional
 
 import pandas as pd
+import sqlparse
 import trino
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
+from sqlparse.sql import IdentifierList, TokenList
+from sqlparse.tokens import Keyword
 from traitlets import Bool, Instance, Int, Unicode, Union
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
@@ -139,8 +143,13 @@ class Trino(Base):
 
         if output == "sql":
             return self.display_sql(sql)
-        elif not args.raw:
-            sql = f"{sql} limit {limit+1}"
+
+        sql_statement = sqlparse.format(sql, strip_comments=True)
+        parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
+        for statement in parsed:
+            sql_lim = self._extract_limit_from_query(statement)
+        if not args.raw and not sql_lim:
+            sql = f"{sql} LIMIT {limit+1}"
 
         if not (output == "skip" or output == "none") or args.dataframe:
             start = time()
@@ -169,6 +178,28 @@ class Trino(Base):
             truncate=truncate,
             args=args,
         )
+
+    @staticmethod
+    # https://github.com/apache/superset/blob/178607093fa826947d9130386705a2e3ed3d9a88/superset/sql_parse.py#L79-L97
+    def _extract_limit_from_query(statement: TokenList) -> Optional[int]:
+        """
+        Extract limit clause from SQL statement.
+
+        :param statement: SQL statement
+        :return: Limit extracted from query, None if no limit present in statement
+        """
+        idx, _ = statement.token_next_by(m=(Keyword, "LIMIT"))
+        if idx is not None:
+            _, token = statement.token_next(idx=idx)
+            if token:
+                if isinstance(token, IdentifierList):
+                    # In case of "LIMIT <offset>, <limit>", find comma and extract
+                    # first succeeding non-whitespace token
+                    idx, _ = token.token_next_by(m=(sqlparse.tokens.Punctuation, ","))
+                    _, token = token.token_next(idx=idx)
+                if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
+                    return int(token.value)
+        return None
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == "all":
