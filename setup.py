@@ -53,6 +53,7 @@ setup_args = dict(
         "jupyter-events>=0.6.1",
         "pandas>=1.4.4",
         "ply",
+        "sqlparse",
         "trino",
     ],
     zip_safe=False,
