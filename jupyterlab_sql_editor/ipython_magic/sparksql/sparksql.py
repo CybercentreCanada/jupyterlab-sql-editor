@@ -159,9 +159,8 @@ class SparkSql(Base):
 
         if output == "schema":
             df.printSchema()
-            return
 
-        if not (output == "skip" or output == "none"):
+        if not (output == "skip" or output == "schema" or output == "none"):
             try:
                 start = time()
                 results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
@@ -177,8 +176,9 @@ class SparkSql(Base):
                 else:
                     raise exc
         else:
+            results = None
+            pdf = None
             print("Display and execution of results skipped")
-            return
 
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"

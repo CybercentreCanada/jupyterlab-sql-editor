@@ -67,7 +67,7 @@ def display_df(
     args=None,
 ):
     query = None
-    start_streaming_query = df.isStreaming and output not in ["skip", "schema", "none"]
+    start_streaming_query = df is not None and df.isStreaming and output not in ["skip", "schema", "none"]
     if start_streaming_query:
         streaming_query_name = "default_streaming_query_name"
         if query_name:
@@ -88,12 +88,13 @@ def display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args):
     """
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     """
-    dataframe_name = retrieve_name(df)
-    if not dataframe_name:
-        dataframe_name = "schema"
-    display(SparkSchemaWidget(dataframe_name, df.schema))
-    display_link()
-    if output not in ["skip", "none"]:
+    if output not in ["skip", "schema", "none"]:
+        dataframe_name = retrieve_name(df)
+        if not dataframe_name:
+            dataframe_name = "schema"
+        display(SparkSchemaWidget(dataframe_name, df.schema))
+        display_link()
+
         try:
             _display_results(
                 pdf[:limit],
