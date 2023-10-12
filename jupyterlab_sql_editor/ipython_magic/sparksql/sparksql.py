@@ -153,6 +153,13 @@ class SparkSql(Base):
             return self.display_sql(sql)
 
         df = self.spark.sql(sql)
+        if args.cache or args.eager:
+            load_type = "eager" if args.eager else "lazy"
+            print(f"Cached dataframe with {load_type} load")
+            df = df.cache()
+            if args.eager:
+                df.count()
+
         if args.dataframe:
             print(f"Captured dataframe to local variable `{args.dataframe}`")
             self.shell.user_ns.update({args.dataframe: df})
@@ -179,13 +186,6 @@ class SparkSql(Base):
             results = None
             pdf = None
             print("Display and execution of results skipped")
-
-        if args.cache or args.eager:
-            load_type = "eager" if args.eager else "lazy"
-            print(f"Cached dataframe with {load_type} load")
-            results = results.cache()
-            if args.eager:
-                results.count()
 
         display_df(
             original_df=df,
