@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="http://fixme/sparksql/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Sparksql - jupyterlab-sql-editor</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Sparksql";
+        var mkdocs_page_input_path = "sparksql.md";
+        var mkdocs_page_url = "/sparksql/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> jupyterlab-sql-editor
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">Sparksql</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#execute-and-output-your-query-results-into-an-interactive-data-grid">Execute and output your query results into an interactive data grid</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#output-as-json">Output as JSON</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#auto-suggest-column-names-and-sub-fields">Auto suggest column names and sub-fields</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#auto-suggest-joins-on-matching-column-names">Auto suggest JOINs on matching column names</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#format-and-show-syntax-highlighting-in-notebook-code-cells">Format and show syntax highlighting in Notebook code cells</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#works-in-python-strings">Works in Python strings</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#capture-your-spark-query-as-a-dataframe-or-a-temporary-view">Capture your Spark query as a Dataframe or a temporary view</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#use-jinja-templating-to-create-re-usable-sql">Use jinja templating to create re-usable SQL</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../trino/">Trino</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">jupyterlab-sql-editor</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Sparksql</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="sparksql-magic">sparksql magic</h1>
+<p>A JupyterLab extension providing the following features via <code>%%sparksql</code> and <code>%%trino</code> magics:</p>
+<ul>
+<li>SQL formatter</li>
+<li>Automatic extraction of database schemas</li>
+<li>Auto-completion triggered by <code>tab</code> or <code>dot</code> for:<ul>
+<li>table names</li>
+<li>table aliases</li>
+<li>table joins</li>
+<li>nested column names</li>
+<li>functions</li>
+</ul>
+</li>
+<li>Syntax highlighting for:<ul>
+<li>line magic</li>
+<li>cell magic</li>
+<li>Python strings</li>
+</ul>
+</li>
+</ul>
+<h2 id="execute-and-output-your-query-results-into-an-interactive-data-grid">Execute and output your query results into an interactive data grid</h2>
+<p><img alt="" src="../img/ipydatagrid.gif" /></p>
+<h2 id="output-as-json">Output as JSON</h2>
+<p><img alt="" src="../img/json-output.gif" /></p>
+<h2 id="auto-suggest-column-names-and-sub-fields">Auto suggest column names and sub-fields</h2>
+<p><img alt="" src="../img/sparksql-nested-columns.gif" /></p>
+<h2 id="auto-suggest-joins-on-matching-column-names">Auto suggest JOINs on matching column names</h2>
+<p><img alt="" src="../img/spark-inner-join.gif" /></p>
+<h2 id="format-and-show-syntax-highlighting-in-notebook-code-cells">Format and show syntax highlighting in Notebook code cells</h2>
+<p>To format SQL statements in the cell, right-click in the cell and select <code>Format Sql Cell</code> or hit <code>&lt;CTRL+Q&gt;</code>.</p>
+<p><img alt="" src="../img/format-cell.gif" /></p>
+<h2 id="works-in-python-strings">Works in Python strings</h2>
+<p>While inside a notebook, you can have a multi-line Python string containing SQL and enjoy the same features (syntax highlighting, code completion and SQL formatting)
+as in a <code>sparksql</code> cell by wrapping your string with <code>--start-sparksql</code> and <code>--end-sparksql</code>.  Here is an example:</p>
+<pre><code class="language-python"># declare a python string
+sql = &quot;&quot;&quot;
+--start-sparksql
+SELECT
+    *
+FROM
+    table AS t
+--end-sparksql
+&quot;&quot;&quot;
+print(sql)
+</code></pre>
+<p><img alt="" src="https://raw.githubusercontent.com/CybercentreCanada/jupyterlab-sql-editor/main/images//python-string.gif" /></p>
+<h2 id="capture-your-spark-query-as-a-dataframe-or-a-temporary-view">Capture your Spark query as a Dataframe or a temporary view</h2>
+<p><img alt="" src="../img/args.png" /></p>
+<h2 id="use-jinja-templating-to-create-re-usable-sql">Use jinja templating to create re-usable SQL</h2>
+<p><img alt="" src="../img/jinja.png" /></p>
+<h2 id="usage">Usage</h2>
+<p>Parameter usage example:</p>
+<pre><code>%%sparksql -c -l 10 --dataframe df
+&lt;QUERY&gt;
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--database NAME</code></td>
+<td>Spark database to use.</td>
+</tr>
+<tr>
+<td><code>-l LIMIT</code>, <code>--limit LIMIT</code></td>
+<td>The maximum number of rows to display. A value of zero is equivalent to <code>--output skip</code></td>
+</tr>
+<tr>
+<td><code>-r all|local|none</code>, <code>--refresh all|local|none</code></td>
+<td>Force the regeneration of the schema cache file. The <code>local</code> option will only update tables/views created in the local Spark context.</td>
+</tr>
+<tr>
+<td><code>-d NAME</code>, <code>--dataframe NAME</code></td>
+<td>Capture results in pandas dataframe named <code>NAME</code>.</td>
+</tr>
+<tr>
+<td><code>-c</code>, <code>--cache</code></td>
+<td>Cache dataframe.</td>
+</tr>
+<tr>
+<td><code>-e</code>, <code>--eager</code></td>
+<td>Cache dataframe with eager load.</td>
+</tr>
+<tr>
+<td><code>-v VIEW</code>, <code>--view VIEW</code></td>
+<td>Create or replace a temporary view named <code>VIEW</code>.</td>
+</tr>
+<tr>
+<td><code>-o sql|json|html|aggrid|grid|text|schema|skip|none</code>, <code>--output sql|json|html|aggrid|grid|text|schema|skip|none</code></td>
+<td>Output format. Defaults to html. The <code>sql</code> option prints the SQL statement that will be executed (useful to test jinja templated statements).</td>
+</tr>
+<tr>
+<td><code>-s</code>, <code>--show-nonprinting</code></td>
+<td>Replace none printable characters with their ascii codes (<code>LF</code> -&gt; <code>\x0a</code>)</td>
+</tr>
+<tr>
+<td><code>-j</code>, <code>--jinja</code></td>
+<td>Enable Jinja templating support.</td>
+</tr>
+<tr>
+<td><code>-b</code>, <code>--dbt</code></td>
+<td>Enable DBT templating support.</td>
+</tr>
+<tr>
+<td><code>-t LIMIT</code>, <code>--truncate LIMIT</code></td>
+<td>Truncate output.</td>
+</tr>
+<tr>
+<td><code>-m update|complete</code>, <code>--streaming_mode update|complete</code></td>
+<td>The mode of streaming queries.</td>
+</tr>
+<tr>
+<td><code>-x</code>, <code>--lean-exceptions</code></td>
+<td>Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries.</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../trino/" class="btn btn-neutral float-right" title="Trino">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../trino/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
