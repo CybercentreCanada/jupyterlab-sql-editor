@@ -55,6 +55,7 @@ setup_args = dict(
         "ply",
         "sqlparse",
         "trino",
+        "mkdocs",
     ],
     zip_safe=False,
     include_package_data=True,
