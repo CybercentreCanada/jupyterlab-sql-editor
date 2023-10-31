@@ -1,0 +1,9 @@
+site_name: jupyterlab-sql-editor
+site_url: https://cybercentrecanada.github.io/jupyterlab-sql-editor
+site_dir: site
+nav:
+  - Home: index.md
+  - Sparksql: sparksql.md
+  - Trino: trino.md
+theme:
+  name: readthedocs
