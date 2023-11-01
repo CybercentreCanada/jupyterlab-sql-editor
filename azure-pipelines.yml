@@ -87,5 +87,6 @@ stages:
     dependsOn: BuildPythonArtifact
     steps:
     - script: |
+        pip install mkdocs
         mkdocs gh-deploy --force
       displayName: 'Publish documentation site to GitHub.'
