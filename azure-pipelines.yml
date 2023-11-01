@@ -83,3 +83,9 @@ stages:
         pip install twine
         python -m twine upload --skip-existing -r "cccs-pypi" --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
       displayName: 'Publish artifact to PyPI.'
+  - job: PublishDocumentationToGithub
+    dependsOn: BuildPythonArtifact
+    steps:
+    - script: |
+        mkdocs gh-deploy --force
+      displayName: 'Publish documentation site to GitHub.'
