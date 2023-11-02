@@ -2,17 +2,52 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/</loc>
-         <lastmod>2023-11-01</lastmod>
+         <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/sparksql/</loc>
-         <lastmod>2023-11-01</lastmod>
+         <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/trino/</loc>
-         <lastmod>2023-11-01</lastmod>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/JinjaTemplate/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/Spark/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/SparkDataframe/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/SparkSQLEscapeControlChars/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/SparkSyntaxDemo/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/SupersetJinjaTestHarness/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://cybercentrecanada.github.io/jupyterlab-sql-editor/example/Trino/</loc>
+         <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
