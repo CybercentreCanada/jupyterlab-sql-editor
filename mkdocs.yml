@@ -3,7 +3,12 @@ site_url: https://cybercentrecanada.github.io/jupyterlab-sql-editor
 site_dir: site
 nav:
   - Home: index.md
-  - Sparksql: sparksql.md
-  - Trino: trino.md
+  - sparksql magic: sparksql.md
+  - trino magic: trino.md
+  - Notebook: example/SparkSyntaxDemo.ipynb
 theme:
-  name: readthedocs
+  name: material
+plugins:
+  - search
+  - mkdocs-jupyter:
+      execute: false
