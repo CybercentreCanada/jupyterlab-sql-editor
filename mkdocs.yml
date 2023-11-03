@@ -3,9 +3,18 @@ site_url: https://cybercentrecanada.github.io/jupyterlab-sql-editor
 site_dir: site
 nav:
   - Home: index.md
-  - sparksql magic: sparksql.md
-  - trino magic: trino.md
-  - Notebook: example/SparkSyntaxDemo.ipynb
+  - 'sparksql magic':
+    - Usage: sparksql.md
+    - Examples:
+      - example/SparkConfigurationUsage.ipynb
+      - example/SparkSyntaxDemo.ipynb
+      - example/SparkSQLEscapeControlChars.ipynb
+  - 'trino magic':
+    - Usage: trino.md
+    - Examples:
+      - example/TrinoConfigurationUsage.ipynb
+      - example/TrinoJinjaTemplate.ipynb
+      - example/SupersetJinjaTestHarness.ipynb
 theme:
   name: material
 plugins:
