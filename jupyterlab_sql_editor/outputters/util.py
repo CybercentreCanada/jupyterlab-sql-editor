@@ -3,6 +3,7 @@ import itertools
 import math
 import re
 import string
+from decimal import Decimal
 from html import escape
 from html import escape as html_escape
 from os import environ
@@ -12,6 +13,7 @@ import pandas as pd
 import pyspark.sql.types as pt
 from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
+from numpy import datetime64, ndarray
 from pandas.core.series import Series as PandasSeriesLike
 from pyspark.errors.exceptions.base import PySparkException
 from pyspark.sql.types import (
@@ -715,15 +717,17 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
 
     if isinstance(data, dict):
         for key, value in data.items():
-            result[key] = sanitize_results(value, warnings)
-    elif isinstance(data, list):
+            result[key] = sanitize_results(value, warnings, safe_js_ints)
+    elif isinstance(data, (list, ndarray)):
         json_array = []
         for v in data:
-            json_array.append(sanitize_results(v, warnings))
+            json_array.append(sanitize_results(v, warnings, safe_js_ints))
         return json_array
+    elif isinstance(data, datetime64):
+        return pd.Timestamp(data)
     elif isinstance(data, (bytearray, bytes)):
         return data.hex(" ").upper().split().__str__()
-    elif safe_js_ints and isinstance(data, int):
+    elif safe_js_ints and isinstance(data, (int, Decimal)):
         if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
             return data
         else:
@@ -731,10 +735,10 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
             return str(data)
     elif isinstance(data, pt.Row):
         for key, value in data.asDict().items():
-            result[key] = sanitize_results(value, warnings)
+            result[key] = sanitize_results(value, warnings, safe_js_ints)
     elif isinstance(data, NamedRowTuple):
         for key, value in zip(data._names, data):
-            result[key] = sanitize_results(value, warnings)
+            result[key] = sanitize_results(value, warnings, safe_js_ints)
     else:
         return data
     return result
