@@ -15,6 +15,7 @@ from ipyaggrid import Grid
 from ipydatagrid import DataGrid, TextRenderer
 from numpy import datetime64, ndarray
 from pandas.core.series import Series as PandasSeriesLike
+from pandas.errors import OutOfBoundsDatetime
 from pyspark.errors.exceptions.base import PySparkException
 from pyspark.sql.types import (
     ArrayType,
@@ -521,10 +522,13 @@ def _create_converter_to_pandas(
             )
 
             def convert_timestamp(value: Any) -> Any:
-                if isinstance(value, datetime.datetime) and value.tzinfo is not None:
-                    ts = pd.Timestamp(value)
-                else:
-                    ts = pd.Timestamp(value).tz_localize(local_tz)
+                try:
+                    if isinstance(value, datetime.datetime) and value.tzinfo is not None:
+                        ts = pd.Timestamp(value)
+                    else:
+                        ts = pd.Timestamp(value).tz_localize(local_tz)
+                except OutOfBoundsDatetime:
+                    return pd.to_datetime(value, errors="ignore")
                 return ts.tz_convert(timezone).tz_localize(None)
 
             return convert_timestamp
@@ -532,7 +536,10 @@ def _create_converter_to_pandas(
         elif isinstance(dt, TimestampNTZType):
 
             def convert_timestamp_ntz(value: Any) -> Any:
-                return pd.Timestamp(value)
+                try:
+                    return pd.Timestamp(value)
+                except OutOfBoundsDatetime:
+                    return pd.to_datetime(value, errors="ignore")
 
             return convert_timestamp_ntz
 
