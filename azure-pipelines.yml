@@ -19,38 +19,52 @@ stages:
       matrix:
         Python:
           python.version: '3.10'
+
     steps:
     - task: NodeTool@0
       inputs:
         versionSpec: '18.x'
+
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '$(python.version)'
       displayName: 'Use Python $(python.version)'
+
     - script: |
-        pip install wheel build jupyterlab==3.6.1 cookiecutter nodejs jupyter-packaging
-      displayName: 'Install deps'
+        python -m pip install -U "jupyterlab>=4.0.0,<5"
+      displayName: 'Install dependencies'
+
     - script: |
-        pip install -ve .
-        jlpm install
-      displayName: 'install npm modules'
+        set -eux
+        jlpm
+        jlpm run lint:check
+      displayName: 'Lint the extension'
+
     - script: |
-        jlpm run build
-      displayName: 'Build lab extension'
+        set -eux
+        python -m pip install -v .
+      displayName: 'Build the extension'
+
     - script: |
+        set -eux
+
         echo '.$(tag)' >> version.txt
+        pip install build
         python -m build
-      displayName: 'Build artifact'
+      displayName: 'Package the extension'
+
     - task: CopyFiles@2
       inputs:
         targetFolder: $(Build.ArtifactStagingDirectory)
       displayName: 'Stage build artifact to publish'
+
     - task: PublishBuildArtifacts@1
-      displayName: Publish build artifacts
       inputs:
         pathtoPublish: '$(Build.ArtifactStagingDirectory)/dist'
         artifactName: 'dist'
         publishLocation: 'Container'
+      displayName: 'Publish build artifacts'
+
   - job: PublishArtifactToFeedArtifact
     dependsOn: BuildPythonArtifact
     steps:
@@ -59,14 +73,17 @@ stages:
         buildType: 'current'
         downloadType: 'specific'
         downloadPath: '$(Pipeline.Workspace)'
-      displayName: 'Download build artifact.'
+      displayName: 'Download build artifact'
+
     - task: TwineAuthenticate@1
       inputs:
         artifactFeed: Analytical Platform/analytical-platform
+
     - script: |
         pip install twine
         python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
-      displayName: 'Publish artifact to analytical-platform feed.'
+      displayName: 'Publish artifact to analytical-platform feed'
+
   - job: PublishArtifactToPypi
     dependsOn: BuildPythonArtifact
     steps:
@@ -75,11 +92,13 @@ stages:
         buildType: 'current'
         downloadType: 'specific'
         downloadPath: '$(Pipeline.Workspace)'
-      displayName: 'Download build artifact.'
+      displayName: 'Download build artifact'
+
     - task: TwineAuthenticate@1
       inputs:
         pythonUploadServiceConnection: cccs-pypi
+
     - script: |
         pip install twine
         python -m twine upload --skip-existing -r "cccs-pypi" --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
-      displayName: 'Publish artifact to PyPI.'
+      displayName: 'Publish artifact to PyPI'
