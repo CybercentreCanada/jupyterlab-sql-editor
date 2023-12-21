@@ -50,7 +50,7 @@ def load(app):
             "argv": ["trino_language_server", "up", "--method", "stdio"],
             "languages": ["trino"],
             "display_name": "Trino language server",
-            "mime_types": ["application/trino", "application/x-trino"],
+            "mime_types": ["application/trino", "text/x-trino"],
             "config_schema": json.loads((CONFIG / "{}.schema.json".format(KEY)).read_text(encoding="utf-8")),
         }
     }

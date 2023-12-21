@@ -1,25 +1,76 @@
-# jupyterlab-sql-editor
+# jupyterlab_sql_editor
 
-## Installation
+[![Github Actions Status](https://github.com/CybercentreCanada/jupyterlab-sql-editor.git/workflows/Build/badge.svg)](https://github.com/CybercentreCanada/jupyterlab-sql-editor.git/actions/workflows/build.yml)
+SQL editor support for formatting, syntax highlighting and code completion of SQL in cell magic, line magic, python string and file editor.
 
-Follow the installation instructions in [CONTRIBUTING](./CONTRIBUTING.md)
+## Requirements
 
-## Security Vulnerability Reporting
+- JupyterLab >= 4.0.0
 
-If you believe you have identified a security vulnerability in this project, please send an email to the project
-team at contact@cyber.gc.ca, detailing the suspected issue and any methods you've found to reproduce it.
+## Install
 
-Please do NOT open an issue in the GitHub repository, as we'd prefer to keep vulnerability reports private until
-we've had an opportunity to review and address them.
+To install the extension, execute:
 
-## Shout-outs
+```bash
+pip install jupyterlab_sql_editor
+```
 
-Many thanks to the contributors of these projects:
+## Uninstall
 
-- [krassowski/jupyterlab-lsp](https://github.com/jupyter-lsp/jupyterlab-lsp)
-- [joe-re/sql-language-server](https://github.com/joe-re/sql-language-server)
-- [zeroturnaround/sql-formatter](https://github.com/zeroturnaround/sql-formatter)
-- [cryeo/sparksql-magic](https://github.com/cryeo/sparksql-magic)
-- [trino-python-client](https://github.com/trinodb/trino-python-client)
-- [bloomberg/ipydatagrid](https://github.com/bloomberg/ipydatagrid)
-- [widgetti/ipyaggrid](https://github.com/widgetti/ipyaggrid)
+To remove the extension, execute:
+
+```bash
+pip uninstall jupyterlab_sql_editor
+```
+
+## Contributing
+
+### Development install
+
+Note: You will need NodeJS to build the extension package.
+
+The `jlpm` command is JupyterLab's pinned version of
+[yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
+`yarn` or `npm` in lieu of `jlpm` below.
+
+```bash
+# Clone the repo to your local environment
+# Change directory to the jupyterlab_sql_editor directory
+# Install package in development mode
+pip install -e "."
+# Link your development version of the extension with JupyterLab
+jupyter labextension develop . --overwrite
+# Rebuild extension Typescript source after making changes
+jlpm build
+```
+
+You can watch the source directory and run JupyterLab at the same time in different terminals to watch for changes in the extension's source and automatically rebuild the extension.
+
+```bash
+# Watch the source directory in one terminal, automatically rebuilding when needed
+jlpm watch
+# Run JupyterLab in another terminal
+jupyter lab
+```
+
+With the watch command running, every saved change will immediately be built locally and available in your running JupyterLab. Refresh JupyterLab to load the change in your browser (you may need to wait several seconds for the extension to be rebuilt).
+
+By default, the `jlpm build` command generates the source maps for this extension to make it easier to debug using the browser dev tools. To also generate source maps for the JupyterLab core extensions, you can run the following command:
+
+```bash
+jupyter lab build --minimize=False
+```
+
+### Development uninstall
+
+```bash
+pip uninstall jupyterlab_sql_editor
+```
+
+In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
+command. To find its location, you can run `jupyter labextension list` to figure out where the `labextensions`
+folder is located. Then you can remove the symlink named `jupyterlab-sql-editor` within that folder.
+
+### Packaging the extension
+
+See [RELEASE](RELEASE.md)

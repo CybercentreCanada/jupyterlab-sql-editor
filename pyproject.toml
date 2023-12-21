@@ -1,17 +1,100 @@
 [build-system]
-requires = ["jupyter_packaging~=0.10,<2", "jupyterlab~=3.2"]
-build-backend = "jupyter_packaging.build_api"
+requires = ["hatchling>=1.5.0", "jupyterlab>=4.0.0,<5", "hatch-nodejs-version>=0.3.2"]
+build-backend = "hatchling.build"
 
-[tool.jupyter-packaging.options]
+[project]
+name = "jupyterlab_sql_editor"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Framework :: Jupyter :: JupyterLab :: 4",
+    "Framework :: Jupyter :: JupyterLab :: Extensions",
+    "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "cccs-ipyaggrid>=0.5.3",
+  "ipydatagrid",
+  "ipytree",
+  "ipywidgets",
+  "Jinja2",
+  "jupyter-events>=0.6.1",
+  "pandas>=1.4.4",
+  "ply",
+  "sqlparse",
+  "trino",
+  "mkdocs",
+]
+dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.scripts]
+sparksql_language_server = "jupyterlab_sql_editor.ipython_magic.sparksql.main:main"
+trino_language_server-language-server = "jupyterlab_sql_editor.ipython_magic.trino.main:main"
+
+[project.entry-points."jupyter_lsp_spec_v1"]
+sparksql-language-server = "jupyterlab_sql_editor.ipython_magic.trino.main:load"
+trino-language-server = "jupyterlab_sql_editor.ipython_magic.sparksql.main:load"
+
+[tool.hatch.version]
+source = "nodejs"
+
+[tool.hatch.metadata.hooks.nodejs]
+fields = ["description", "authors", "urls"]
+
+[tool.hatch.build.targets.sdist]
+artifacts = ["jupyterlab_sql_editor/labextension"]
+exclude = [".github", "binder"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"jupyterlab_sql_editor/labextension" = "share/jupyter/labextensions/jupyterlab-sql-editor"
+"install.json" = "share/jupyter/labextensions/jupyterlab-sql-editor/install.json"
+"overrides/trino-lsp.json" = "share/jupyter/lab/settings/overrides.d"
+"overrides/sparksql-lsp.json" = "share/jupyter/lab/settings/overrides.d"
+"overrides/syntax_highlighting.json" = "share/jupyter/lab/settings/overrides.d"
+"jupyterlab_sql_editor/ipython_magic/sql-language-server.schema.json" = "jupyterlab_sql_editor/ipython_magic/"
+
+[tool.hatch.build.hooks.version]
+path = "jupyterlab_sql_editor/_version.py"
+
+[tool.hatch.build.hooks.jupyter-builder]
+dependencies = ["hatch-jupyter-builder>=0.5"]
+build-function = "hatch_jupyter_builder.npm_builder"
+ensured-targets = [
+    "jupyterlab_sql_editor/labextension/static/style.js",
+    "jupyterlab_sql_editor/labextension/package.json",
+]
 skip-if-exists = ["jupyterlab_sql_editor/labextension/static/style.js"]
-ensured-targets = ["jupyterlab_sql_editor/labextension/static/style.js", "jupyterlab_sql_editor/labextension/package.json"]
 
-[tool.jupyter-packaging.builder]
-factory = "jupyter_packaging.npm_builder"
-
-[tool.jupyter-packaging.build-args]
+[tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
 npm = ["jlpm"]
 
-[tool.check-manifest]
-ignore = ["jupyterlab_sql_editor/labextension/**", "yarn.lock", ".*", "package-lock.json"]
+[tool.hatch.build.hooks.jupyter-builder.editable-build-kwargs]
+build_cmd = "install:extension"
+npm = ["jlpm"]
+source_dir = "src"
+build_dir = "jupyterlab_sql_editor/labextension"
+
+[tool.jupyter-releaser.options]
+version_cmd = "hatch version"
+
+[tool.jupyter-releaser.hooks]
+before-build-npm = [
+    "python -m pip install 'jupyterlab>=4.0.0,<5'",
+    "jlpm",
+    "jlpm build:prod"
+]
+before-build-python = ["jlpm clean:all"]
+
+[tool.check-wheel-contents]
+ignore = ["W002"]

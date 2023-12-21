@@ -1,6 +1,6 @@
 import { RegExpForeignCodeExtractor } from '@jupyter-lsp/jupyterlab-lsp';
 import { Mode } from 'codemirror';
-import { ICodeMirror } from '@jupyterlab/codemirror';
+import { IEditorLanguageRegistry } from '@jupyterlab/codemirror';
 
 function line_magic(language: string) {
   return `%${language}`;
@@ -62,9 +62,9 @@ export function lineMagicExtractor(
   return new RegExpForeignCodeExtractor({
     language: language,
     pattern: `${BEGIN}${line_magic(language)}${COMMANDS}([^\n]*)`,
-    foreign_capture_groups: [1],
-    is_standalone: true,
-    file_extension: language
+    foreignCaptureGroups: [1],
+    isStandalone: true,
+    fileExtension: language
   });
 }
 
@@ -74,9 +74,9 @@ export function cellMagicExtractor(
   return new RegExpForeignCodeExtractor({
     language: language,
     pattern: `^${cell_magic(language)}.*?\n([\\S\\s]*)`,
-    foreign_capture_groups: [1],
-    is_standalone: true,
-    file_extension: language
+    foreignCaptureGroups: [1],
+    isStandalone: true,
+    fileExtension: language
   });
 }
 
@@ -84,30 +84,25 @@ export function markerExtractor(language: string): RegExpForeignCodeExtractor {
   return new RegExpForeignCodeExtractor({
     language: language,
     pattern: `${start(language)}.*?\n([\\S\\s]*)${end(language)}`,
-    foreign_capture_groups: [1],
-    is_standalone: true,
-    file_extension: language
+    foreignCaptureGroups: [1],
+    isStandalone: true,
+    fileExtension: language
   });
 }
 
-/**
- * Register text editor based on file type.
- * @param c
- * @param language
- */
-export function registerCodeMirrorFor(c: ICodeMirror, language: string): void {
-  c.CodeMirror.defineMode(
-    language,
-    (config: CodeMirror.EditorConfiguration, modeOptions?: any) => {
-      const mode = c.CodeMirror.getMode(config, 'sql');
-      return mode;
+export function registerCodeMirrorFor(
+  languageRegistry: IEditorLanguageRegistry,
+  displayName: string,
+  language: string
+): void {
+  languageRegistry.addLanguage({
+    name: language,
+    displayName: displayName,
+    mime: [`application/${language}`, `text/x-${language}`],
+    extensions: [language],
+    async load() {
+      const m = await import('@codemirror/lang-sql');
+      return m.sql();
     }
-  );
-  c.CodeMirror.defineMIME(`text/x-${language}`, language);
-  c.CodeMirror.modeInfo.push({
-    ext: [language],
-    mime: `text/x-${language}`,
-    mode: language,
-    name: language
   });
 }

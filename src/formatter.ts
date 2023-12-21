@@ -7,7 +7,6 @@ import { RegExpForeignCodeExtractor } from '@jupyter-lsp/jupyterlab-lsp';
 import { Constants } from './constants';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { cellMagicExtractor, markerExtractor } from './utils';
-import { ICodeMirror } from '@jupyterlab/codemirror';
 import { KeywordCase } from 'sql-formatter';
 
 export class SqlFormatter {
@@ -41,13 +40,8 @@ class JupyterlabNotebookCodeFormatter {
   private notebookTracker: INotebookTracker;
   private working: boolean;
   private extractors: RegExpForeignCodeExtractor[];
-  private codeMirror: ICodeMirror;
   private sqlFormatter: SqlFormatter;
-  constructor(
-    notebookTracker: INotebookTracker,
-    codeMirror: ICodeMirror,
-    sqlFormatter: SqlFormatter
-  ) {
+  constructor(notebookTracker: INotebookTracker, sqlFormatter: SqlFormatter) {
     this.working = false;
     this.notebookTracker = notebookTracker;
     this.extractors = [];
@@ -55,7 +49,6 @@ class JupyterlabNotebookCodeFormatter {
     this.extractors.push(cellMagicExtractor('trino'));
     this.extractors.push(markerExtractor('sparksql'));
     this.extractors.push(markerExtractor('trino'));
-    this.codeMirror = codeMirror;
     this.sqlFormatter = sqlFormatter;
   }
 
@@ -72,11 +65,11 @@ class JupyterlabNotebookCodeFormatter {
   }
 
   private getCodeCells(selectedOnly = true, notebook?: Notebook): CodeCell[] {
-    if (!this.notebookTracker.currentWidget) {
+    if (!this.notebookTracker?.currentWidget) {
       return [];
     }
     const codeCells: CodeCell[] = [];
-    notebook = notebook || this.notebookTracker.currentWidget.content;
+    notebook = notebook || this.notebookTracker?.currentWidget.content;
     notebook.widgets.forEach((cell: Cell) => {
       if (cell.model.type === 'code') {
         if (!selectedOnly || notebook?.isSelectedOrActive(cell)) {
@@ -88,31 +81,28 @@ class JupyterlabNotebookCodeFormatter {
   }
 
   private tryReplacing(
+    cell: CodeCell,
     cellText: string,
     extractor: RegExpForeignCodeExtractor
-  ): string | null {
-    const extracted = extractor.extract_foreign_code(cellText);
+  ) {
+    const extracted = extractor.extractForeignCode(cellText);
+    const cellEditor = cell.editor;
     if (
+      cellEditor &&
       extracted &&
       extracted.length > 0 &&
-      extracted[0].foreign_code &&
+      extracted[0].foreignCode &&
       extracted[0].range
     ) {
-      const sqlText = extracted[0].foreign_code;
-      const formattedSql = this.sqlFormatter.format(sqlText) + '\n';
-      const doc = new this.codeMirror.CodeMirror.Doc(cellText, 'sql', 0, '\n');
-      const startPos = new this.codeMirror.CodeMirror.Pos(
-        extracted[0].range.start.line,
-        extracted[0].range.start.column
+      const sqlText = extracted[0].foreignCode;
+      const formattedSql = this.sqlFormatter.format(sqlText);
+      cell.model.sharedModel.updateSource(
+        cellEditor?.getOffsetAt(extracted[0].range.start) || 0,
+        cellEditor?.getOffsetAt(extracted[0].range.end) || 0,
+        formattedSql
       );
-      const endPos = new this.codeMirror.CodeMirror.Pos(
-        extracted[0].range.end.line,
-        extracted[0].range.end.column
-      );
-      doc.replaceRange(formattedSql, startPos, endPos);
-      return doc.getValue();
     }
-    return null;
+    return;
   }
 
   private async formatCells(selectedOnly: boolean, notebook?: Notebook) {
@@ -123,23 +113,22 @@ class JupyterlabNotebookCodeFormatter {
       this.working = true;
       const selectedCells = this.getCodeCells(selectedOnly, notebook);
       if (selectedCells.length > 0) {
-        const currentTexts = selectedCells.map(cell => cell.model.value.text);
-        const formattedTexts = currentTexts.map(cellText => {
-          const formatted = this.extractors
-            .map(extractor => this.tryReplacing(cellText, extractor))
-            .find(formatted => formatted);
-          return formatted || '';
-        });
+        const currentTexts = selectedCells.map(cell =>
+          cell.model.sharedModel.getSource()
+        );
         for (let i = 0; i < selectedCells.length; ++i) {
           const cell = selectedCells[i];
           const currentText = currentTexts[i];
-          const formattedText = formattedTexts[i];
-          if (cell.model.value.text === currentText) {
-            cell.model.value.text = formattedText;
+          if (cell.model.sharedModel.getSource() === currentText) {
+            for (let i = 0; i < this.extractors.length; ++i) {
+              console.log('jupyterlab-sql-editor extractors');
+              console.log(this.extractors[i]);
+              this.tryReplacing(cell, currentText, this.extractors[i]);
+            }
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       await showErrorMessage('Jupyterlab Code Formatter Error', error);
     } finally {
       this.working = false;
@@ -149,11 +138,13 @@ class JupyterlabNotebookCodeFormatter {
   applicable() {
     const selectedCells = this.getCodeCells();
     if (selectedCells.length > 0) {
-      const currentTexts = selectedCells.map(cell => cell.model.value.text);
+      const currentTexts = selectedCells.map(cell =>
+        cell.model.sharedModel.getSource()
+      );
       let numSqlCells = 0;
       currentTexts.forEach(cellText => {
         const found = this.extractors.find(extractor =>
-          extractor.has_foreign_code(cellText)
+          extractor.hasForeignCode(cellText)
         );
         if (found) {
           numSqlCells++;
@@ -189,9 +180,9 @@ class JupyterlabFileEditorCodeFormatter {
       try {
         this.working = true;
         const editor = editorWidget.content.editor;
-        const code = editor?.model.value.text;
+        const code = editor?.model.sharedModel.getSource();
         const formatted = this.sqlFormatter.format(code);
-        editorWidget.content.editor.model.value.text = formatted;
+        editorWidget.content.editor.model.sharedModel.setSource(formatted);
       } finally {
         this.working = false;
       }
@@ -209,7 +200,6 @@ export class JupyterLabCodeFormatter {
     app: JupyterFrontEnd,
     tracker: INotebookTracker,
     editorTracker: IEditorTracker,
-    codeMirror: ICodeMirror,
     sqlFormatter: SqlFormatter
   ) {
     this.app = app;
@@ -217,7 +207,6 @@ export class JupyterLabCodeFormatter {
     this.editorTracker = editorTracker;
     this.notebookCodeFormatter = new JupyterlabNotebookCodeFormatter(
       this.tracker,
-      codeMirror,
       sqlFormatter
     );
     this.fileEditorCodeFormatter = new JupyterlabFileEditorCodeFormatter(
