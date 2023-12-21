@@ -1,18 +1,18 @@
 {
-    "@jupyter-lsp/jupyterlab-lsp:plugin": {
-        "language_servers": {
-            "sparksql-language-server": {
-                "serverSettings": {
-                    "sqlLanguageServer.connections": [
-                        {
-                            "name": "pyspark-conf",
-                            "adapter": "json",
-                            "filename": "/home/jovyan/.local/sparkdb.schema.json"
-                        }
-                    ]
-                }
+  "@jupyter-lsp/jupyterlab-lsp:plugin": {
+    "language_servers": {
+      "sparksql-language-server": {
+        "serverSettings": {
+          "sqlLanguageServer.connections": [
+            {
+              "name": "pyspark-conf",
+              "adapter": "json",
+              "filename": "/home/jovyan/.local/sparkdb.schema.json"
             }
-        },
-        "extra_node_roots": []
-    }
+          ]
+        }
+      }
+    },
+    "extra_node_roots": []
+  }
 }

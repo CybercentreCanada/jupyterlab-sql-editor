@@ -65,7 +65,8 @@ stages:
         publishLocation: 'Container'
       displayName: 'Publish build artifacts'
 
-  - job: PublishArtifactToFeedArtifact
+  - job: PublishArtifactToAPAFeed
+    displayName: Publish artifact to APA feed
     dependsOn: BuildPythonArtifact
     steps:
     - task: DownloadBuildArtifacts@0
@@ -85,6 +86,7 @@ stages:
       displayName: 'Publish artifact to analytical-platform feed'
 
   - job: PublishArtifactToPypi
+    displayName: Publish artifact to PyPI
     dependsOn: BuildPythonArtifact
     steps:
     - task: DownloadBuildArtifacts@0

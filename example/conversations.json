@@ -1,1 +1,8 @@
-{ "first Name": "Rack", "last Name": "Jackon", "messages": [ {"time": "2022-01-15", "body": "hello"}, {"time": "2022-01-16", "body": "you there"}] }
+{
+  "first Name": "Rack",
+  "last Name": "Jackon",
+  "messages": [
+    { "time": "2022-01-15", "body": "hello" },
+    { "time": "2022-01-16", "body": "you there" }
+  ]
+}

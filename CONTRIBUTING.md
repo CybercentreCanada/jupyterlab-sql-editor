@@ -1,16 +1,16 @@
 # Overview
+
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
 - [Contributing](#contributing)
 - [Set up Trino Server for Testing](#set-up-trino-server-for-testing)
 
-
 # Installation
 
 ## Requirements
 
-* JupyterLab >= 3.0
+- JupyterLab >= 3.0
 
 ## Install
 
@@ -52,7 +52,7 @@ $ npm list -g
 ls -lh /usr/local/lib/node_modules/sql-language-server/
 ```
 
-Remember the location where your module is installed. We will configure jupyterlab-lsp with this location. In this example, the location is: `/usr/local/lib/`. 
+Remember the location where your module is installed. We will configure jupyterlab-lsp with this location. In this example, the location is: `/usr/local/lib/`.
 
 # Configuration
 
@@ -64,13 +64,12 @@ You can configure jupyterlab-lsp using the Advanced Settings Editor.
 
 ![display](images/jupyterlab-lsp-config.png)
 
-
 ## Pre-configure Magics (optional)
 
 SparkSql and Trino magic can be configured inside a Notebook. However, it's convenient to pre-configure them using an IPython profile.
 
 ```bash
-$ cat ~/.ipython/profile_default/ipython_config.py 
+$ cat ~/.ipython/profile_default/ipython_config.py
 
 # get the config
 c = get_config()
@@ -107,9 +106,7 @@ InteractiveShell.ast_node_interactivity = 'all'
 
 You can configure AG Grid (the widget that shows up when you use --output aggrid) to use your license key by setting the AG_GRID_LICENSE_KEY environment variable. It'll be accessed through Python's os.environ.get.
 
-
 # How it works
-
 
 ### Code completion
 
@@ -118,20 +115,22 @@ Code completion is performed by an LSP server [sql-language-server](https://gith
 ### Transclusions
 
 `jupyterlab-sql-editor` includes transclusions to extract SQL statements from:
-  - sparksql cell magic
-  - sparksql line magic
-  - SQL in a Python strings (using special --start/end-sql-syntax markers)
+
+- sparksql cell magic
+- sparksql line magic
+- SQL in a Python strings (using special --start/end-sql-syntax markers)
 
 Transclusions are what [jupyterlab-lsp](https://github.com/krassowski/jupyterlab-lsp) uses to extract parts of a cell (in this case, SQL statements) and pass them to the `sql-language-server` for evaluation. This enables auto completion of spark SQL keywords, tables, columns and functions.
 
 ### Syntax Highlighting
+
 `jupyterlab-sql-editor` registers 3 multiplexed CodeMirrors to support precise syntax highlighting. A multiplexed CodeMirror is registered for:
-  - sparksql cell magic
-  - sparksql line magic
-  - SQL in Python strings
+
+- sparksql cell magic
+- sparksql line magic
+- SQL in Python strings
 
 Multiplexed CodeMirror is better at detecting what to syntax-highlight as Python and what to syntax-highlight as SQL. It does not rely on `jupyterlab-lsp` heuristic detection which, when passed a given [foreignCodeThreshold](https://github.com/krassowski/jupyterlab-lsp/blob/master/packages/jupyterlab-lsp/schema/syntax_highlighting.json), will change the mode of the entire cell's editor. Instead, multiplexed CodeMirror is able to support SQL mode which is embedded in a Python mode and will apply syntax highlighting to each section of the cell accordingly.
-
 
 However, you'll notice that as your SQL query gets larger the code cell will switch from Python syntax highlighting to SQL syntax highlighting. This is due to the fact that jupyter-lsp has a builtin behaviour to do this. It can be found here.
 
@@ -150,9 +149,6 @@ https://github.com/krassowski/jupyterlab-lsp/blob/a52d4220ab889d0572091410db7f77
 
 This is why we recommend increasing the `foreignCodeThreshold` to 99%.
 
-
-
-
 # Contributing
 
 We :heart: contributions.
@@ -161,7 +157,6 @@ Have you had a good experience with this project? Why not share some love and co
 
 We welcome issue reports [here](../../issues); be sure to choose the proper issue template for your issue, so that we can be sure you're providing the necessary information.
 
-
 ### Development install
 
 Note: You will need NodeJS to build the extension package.
@@ -169,7 +164,6 @@ Note: You will need NodeJS to build the extension package.
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
 `yarn` or `npm` in lieu of `jlpm` below.
-
 
 Clone the repo to your local environment
 
@@ -204,7 +198,6 @@ By default, the `jlpm run build` command generates the source maps for this exte
 jupyter lab build --minimize=False
 ```
 
-
 ### Development uninstall
 
 ```bash
@@ -218,7 +211,6 @@ folder is located. Then you can remove the symlink named `jupyterlab-sql-editor`
 ### Packaging the extension
 
 See [RELEASE](RELEASE.md)
-
 
 ### Installing sql-language-server from source
 
@@ -248,25 +240,27 @@ cd /home/jovyan/node_modules/
 ln -s ~/dev/sql-language-server/packages/server/ sql-language-server
 ```
 
-
 # Set up Trino Server for Testing
 
 Download server
-```bash 
+
+```bash
 wget https://repo1.maven.org/maven2/io/trino/trino-server/364/trino-server-364.tar.gz
 tar -zxvf trino-server-364.tar.gz
 cd trino-server-364
 mkdir etc
- ```
+```
 
-Create a file etc/node.properties 
+Create a file etc/node.properties
+
 ```properties
 node.environment=production
 node.id=ffffffff-ffff-ffff-ffff-ffffffffffff
 node.data-dir=/var/trino/data
 ```
 
-Create a file etc/jvm.config 
+Create a file etc/jvm.config
+
 ```properties
 -server
 -Xmx16G
@@ -284,7 +278,8 @@ Create a file etc/jvm.config
 -Djdk.nio.maxCachedBufferSize=2000000
 ```
 
-Create a file etc/config.properties 
+Create a file etc/config.properties
+
 ```properties
 coordinator=true
 node-scheduler.include-coordinator=true
@@ -296,17 +291,19 @@ discovery.uri=http://localhost:8080
 ```
 
 Configure the sample TPCH database
+
 ```bash
 mkdir etc/catalog
 ```
 
 Create a file etc/catalog/tpch.properties with this content
+
 ```properties
 connector.name=tpch
 ```
 
-
 Launch the Trino server
+
 ```bash
 bin/launcher start
 ```

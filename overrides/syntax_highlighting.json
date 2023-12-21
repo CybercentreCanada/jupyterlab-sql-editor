@@ -1,5 +1,5 @@
 {
-    "@jupyter-lsp/jupyterlab-lsp:syntax_highlighting": {
-        "disable": true
-    }
+  "@jupyter-lsp/jupyterlab-lsp:syntax_highlighting": {
+    "disable": true
+  }
 }
