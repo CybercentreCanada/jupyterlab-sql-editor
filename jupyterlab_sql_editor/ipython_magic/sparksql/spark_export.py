@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
     Connection,
@@ -143,7 +145,12 @@ def update_database_schema(spark, schema_file_name, catalog_names):
     exp.update_schema()
 
 
-def update_local_database(spark, schema_file_name):
+def update_local_database(spark, schema_file_name, catalog_array):
+    # If file doesn't exist, just do a --refresh all instead
+    schema_file = Path(schema_file_name)
+    if not schema_file.exists():
+        update_database_schema(spark, schema_file_name, catalog_array)
+        return
     connection = SparkConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
     exp = SchemaExporter(connection, schema_file_name, None, local_catalog, display_progress=False)

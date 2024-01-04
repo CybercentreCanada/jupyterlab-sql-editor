@@ -1,4 +1,4 @@
-import os
+import pathlib
 from time import time
 from typing import Optional
 
@@ -98,7 +98,11 @@ class Trino(Base):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
-        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/trinodb.schema.json"
+        output_file = (
+            pathlib.Path(self.outputFile).expanduser()
+            if self.outputFile
+            else pathlib.Path("~/.local/trinodb.schema.json").expanduser()
+        )
 
         truncate = 256
         if args.truncate:
@@ -206,5 +210,5 @@ class Trino(Base):
             update_database_schema(self.cur, output_file, catalog_array)
             return True
         if refresh_arg != "none":
-            print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]")
+            print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|none]")
         return False
