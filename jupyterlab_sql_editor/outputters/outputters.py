@@ -82,9 +82,11 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
 
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
-    html = rows_to_html(sanitize_results(df.to_numpy()), df.columns.values.tolist(), show_nonprinting, truncate)
+    html = rows_to_html(
+        sanitize_results(df.to_numpy(dtype=object)), df.columns.values.tolist(), show_nonprinting, truncate
+    )
     display(HTML(make_tag("table", False, html)))
 
 
 def text(df: pd.DataFrame, truncate=256) -> None:
-    print(render_text(sanitize_results(df.to_numpy()), df.columns.values.tolist(), truncate))
+    print(render_text(sanitize_results(df.to_numpy(dtype=object)), df.columns.values.tolist(), truncate))
