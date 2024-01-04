@@ -79,6 +79,7 @@ stages:
     - task: TwineAuthenticate@1
       inputs:
         artifactFeed: Analytical Platform/analytical-platform
+      displayName: 'Twine Authenticate'
 
     - script: |
         pip install twine
@@ -99,6 +100,7 @@ stages:
     - task: TwineAuthenticate@1
       inputs:
         pythonUploadServiceConnection: cccs-pypi
+      displayName: 'Twine Authenticate'
 
     - script: |
         pip install twine
