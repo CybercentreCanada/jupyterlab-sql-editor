@@ -145,10 +145,9 @@ def update_database_schema(spark, schema_file_name, catalog_names):
     exp.update_schema()
 
 
-def update_local_database(spark, schema_file_name, catalog_array):
+def update_local_database(spark, schema_file_name: Path, catalog_array):
     # If file doesn't exist, just do a --refresh all instead
-    schema_file = Path(schema_file_name)
-    if not schema_file.exists():
+    if not schema_file_name.exists():
         update_database_schema(spark, schema_file_name, catalog_array)
         return
     connection = SparkConnection(spark)
