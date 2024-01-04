@@ -58,10 +58,10 @@ exclude = [".github", "binder"]
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_sql_editor/labextension" = "share/jupyter/labextensions/jupyterlab-sql-editor"
 "install.json" = "share/jupyter/labextensions/jupyterlab-sql-editor/install.json"
-"overrides/trino-lsp.json" = "share/jupyter/lab/settings/overrides.d"
-"overrides/sparksql-lsp.json" = "share/jupyter/lab/settings/overrides.d"
-"overrides/syntax_highlighting.json" = "share/jupyter/lab/settings/overrides.d"
-"jupyterlab_sql_editor/ipython_magic/sql-language-server.schema.json" = "jupyterlab_sql_editor/ipython_magic/"
+"overrides/trino-lsp.json" = "share/jupyter/lab/settings/overrides.d/trino-lsp.json"
+"overrides/sparksql-lsp.json" = "share/jupyter/lab/settings/overrides.d/sparksql-lsp.json"
+"overrides/syntax_highlighting.json" = "share/jupyter/lab/settings/overrides.d/syntax_highlighting.json"
+"jupyterlab_sql_editor/ipython_magic/sql-language-server.schema.json" = "jupyterlab_sql_editor/ipython_magic/sql-language-server.schema.json"
 
 [tool.hatch.build.hooks.version]
 path = "jupyterlab_sql_editor/_version.py"
