@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 from importlib import reload
 from time import time
 
@@ -113,7 +114,11 @@ class SparkSql(Base):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
-        output_file = self.outputFile or f"{os.path.expanduser('~')}/.local/sparkdb.schema.json"
+        output_file = (
+            pathlib.Path(self.outputFile).expanduser()
+            if self.outputFile
+            else pathlib.Path("~/.local/sparkdb.schema.json").expanduser()
+        )
         output = args.output.lower()
 
         streaming_mode = args.streaming_mode.lower()
@@ -206,7 +211,7 @@ class SparkSql(Base):
             update_database_schema(self.spark, output_file, catalog_array)
             return True
         if refresh_arg == "local":
-            update_local_database(self.spark, output_file)
+            update_local_database(self.spark, output_file, catalog_array)
             return True
         if refresh_arg != "none":
             print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|local|none]")
