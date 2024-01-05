@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import time
 from abc import ABC, abstractmethod
 
@@ -212,6 +213,9 @@ class SchemaExporter:
     def update_schema(self):
         print(f"Generating schema file: {self.schema_file_name}")
 
+        # Create folders if they don't exist
+        pathlib.Path(self.schema_file_name).parent.mkdir(parents=True, exist_ok=True)
+
         schema = {
             "tables": self.render_catalogs(),
             "functions": self.render_functions(),
@@ -219,7 +223,7 @@ class SchemaExporter:
         # Save schema to disk. sql-language-server will pickup any changes to this file.
         with open(self.schema_file_name, "w", encoding="utf8") as fout:
             json.dump(schema, fout, sort_keys=True, indent=2)
-        print("Schema file updated: " + self.schema_file_name)
+        print(f"Schema file updated: {self.schema_file_name}")
 
     def update_local_schema(self):
         print("Updating local tables")
@@ -239,6 +243,7 @@ class SchemaExporter:
 
         with open(self.schema_file_name, "w", encoding="utf8") as fout:
             json.dump(updated_schema, fout, indent=2, sort_keys=True)
+        print(f"Schema file updated: {self.schema_file_name}")
 
 
 class SparkTableSchema:
