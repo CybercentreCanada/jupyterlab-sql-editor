@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 import sqlparse
 import trino
+from IPython import get_ipython
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from sqlparse.sql import IdentifierList, TokenList
@@ -94,10 +95,24 @@ class Trino(Base):
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     @argument("--expand", action="store_true", help="Expand json results")
+    @argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Detailed information about Trino magic",
+    )
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
+
+        # Equivalent to %trino? or %%trino?
+        if args.help:
+            ip = get_ipython()
+            if ip:
+                ip.run_line_magic("pinfo", "trino")
+            return
+
         output_file = (
             pathlib.Path(self.outputFile).expanduser()
             if self.outputFile

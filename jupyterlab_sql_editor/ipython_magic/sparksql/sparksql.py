@@ -10,6 +10,7 @@ try:
 except ImportError:
     pass
 
+from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
     line_magic,
@@ -110,10 +111,24 @@ class SparkSql(Base):
         help="Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries",
     )
     @argument("--expand", action="store_true", help="Expand json results")
+    @argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Detailed information about SparkSQL magic",
+    )
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
+
+        # Equivalent to %sparksql? or %%sparksql?
+        if args.help:
+            ip = get_ipython()
+            if ip:
+                ip.run_line_magic("pinfo", "sparksql")
+            return
+
         output_file = (
             pathlib.Path(self.outputFile).expanduser()
             if self.outputFile
