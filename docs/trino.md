@@ -30,6 +30,7 @@ Parameter usage example:
 |`-l LIMIT`, `--limit LIMIT`|The maximum number of rows to display. A value of zero is equivalent to `--output skip`|
 |`-r all\|none`, `--refresh all\|none`|Force the regeneration of the schema cache file.|
 |`-d NAME`, `--dataframe NAME`|Capture results in pandas dataframe named `NAME`.|
+|`-i NAME`, `--input NAME`|Display pandas dataframe named `NAME`.|
 |`-o sql\|json\|html\|aggrid\|grid\|text\|schema\|skip\|none`, `--output sql\|json\|html\|aggrid\|grid\|text\|schema\|skip\|none`|Output format. Defaults to html. The `sql` option prints the SQL statement that will be executed (useful to test jinja templated statements).|
 |`-s`, `--show-nonprinting`|Replace none printable characters with their ascii codes (`LF` -> `\x0a`).|
 |`-j`, `--jinja`|Enable Jinja templating support.|
