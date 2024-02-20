@@ -36,7 +36,7 @@ from pyspark.sql.types import (
     UserDefinedType,
     _create_row,
 )
-from trino.client import NamedRowTuple
+from trino.types import NamedRowTuple
 
 DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
 
@@ -227,9 +227,11 @@ def _check_series_convert_timestamps_localize(
         return cast(
             "PandasSeriesLike",
             s.apply(
-                lambda ts: ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
-                if ts is not pd.NaT
-                else pd.NaT
+                lambda ts: (
+                    ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
+                    if ts is not pd.NaT
+                    else pd.NaT
+                )
             ),
         )
     else:
