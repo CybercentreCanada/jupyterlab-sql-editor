@@ -1,6 +1,7 @@
 """
 jupyterlab_sql_editor setup
 """
+
 import json
 import sys
 from pathlib import Path
@@ -55,7 +56,7 @@ setup_args = dict(
         "ply",
         "pyspark",
         "sqlparse",
-        "trino",
+        "trino>=0.328.0",
         "mkdocs",
     ],
     zip_safe=False,
