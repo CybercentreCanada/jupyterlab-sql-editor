@@ -19,15 +19,15 @@ from IPython.core.magic import (
     needs_local_scope,
 )
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from pyspark.sql import SparkSession
-from pyspark.sql.dataframe import DataFrame
-from pyspark.sql.utils import (
+from pyspark.errors.exceptions.captured import (
     AnalysisException,
     IllegalArgumentException,
     ParseException,
     QueryExecutionException,
     StreamingQueryException,
 )
+from pyspark.sql import SparkSession
+from pyspark.sql.dataframe import DataFrame
 from traitlets import List, Unicode
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
@@ -202,7 +202,15 @@ class SparkSql(Base):
             elif output == "sql":
                 return self.display_sql(sql)
 
-            df = self.spark.sql(sql)
+            # try-except here as well because it can also raise PYSPARK_ERROR_TYPES
+            try:
+                df = self.spark.sql(sql)
+            except PYSPARK_ERROR_TYPES as exc:
+                if args.lean_exceptions:
+                    self.print_pyspark_error(exc)
+                    return
+                else:
+                    raise exc
 
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"
