@@ -47,13 +47,25 @@ class JupyterlabNotebookCodeFormatter {
     this.extractors = [];
     this.extractors.push(cellMagicExtractor('sparksql'));
     this.extractors.push(cellMagicExtractor('trino'));
-    this.extractors.push(markerExtractor('sparksql'));
-    this.extractors.push(markerExtractor('trino'));
     this.sqlFormatter = sqlFormatter;
   }
 
   setFormatter(sqlFormatter: SqlFormatter) {
     this.sqlFormatter = sqlFormatter;
+  }
+
+  pushExtractors(
+    sparksqlStartMarker: string,
+    sparksqlEndMarker: string,
+    trinoStartMarker: string,
+    trinoEndMarker: string
+  ) {
+    this.extractors.push(
+      markerExtractor(sparksqlStartMarker, sparksqlEndMarker, 'sparksql')
+    );
+    this.extractors.push(
+      markerExtractor(trinoStartMarker, trinoEndMarker, 'trino')
+    );
   }
 
   public async formatAction() {
@@ -220,6 +232,20 @@ export class JupyterLabCodeFormatter {
   setFormatter(sqlFormatter: SqlFormatter): void {
     this.notebookCodeFormatter.setFormatter(sqlFormatter);
     this.fileEditorCodeFormatter.setFormatter(sqlFormatter);
+  }
+
+  pushExtractors(
+    sparksqlStartMarker: string,
+    sparksqlEndMarker: string,
+    trinoStartMarker: string,
+    trinoEndMarker: string
+  ) {
+    this.notebookCodeFormatter.pushExtractors(
+      sparksqlStartMarker,
+      sparksqlEndMarker,
+      trinoStartMarker,
+      trinoEndMarker
+    );
   }
 
   private setupContextMenu() {

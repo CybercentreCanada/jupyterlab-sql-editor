@@ -32,6 +32,30 @@
       "title": "Keyword case",
       "description": "Converts reserved keywords and builtin function names to upper or lowercase. ('preserve', 'upper' or 'lower')",
       "default": "preserve"
+    },
+    "sparksqlStartMarker": {
+      "type": "string",
+      "title": "",
+      "description": "",
+      "default": "--start-sparksql"
+    },
+    "sparksqlEndMarker": {
+      "type": "string",
+      "title": "",
+      "description": "",
+      "default": "--end-sparksql"
+    },
+    "trinoStartMarker": {
+      "type": "string",
+      "title": "",
+      "description": "",
+      "default": "--start-trino"
+    },
+    "trinoEndMarker": {
+      "type": "string",
+      "title": "",
+      "description": "",
+      "default": "--end-trino"
     }
   },
   "additionalProperties": false

@@ -36,10 +36,14 @@ export function cellMagicExtractor(
   });
 }
 
-export function markerExtractor(language: string): RegExpForeignCodeExtractor {
+export function markerExtractor(
+  startMarker: string,
+  endMarker: string,
+  language: string
+): RegExpForeignCodeExtractor {
   return new RegExpForeignCodeExtractor({
     language: language,
-    pattern: `--start-${language}.*?\n([\\S\\s]*)--end-${language}`,
+    pattern: `${startMarker}.*?\n([\\S\\s]*)${endMarker}`,
     foreignCaptureGroups: [1],
     isStandalone: false,
     fileExtension: language

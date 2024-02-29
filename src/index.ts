@@ -52,12 +52,25 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const formatUseTabs = settings.get('formatUseTabs').composite as boolean;
       const formatKeywordCase = settings.get('formatKeywordCase')
         .composite as KeywordCase;
+      const sparksqlStartMarker = settings.get('sparksqlStartMarker')
+        .composite as string;
+      const sparksqlEndMarker = settings.get('sparksqlEndMarker')
+        .composite as string;
+      const trinoStartMarker = settings.get('trinoStartMarker')
+        .composite as string;
+      const trinoEndMarker = settings.get('trinoEndMarker').composite as string;
       const sqlFormatter = new SqlFormatter(
         formatTabwidth,
         formatUseTabs,
         formatKeywordCase
       );
       sqlCodeFormatter.setFormatter(sqlFormatter);
+      sqlCodeFormatter.pushExtractors(
+        sparksqlStartMarker,
+        sparksqlEndMarker,
+        trinoStartMarker,
+        trinoEndMarker
+      );
       console.log('jupyterlab-sql-editor SQL code formatter registered');
     };
 
@@ -91,10 +104,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
         // JupyterLab-LSP relies on extractors to pull the SQL out of the cell
         // and into a virtual document which is then passed to the sql-language-server
         // for code completion evaluation
-        lspExtractorsMgr.register(markerExtractor('sparksql'), 'python');
+        lspExtractorsMgr.register(
+          markerExtractor('--start-sparksql', '--end-sparksql', 'sparksql'),
+          'python'
+        );
         lspExtractorsMgr.register(lineMagicExtractor('sparksql'), 'python');
         lspExtractorsMgr.register(cellMagicExtractor('sparksql'), 'python');
-        lspExtractorsMgr.register(markerExtractor('trino'), 'python');
+        lspExtractorsMgr.register(
+          markerExtractor('--start-trino', '--end-trino', 'trino'),
+          'python'
+        );
         lspExtractorsMgr.register(lineMagicExtractor('trino'), 'python');
         lspExtractorsMgr.register(cellMagicExtractor('trino'), 'python');
         console.log('jupyterlab-sql-editor: LSP extractors registered');
