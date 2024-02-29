@@ -273,10 +273,6 @@ class SparkSql(Base):
 
     @staticmethod
     def print_pyspark_error(exc):
-        """
-        To revisit with PySpark 3.4.0
-        See: https://github.com/apache/spark/commit/b8100b5b3fd82c0ee79c4f35a14a2bbfbe03ef43
-        """
         if isinstance(exc, AnalysisException):
             print(f"AnalysisException: {exc.desc.splitlines()[0]}")
         elif isinstance(exc, ParseException):
