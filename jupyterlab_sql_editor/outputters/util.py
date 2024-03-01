@@ -761,3 +761,12 @@ def format_value(text, show_nonprinting=False, truncate=0):
         if truncate > 0 and len(formatted_value) > truncate:
             formatted_value = formatted_value[:truncate] + "..."
     return formatted_value
+
+
+# Define a function for conditional conversion of a Pandas df column
+# Allows us to have human readable dates & avoid issues like ints
+# being cast to something with decimals
+def dataframe_conditional_conversion(col):
+    if pd.api.types.is_datetime64_any_dtype(col):
+        return col.values.astype("datetime64[ns]")
+    return col.values.astype(object)
