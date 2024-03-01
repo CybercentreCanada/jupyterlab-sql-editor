@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 import sqlparse
 import trino
+from IPython import get_ipython
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from sqlparse.sql import IdentifierList, TokenList
@@ -67,6 +68,7 @@ class Trino(Base):
         help="Force the regeneration of the schema cache file.",
     )
     @argument("-d", "--dataframe", metavar="name", type=str, help="Capture results in pandas dataframe")
+    @argument("-i", "--input", metavar="name", type=str, help="Display pandas dataframe")
     @argument(
         "-o",
         "--output",
@@ -94,10 +96,24 @@ class Trino(Base):
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     @argument("--expand", action="store_true", help="Expand json results")
+    @argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Detailed information about Trino magic",
+    )
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
+
+        # Equivalent to %trino? or %%trino?
+        if args.help:
+            ip = get_ipython()
+            if ip:
+                ip.run_line_magic("pinfo", "trino")
+            return
+
         output_file = (
             pathlib.Path(self.outputFile).expanduser()
             if self.outputFile
@@ -120,6 +136,28 @@ class Trino(Base):
         if limit is None or limit <= 0:
             limit = self.limit
 
+        if args.input and not isinstance(self.shell.user_ns.get(args.input), pd.DataFrame) and cell is None:
+            print("Input does not exist or is not a pandas dataframe.")
+            return
+
+        if args.input and cell is not None:
+            print("Ignoring --input, cell body found.")
+
+        output = args.output.lower()
+        if output not in VALID_OUTPUTS:
+            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
+            return
+
+        if args.input and cell is None:
+            _display_results(
+                pdf=self.shell.user_ns.get(args.input),
+                output=output,
+                show_nonprinting=args.show_nonprinting,
+                truncate=truncate,
+                args=args,
+            )
+            return
+
         self.conn = trino.dbapi.connect(
             host=self.host,
             port=self.port,
@@ -134,11 +172,6 @@ class Trino(Base):
 
         catalog_array = self.get_catalog_array()
         if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
-            return
-
-        output = args.output.lower()
-        if output not in VALID_OUTPUTS:
-            print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
         sql = self.get_sql_statement(cell, args.sql, args.jinja)

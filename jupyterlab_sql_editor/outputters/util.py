@@ -36,7 +36,7 @@ from pyspark.sql.types import (
     UserDefinedType,
     _create_row,
 )
-from trino.client import NamedRowTuple
+from trino.types import NamedRowTuple
 
 DEFAULT_COLUMN_DEF = {"editable": False, "filter": True, "resizable": True, "sortable": True}
 
@@ -227,9 +227,11 @@ def _check_series_convert_timestamps_localize(
         return cast(
             "PandasSeriesLike",
             s.apply(
-                lambda ts: ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
-                if ts is not pd.NaT
-                else pd.NaT
+                lambda ts: (
+                    ts.tz_localize(from_tz, ambiguous=False).tz_convert(to_tz).tz_localize(None)
+                    if ts is not pd.NaT
+                    else pd.NaT
+                )
             ),
         )
     else:
@@ -759,3 +761,12 @@ def format_value(text, show_nonprinting=False, truncate=0):
         if truncate > 0 and len(formatted_value) > truncate:
             formatted_value = formatted_value[:truncate] + "..."
     return formatted_value
+
+
+# Define a function for conditional conversion of a Pandas df column
+# Allows us to have human readable dates & avoid issues like ints
+# being cast to something with decimals
+def dataframe_conditional_conversion(col):
+    if pd.api.types.is_datetime64_any_dtype(col):
+        return col.values.astype("datetime64[ns]")
+    return col.values.astype(object)

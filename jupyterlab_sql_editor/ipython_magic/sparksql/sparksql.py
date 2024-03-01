@@ -10,6 +10,8 @@ try:
 except ImportError:
     pass
 
+import pandas as pd
+from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
     line_magic,
@@ -17,14 +19,15 @@ from IPython.core.magic import (
     needs_local_scope,
 )
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from pyspark.sql import SparkSession
-from pyspark.sql.utils import (
+from pyspark.errors.exceptions.captured import (
     AnalysisException,
     IllegalArgumentException,
     ParseException,
     QueryExecutionException,
     StreamingQueryException,
 )
+from pyspark.sql import SparkSession
+from pyspark.sql.dataframe import DataFrame
 from traitlets import List, Unicode
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
@@ -33,6 +36,7 @@ from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
     update_local_database,
 )
 from jupyterlab_sql_editor.ipython_magic.sparksql.sparkdf import display_df
+from jupyterlab_sql_editor.outputters.outputters import _display_results
 from jupyterlab_sql_editor.outputters.util import to_pandas
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "schema", "skip", "none"]
@@ -77,6 +81,7 @@ class SparkSql(Base):
     @argument("-c", "--cache", action="store_true", help="Cache dataframe")
     @argument("-e", "--eager", action="store_true", help="Cache dataframe with eager load")
     @argument("-v", "--view", metavar="name", type=str, help="Create or replace a temporary view named `name`")
+    @argument("-i", "--input", metavar="name", type=str, help="Display pandas or Spark dataframe")
     @argument(
         "-o",
         "--output",
@@ -110,10 +115,24 @@ class SparkSql(Base):
         help="Shortened exceptions. Might be helpful if the exceptions reported by Spark are noisy such as with big SQL queries",
     )
     @argument("--expand", action="store_true", help="Expand json results")
+    @argument(
+        "-h",
+        "--help",
+        action="store_true",
+        help="Detailed information about SparkSQL magic",
+    )
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
+
+        # Equivalent to %sparksql? or %%sparksql?
+        if args.help:
+            ip = get_ipython()
+            if ip:
+                ip.run_line_magic("pinfo", "sparksql")
+            return
+
         output_file = (
             pathlib.Path(self.outputFile).expanduser()
             if self.outputFile
@@ -131,8 +150,29 @@ class SparkSql(Base):
         if limit is None or limit <= 0:
             limit = self.limit
 
+        if (
+            args.input
+            and not isinstance(self.shell.user_ns.get(args.input), (pd.DataFrame, DataFrame))
+            and cell is None
+        ):
+            print("Input does not exist or is not a pandas or Spark dataframe.")
+            return
+
+        if args.input and cell is not None:
+            print("Ignoring --input, cell body found.")
+
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
+            return
+
+        if args.input and isinstance(self.shell.user_ns.get(args.input), pd.DataFrame) and cell is None:
+            _display_results(
+                pdf=self.shell.user_ns.get(args.input),
+                output=output,
+                show_nonprinting=args.show_nonprinting,
+                truncate=truncate,
+                args=args,
+            )
             return
 
         self.spark = self.get_instantiated_spark_session()
@@ -147,17 +187,31 @@ class SparkSql(Base):
         if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
             return
 
-        if args.dbt:
-            sql = self.get_dbt_sql_statement(cell, args.sql)
+        # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement
+        if args.input and cell is None:
+            sql = None
+            df = self.shell.user_ns.get(args.input)
         else:
-            sql = self.get_sql_statement(cell, args.sql, args.jinja)
+            if args.dbt:
+                sql = self.get_dbt_sql_statement(cell, args.sql)
+            else:
+                sql = self.get_sql_statement(cell, args.sql, args.jinja)
 
-        if not sql:
-            return
-        elif output == "sql":
-            return self.display_sql(sql)
+            if not sql:
+                return
+            elif output == "sql":
+                return self.display_sql(sql)
 
-        df = self.spark.sql(sql)
+            # try-except here as well because it can also raise PYSPARK_ERROR_TYPES
+            try:
+                df = self.spark.sql(sql)
+            except PYSPARK_ERROR_TYPES as exc:
+                if args.lean_exceptions:
+                    self.print_pyspark_error(exc)
+                    return
+                else:
+                    raise exc
+
         if args.cache or args.eager:
             load_type = "eager" if args.eager else "lazy"
             print(f"Cached dataframe with {load_type} load")
@@ -219,10 +273,6 @@ class SparkSql(Base):
 
     @staticmethod
     def print_pyspark_error(exc):
-        """
-        To revisit with PySpark 3.4.0
-        See: https://github.com/apache/spark/commit/b8100b5b3fd82c0ee79c4f35a14a2bbfbe03ef43
-        """
         if isinstance(exc, AnalysisException):
             print(f"AnalysisException: {exc.desc.splitlines()[0]}")
         elif isinstance(exc, ParseException):
