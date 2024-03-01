@@ -107,7 +107,7 @@ class JupyterlabNotebookCodeFormatter {
       extracted[0].range
     ) {
       const sqlText = extracted[0].foreignCode;
-      const formattedSql = this.sqlFormatter.format(sqlText);
+      const formattedSql = this.sqlFormatter.format(sqlText) + '\n';
       cell.model.sharedModel.updateSource(
         cellEditor?.getOffsetAt(extracted[0].range.start) || 0,
         cellEditor?.getOffsetAt(extracted[0].range.end) || 0,
@@ -133,8 +133,6 @@ class JupyterlabNotebookCodeFormatter {
           const currentText = currentTexts[i];
           if (cell.model.sharedModel.getSource() === currentText) {
             for (let i = 0; i < this.extractors.length; ++i) {
-              console.log('jupyterlab-sql-editor extractors');
-              console.log(this.extractors[i]);
               this.tryReplacing(cell, currentText, this.extractors[i]);
             }
           }

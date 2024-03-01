@@ -35,26 +35,26 @@
     },
     "sparksqlStartMarker": {
       "type": "string",
-      "title": "",
-      "description": "",
+      "title": "SparkSQL start marker",
+      "description": "SparkSQL start marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
       "default": "--start-sparksql"
     },
     "sparksqlEndMarker": {
       "type": "string",
-      "title": "",
-      "description": "",
+      "title": "SparkSQL end marker",
+      "description": "SparkSQL end marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
       "default": "--end-sparksql"
     },
     "trinoStartMarker": {
       "type": "string",
-      "title": "",
-      "description": "",
+      "title": "Trino start marker",
+      "description": "Trino start marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
       "default": "--start-trino"
     },
     "trinoEndMarker": {
       "type": "string",
-      "title": "",
-      "description": "",
+      "title": "Trino end marker",
+      "description": "Trino end marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
       "default": "--end-trino"
     }
   },

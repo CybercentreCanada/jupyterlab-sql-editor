@@ -64,6 +64,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
         formatUseTabs,
         formatKeywordCase
       );
+      lspExtractorsMgr.register(
+        markerExtractor(sparksqlStartMarker, sparksqlEndMarker, 'sparksql'),
+        'python'
+      );
+      lspExtractorsMgr.register(
+        markerExtractor(trinoStartMarker, trinoEndMarker, 'trino'),
+        'python'
+      );
       sqlCodeFormatter.setFormatter(sqlFormatter);
       sqlCodeFormatter.pushExtractors(
         sparksqlStartMarker,
@@ -104,16 +112,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         // JupyterLab-LSP relies on extractors to pull the SQL out of the cell
         // and into a virtual document which is then passed to the sql-language-server
         // for code completion evaluation
-        lspExtractorsMgr.register(
-          markerExtractor('--start-sparksql', '--end-sparksql', 'sparksql'),
-          'python'
-        );
         lspExtractorsMgr.register(lineMagicExtractor('sparksql'), 'python');
         lspExtractorsMgr.register(cellMagicExtractor('sparksql'), 'python');
-        lspExtractorsMgr.register(
-          markerExtractor('--start-trino', '--end-trino', 'trino'),
-          'python'
-        );
         lspExtractorsMgr.register(lineMagicExtractor('trino'), 'python');
         lspExtractorsMgr.register(cellMagicExtractor('trino'), 'python');
         console.log('jupyterlab-sql-editor: LSP extractors registered');
