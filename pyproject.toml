@@ -39,7 +39,7 @@ dynamic = ["version", "description", "authors", "urls", "keywords"]
 
 [project.scripts]
 sparksql_language_server = "jupyterlab_sql_editor.ipython_magic.sparksql.main:main"
-trino_language_server-language-server = "jupyterlab_sql_editor.ipython_magic.trino.main:main"
+trino_language_server = "jupyterlab_sql_editor.ipython_magic.trino.main:main"
 
 [project.entry-points."jupyter_lsp_spec_v1"]
 sparksql-language-server = "jupyterlab_sql_editor.ipython_magic.trino.main:load"
