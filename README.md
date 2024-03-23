@@ -1,5 +1,9 @@
 # jupyterlab-sql-editor
 
+## User Guide
+
+A user guide is hosted [here](https://cybercentrecanada.github.io/jupyterlab-sql-editor/).
+
 ## Installation
 
 Follow the installation instructions in [CONTRIBUTING](./CONTRIBUTING.md)

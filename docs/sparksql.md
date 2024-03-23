@@ -57,9 +57,6 @@ print(sql)
 ## Capture your Spark query as a Dataframe or a temporary view
 ![](img/args.png)
 
-## Use jinja templating to create re-usable SQL
-![](img/jinja.png)
-
 
 ## Usage
 Parameter usage example:
