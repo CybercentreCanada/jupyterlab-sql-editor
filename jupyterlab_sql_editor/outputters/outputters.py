@@ -70,7 +70,13 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
-        display(warnings)
+        display(
+            JSON(
+                data={"values": warnings},
+                expanded=False,
+                root="Some values were cast to string to avoid loss of precision",
+            )
+        )
 
     display(
         JSON(
