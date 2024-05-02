@@ -70,7 +70,13 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
-        display(warnings)
+        display(
+            JSON(
+                data={"values": warnings},
+                expanded=False,
+                root="Some values were cast to string to avoid loss of precision",
+            )
+        )
 
     display(
         JSON(
@@ -84,7 +90,7 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
     html = rows_to_html(
-        sanitize_results(df.apply(dataframe_conditional_conversion).values),
+        sanitize_results(df.apply(dataframe_conditional_conversion).values if not df.empty else df.values),
         df.columns.values.tolist(),
         show_nonprinting,
         truncate,
@@ -95,6 +101,8 @@ def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
 def text(df: pd.DataFrame, truncate=256) -> None:
     print(
         render_text(
-            sanitize_results(df.apply(dataframe_conditional_conversion).values), df.columns.values.tolist(), truncate
+            sanitize_results(df.apply(dataframe_conditional_conversion).values if not df.empty else df.values),
+            df.columns.values.tolist(),
+            truncate,
         )
     )
