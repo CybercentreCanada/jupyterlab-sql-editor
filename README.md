@@ -2,7 +2,7 @@
 
 ## Installation
 
-Follow the installation instructions in [CONTRIBUTING](./CONTRIBUTING.md)
+Follow the installation instructions in [CONTRIBUTING](https://github.com/CybercentreCanada/jupyterlab-sql-editor/blob/main/CONTRIBUTING.md)
 
 ## Security Vulnerability Reporting
 
