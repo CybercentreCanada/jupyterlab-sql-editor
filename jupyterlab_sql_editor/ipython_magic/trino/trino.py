@@ -17,6 +17,7 @@ from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
 )
 from jupyterlab_sql_editor.outputters.outputters import _display_results
+from jupyterlab_sql_editor.outputters.util import sanitize_results
 
 VALID_OUTPUTS = ["sql", "text", "json", "html", "aggrid", "grid", "skip", "none"]
 
@@ -206,6 +207,8 @@ class Trino(Base):
         if args.dataframe:
             print(f"Saved results to pandas dataframe named `{args.dataframe}`")
             pdf = pd.DataFrame.from_records(results, columns=columns)
+            for c in pdf.columns:
+                pdf[c] = pdf[c].apply(lambda v: sanitize_results(v))
             self.shell.user_ns.update({args.dataframe: pdf})
 
         _display_results(

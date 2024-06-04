@@ -732,6 +732,11 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
         for v in data:
             json_array.append(sanitize_results(v, warnings, safe_js_ints))
         return json_array
+    # For Oracle "integers"
+    elif isinstance(data, Decimal):
+        if data == data.to_integral_value():
+            return int(data)
+        return data
     elif isinstance(data, datetime64):
         return pd.Timestamp(data)
     elif isinstance(data, (bytearray, bytes)):
