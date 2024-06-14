@@ -1,3 +1,4 @@
+import json
 import re
 import string
 from typing import List
@@ -66,7 +67,7 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
 
     # sanitize results for display
     for row in df.to_dict(orient="records"):
-        safe_array.append(sanitize_results(row, warnings, True))
+        safe_array.append(sanitize_results(row, warnings, safe_js_ints=True))
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
@@ -78,14 +79,15 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
             )
         )
 
-    display(
-        JSON(
-            pd.DataFrame.from_records(safe_array, columns=df.columns).to_json(
-                orient="records", date_format=date_format
-            ),
-            expanded=expanded,
-        )
+    # remove None elements for display
+    json_str = pd.DataFrame.from_records(safe_array, columns=df.columns).to_json(
+        orient="records", date_format=date_format
     )
+    data_without_nones = [
+        {k: v for k, v in item.items() if v is not None} for item in json.loads(json_str if json_str else "")
+    ]
+
+    display(JSON(data=data_without_nones, expanded=expanded))
 
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
