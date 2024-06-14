@@ -1,6 +1,6 @@
 # jupyterlab-sql-editor
 
-A JupyterLab extension providing the following features via `%%sparksql` and `%%trino` magics:
+A JupyterLab extension providing the following features via `%sparksql` and `%trino` magics:
 
 - SQL formatter
 - Automatic extraction of database schemas

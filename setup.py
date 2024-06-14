@@ -58,6 +58,8 @@ setup_args = dict(
         "sqlparse",
         "trino>=0.328.0",
         "mkdocs",
+        "mkdocs-material",
+        "mkdocs-jupyter",
     ],
     zip_safe=False,
     include_package_data=True,

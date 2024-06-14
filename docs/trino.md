@@ -15,6 +15,9 @@ A JupyterLab extension providing the following features via `%%sparksql` and `%%
     - cell magic
     - Python strings
 
+## Use jinja templating to create re-usable SQL
+![](img/jinja.png)
+
 
 ## Usage
 Parameter usage example:
