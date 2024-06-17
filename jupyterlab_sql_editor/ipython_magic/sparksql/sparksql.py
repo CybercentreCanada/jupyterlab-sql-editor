@@ -349,3 +349,10 @@ class SparkSql(Base):
             return
         os.chdir(self.dbt_project_dir)
         self.invoke_dbt(["debug"] + self.dbt_args)
+
+        # Exporting SparkSession to variable spark if created
+        spark_session = self.get_instantiated_spark_session()
+        if spark_session is not None:
+            self.spark = spark_session
+            print("Captured SparkSession to local variable `spark`")
+            self.shell.user_ns.update({"spark": spark_session})
