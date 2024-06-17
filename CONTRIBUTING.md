@@ -62,7 +62,7 @@ You can configure jupyterlab-lsp using the Advanced Settings Editor.
 
 ### Using the Advanced Settings Editor
 
-![display](images/jupyterlab-lsp-config.png)
+![display](docs/img/jupyterlab-lsp-config.png)
 
 ## Pre-configure Magics (optional)
 
