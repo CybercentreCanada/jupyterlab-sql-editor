@@ -1,18 +1,18 @@
 {
-    "@jupyter-lsp/jupyterlab-lsp:plugin": {
-        "language_servers": {
-            "trino-language-server": {
-                "serverSettings": {
-                    "sqlLanguageServer.connections": [
-                        {
-                            "name": "trino-conf",
-                            "adapter": "json",
-                            "filename": "/home/jovyan/.local/trinodb.schema.json"
-                        }
-                    ]
-                }
+  "@jupyter-lsp/jupyterlab-lsp:plugin": {
+    "language_servers": {
+      "trino-language-server": {
+        "serverSettings": {
+          "sqlLanguageServer.connections": [
+            {
+              "name": "trino-conf",
+              "adapter": "json",
+              "filename": "/home/jovyan/.local/trinodb.schema.json"
             }
-        },
-        "extra_node_roots": []
-    }
+          ]
+        }
+      }
+    },
+    "extra_node_roots": []
+  }
 }

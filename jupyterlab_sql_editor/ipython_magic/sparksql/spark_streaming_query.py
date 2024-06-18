@@ -1,11 +1,16 @@
 import os
 
-import bokeh
-import bokeh.io
-import bokeh.plotting
+# Bokeh for JupyterLab 4.0 not ready yet
+try:
+    import bokeh
+    import bokeh.io
+    import bokeh.plotting
+    from bokeh.embed import components
+except ImportError:
+    pass
+
 import dateutil.parser
 import ipywidgets as widgets
-from bokeh.embed import components
 from IPython.display import Javascript, display
 from pyspark.sql.session import SparkSession
 

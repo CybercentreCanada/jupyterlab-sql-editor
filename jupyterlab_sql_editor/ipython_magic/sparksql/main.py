@@ -50,7 +50,7 @@ def load(app):
             "argv": ["sparksql_language_server", "up", "--method", "stdio"],
             "languages": ["sparksql"],
             "display_name": "Spark language server",
-            "mime_types": ["application/sparksql", "application/x-sparksql"],
+            "mime_types": ["application/sparksql", "text/x-sparksql"],
             "config_schema": json.loads((CONFIG / "{}.schema.json".format(KEY)).read_text(encoding="utf-8")),
         }
     }

@@ -32,6 +32,30 @@
       "title": "Keyword case",
       "description": "Converts reserved keywords and builtin function names to upper or lowercase. ('preserve', 'upper' or 'lower')",
       "default": "preserve"
+    },
+    "sparksqlStartMarker": {
+      "type": "string",
+      "title": "SparkSQL start marker",
+      "description": "SparkSQL start marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
+      "default": "--start-sparksql"
+    },
+    "sparksqlEndMarker": {
+      "type": "string",
+      "title": "SparkSQL end marker",
+      "description": "SparkSQL end marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
+      "default": "--end-sparksql"
+    },
+    "trinoStartMarker": {
+      "type": "string",
+      "title": "Trino start marker",
+      "description": "Trino start marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
+      "default": "--start-trino"
+    },
+    "trinoEndMarker": {
+      "type": "string",
+      "title": "Trino end marker",
+      "description": "Trino end marker for multi-line strings. Restart JupyterLab for these changes to take effect.",
+      "default": "--end-trino"
     }
   },
   "additionalProperties": false
