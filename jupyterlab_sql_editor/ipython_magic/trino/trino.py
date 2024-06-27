@@ -49,6 +49,12 @@ class Trino(Base):
     conn = None
     cur = None
 
+    def __init__(self, shell=None, **kwargs):
+        super().__init__(shell, **kwargs)
+        self.cached_sql = None
+        self.cached_results = None
+        self.cached_pdf = None
+
     @needs_local_scope
     @line_cell_magic
     @magic_arguments()
@@ -189,12 +195,24 @@ class Trino(Base):
         if not args.raw and not sql_lim and parsed[0].get_type() == "SELECT":
             sql = f"{sql} \nLIMIT {limit+1}"
 
+        # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
+        use_cache = True if sql == self.cached_sql and parsed[0].get_type() == "SELECT" else False
+        if use_cache:
+            print("Using cached results")
+
         if not (output == "skip" or output == "none") or args.dataframe:
+            results = [[]]
+            columns = []
+
             start = time()
-            self.cur.execute(sql)
-            results = self.cur.fetchmany(limit + 1)
-            columns = list(map(lambda d: d[0], self.cur.description))
+            if not use_cache:
+                self.cur.execute(sql)
+                results = self.cur.fetchmany(limit + 1)
+                columns = list(map(lambda d: d[0], self.cur.description))
+            else:
+                results = self.cached_results
             end = time()
+
             print(f"Execution time: {end - start:.2f} seconds")
         else:
             print("Display and execution of results skipped")
@@ -202,17 +220,26 @@ class Trino(Base):
 
         if len(results) > limit and not (output == "skip" or output == "none"):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+            self.cached_results = results
             results = results[:limit]
 
-        if args.dataframe:
-            print(f"Saved results to pandas dataframe named `{args.dataframe}`")
+        if not use_cache:
             pdf = pd.DataFrame.from_records(results, columns=columns)
             for c in pdf.columns:
                 pdf[c] = pdf[c].apply(lambda v: sanitize_results(v))
+        else:
+            pdf = self.cached_pdf
+
+        if args.dataframe:
+            print(f"Saved results to pandas dataframe named `{args.dataframe}`")
             self.shell.user_ns.update({args.dataframe: pdf})
 
+        # Cache results
+        self.cached_sql = sql
+        self.cached_pdf = pdf
+
         _display_results(
-            pdf=pd.DataFrame.from_records(results, columns=columns),
+            pdf=pdf if pdf is not None else pd.DataFrame([]),
             output=output,
             show_nonprinting=args.show_nonprinting,
             truncate=truncate,
