@@ -220,9 +220,9 @@ class Trino(Base):
             print("Display and execution of results skipped")
             return
 
+        self.cached_results = results
         if len(results) > limit and not (output == "skip" or output == "none"):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
-            self.cached_results = results
             results = results[:limit]
 
         if not use_cache:
