@@ -682,7 +682,9 @@ def render_grid(pdf, limit):
 def render_ag_grid(pdf):
     grid_options = {
         "columnDefs": [
-            {"headerName": c, "field": c, "sortable": True, "enableRowGroup": True, "autoHeight": True}
+            # TODO: Remove minWidth workaround and fix the issue where columns have a 0 width if grid is rendered when not visible.
+            # The issue is an ipyaggrid issue, see: https://github.com/jupyter-widgets/ipywidgets/issues/2858
+            {"headerName": c, "field": c, "sortable": True, "enableRowGroup": True, "autoHeight": True, "minWidth": 100}
             for c in pdf.columns
         ],
         "defaultColDef": DEFAULT_COLUMN_DEF,
