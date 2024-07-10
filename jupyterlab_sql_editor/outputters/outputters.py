@@ -36,7 +36,8 @@ def _display_results(pdf: pd.DataFrame, output: str, show_nonprinting: bool, tru
         aggrid(pdf, show_nonprinting, truncate)
     elif output == "json":
         expand = args.expand if args else False
-        jjson(pdf, show_nonprinting, expand)
+        json_nulls = args.jsonnulls if args else False
+        jjson(pdf, show_nonprinting, expand, json_nulls)
     elif output == "html":
         html(pdf, show_nonprinting, truncate)
     elif output == "text":
@@ -57,7 +58,7 @@ def grid(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:
     display(render_grid(df, df.size))
 
 
-def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format="iso") -> None:
+def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, json_nulls=False, date_format="iso") -> None:
     safe_array = []
     warnings: List[str] = []
 
@@ -83,11 +84,12 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, date_format=
     json_str = pd.DataFrame.from_records(safe_array, columns=df.columns).to_json(
         orient="records", date_format=date_format
     )
-    data_without_nones = [
-        {k: v for k, v in item.items() if v is not None} for item in json.loads(json_str if json_str else "")
-    ]
+    if not json_nulls:
+        data = [{k: v for k, v in item.items() if v is not None} for item in json.loads(json_str if json_str else "")]
+    else:
+        data = json.loads(json_str if json_str else "")
 
-    display(JSON(data=data_without_nones, expanded=expanded))
+    display(JSON(data=data, expanded=expanded))
 
 
 def html(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:

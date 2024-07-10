@@ -11,6 +11,7 @@ except ImportError:
     pass
 
 import pandas as pd
+import sqlparse
 from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
@@ -57,6 +58,11 @@ class SparkSql(Base):
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
         self.spark = None
+        self.cached_sql = None
+        self.cached_limit = None
+        self.cached_df = None
+        self.cached_results = None
+        self.cached_pdf = None
 
     @needs_local_scope
     @line_cell_magic
@@ -121,6 +127,8 @@ class SparkSql(Base):
         action="store_true",
         help="Detailed information about SparkSQL magic",
     )
+    @argument("--nocache", action="store_true", help="Do not use cache for SELECT statements")
+    @argument("--jsonnulls", action="store_true", help="Show nulls for JSON output")
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
@@ -189,6 +197,7 @@ class SparkSql(Base):
 
         # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement
         if args.input and cell is None:
+            use_cache = False
             sql = None
             df = self.shell.user_ns.get(args.input)
         else:
@@ -202,9 +211,24 @@ class SparkSql(Base):
             elif output == "sql":
                 return self.display_sql(sql)
 
+            sql_statement = sqlparse.format(sql, strip_comments=True)
+            parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
+
+            # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
+            use_cache = (
+                True
+                if not args.nocache
+                and sql == self.cached_sql
+                and limit == self.cached_limit
+                and parsed[0].get_type() == "SELECT"
+                else False
+            )
+            if use_cache:
+                print("Using cached results")
+
             # try-except here as well because it can also raise PYSPARK_ERROR_TYPES
             try:
-                df = self.spark.sql(sql)
+                df = self.spark.sql(sql) if not use_cache else self.cached_df
             except PYSPARK_ERROR_TYPES as exc:
                 if args.lean_exceptions:
                     self.print_pyspark_error(exc)
@@ -229,10 +253,14 @@ class SparkSql(Base):
         if not (output == "skip" or output == "schema" or output == "none"):
             try:
                 start = time()
-                results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
+                results = (
+                    self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
+                    if not use_cache
+                    else self.cached_results
+                )
                 end = time()
                 print(f"Execution time: {end - start:.2f} seconds")
-                pdf = to_pandas(results, self.spark._jconf)
+                pdf = to_pandas(results, self.spark._jconf) if not use_cache else self.cached_pdf
                 if len(pdf) > limit:
                     print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
             except PYSPARK_ERROR_TYPES as exc:
@@ -245,6 +273,13 @@ class SparkSql(Base):
             results = None
             pdf = None
             print("Display and execution of results skipped")
+
+        # Cache results
+        self.cached_sql = sql
+        self.cached_limit = limit
+        self.cached_df = df
+        self.cached_results = results
+        self.cached_pdf = pdf
 
         display_df(
             original_df=df,
