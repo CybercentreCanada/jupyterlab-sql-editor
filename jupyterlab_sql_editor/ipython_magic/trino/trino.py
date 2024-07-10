@@ -109,6 +109,8 @@ class Trino(Base):
         action="store_true",
         help="Detailed information about Trino magic",
     )
+    @argument("--nocache", action="store_true", help="Do not use cache for SELECT statements")
+    @argument("--jsonnulls", action="store_true", help="Show nulls for JSON output")
     def trino(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
@@ -196,7 +198,7 @@ class Trino(Base):
             sql = f"{sql} \nLIMIT {limit+1}"
 
         # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
-        use_cache = True if sql == self.cached_sql and parsed[0].get_type() == "SELECT" else False
+        use_cache = True if not args.nocache and sql == self.cached_sql and parsed[0].get_type() == "SELECT" else False
         if use_cache:
             print("Using cached results")
 
