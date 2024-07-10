@@ -127,6 +127,8 @@ class SparkSql(Base):
         action="store_true",
         help="Detailed information about SparkSQL magic",
     )
+    @argument("--nocache", action="store_true", help="Do not use cache for SELECT statements")
+    @argument("--jsonnulls", action="store_true", help="Show nulls for JSON output")
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
@@ -215,7 +217,10 @@ class SparkSql(Base):
             # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
             use_cache = (
                 True
-                if sql == self.cached_sql and limit == self.cached_limit and parsed[0].get_type() == "SELECT"
+                if not args.nocache
+                and sql == self.cached_sql
+                and limit == self.cached_limit
+                and parsed[0].get_type() == "SELECT"
                 else False
             )
             if use_cache:
