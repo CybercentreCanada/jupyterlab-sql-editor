@@ -279,7 +279,7 @@ class SparkSql(Base):
         self.cached_limit = limit
         self.cached_df = df
         self.cached_results = results
-        self.cached_pdf = pdf
+        self.cached_pdf = pdf.copy() if pdf is not None else None
 
         display_df(
             original_df=df,

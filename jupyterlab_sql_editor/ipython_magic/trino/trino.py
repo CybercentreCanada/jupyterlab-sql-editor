@@ -238,7 +238,7 @@ class Trino(Base):
 
         # Cache results
         self.cached_sql = sql
-        self.cached_pdf = pdf
+        self.cached_pdf = pdf.copy() if pdf is not None else None
 
         _display_results(
             pdf=pdf if pdf is not None else pd.DataFrame([]),
