@@ -11,7 +11,6 @@ except ImportError:
     pass
 
 import pandas as pd
-import sqlparse
 from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
@@ -127,7 +126,6 @@ class SparkSql(Base):
         action="store_true",
         help="Detailed information about SparkSQL magic",
     )
-    @argument("--nocache", action="store_true", help="Do not use cache for SELECT statements")
     @argument("--jsonnulls", action="store_true", help="Show nulls for JSON output")
     def sparksql(self, line=None, cell=None, local_ns=None):
         "Magic that works both as %sparksql and as %%sparksql"
@@ -211,18 +209,20 @@ class SparkSql(Base):
             elif output == "sql":
                 return self.display_sql(sql)
 
-            sql_statement = sqlparse.format(sql, strip_comments=True)
-            parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
+            # TODO: Rework caching feature
+            # sql_statement = sqlparse.format(sql, strip_comments=True)
+            # parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
 
             # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
-            use_cache = (
-                True
-                if not args.nocache
-                and sql == self.cached_sql
-                and limit == self.cached_limit
-                and parsed[0].get_type() == "SELECT"
-                else False
-            )
+            # use_cache = (
+            #     True
+            #     if not args.nocache
+            #     and sql == self.cached_sql
+            #     and limit == self.cached_limit
+            #     and parsed[0].get_type() == "SELECT"
+            #     else False
+            # )
+            use_cache = False
             if use_cache:
                 print("Using cached results")
 
