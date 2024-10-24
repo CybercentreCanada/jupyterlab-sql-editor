@@ -69,9 +69,8 @@ class SparkConnection(Connection):
     def get_table_names(self, catalog_name, database_name):
         table_names = []
         try:
-            self.spark.sql(f"USE {catalog_name}")
-            if database_name:
-                rows = self.spark.sql(f"SHOW TABLES IN {database_name}").collect()
+            if catalog_name and database_name:
+                rows = self.spark.sql(f"SHOW TABLES IN {database_name}.{catalog_name}").collect()
             else:
                 rows = self.spark.sql("SHOW TABLES").collect()
             for r in rows:
@@ -95,49 +94,10 @@ class SparkConnection(Connection):
         return database_names
 
 
-# spark = SparkSession.builder.appName("abc").getOrCreate()
-
-# spark.sql("select 'allo'").createOrReplaceTempView("view_no_database")
-
-# spark.sql("create database db1").collect()
-# spark.sql("create database db2").collect()
-
-# spark.sql(
-#     """
-# CREATE OR REPLACE VIEW view_default_database
-#     (ID COMMENT 'Unique identification number', Name)
-#     COMMENT 'View for experienced employees'
-#     AS SELECT 1 as id, 'jc' as name
-# """
-# ).collect()
-
-# spark.sql(
-#     """
-# CREATE OR REPLACE VIEW db1.view_in_db1
-#     (ID COMMENT 'Unique identification number', Name)
-#     COMMENT 'View for experienced employees'
-#     AS SELECT 1 as id, 'jc' as name
-# """
-# ).collect()
-
-# spark.sql("use spark_catalog").show()
-# spark.sql("use spark_catalog.db1").show()
-
-# spark.sql(
-#     """
-# show tables
-# """
-# ).show()
-
-# spark.table("view_no_database").printSchema()
-# spark.table("default.view_default_database").printSchema()
-# spark.table("db1.view_in_db1").printSchema()
-
-
 def update_database_schema(spark, schema_file_name, catalog_names):
     connection = SparkConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
-    catalogs: list(Catalog) = []
+    catalogs: list[Catalog] = []
     for name in catalog_names:
         catalogs.append(Catalog(connection, name))
     catalogs.append(local_catalog)
