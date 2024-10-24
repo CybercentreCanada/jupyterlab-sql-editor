@@ -712,7 +712,7 @@ def replchars_to_hex(match):
 
 
 def rows_to_html(rows, columns, show_nonprinting, truncate):
-    html = "<table border='1'>\n"
+    html = "<table border='1' class='mathjax_ignore'>\n"
     # generate table head
     html += "<tr><th>%s</th></tr>\n" % "</th><th>".join(map(lambda x: html_escape(x), columns))
     # generate table rows
