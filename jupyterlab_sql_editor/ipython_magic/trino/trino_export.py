@@ -90,7 +90,7 @@ class TrinoConnection(Connection):
                     column_type = trino_column_parser.parse(row_schema)
                     schema.add(name, column_type)
                 except Exception:
-                    logging.warn(f"failed to parse column with schema {row_schema}")
+                    logging.warning(f"Failed to parse column with schema {row_schema}")
                     schema.add(name, StringType())
 
             return SparkTableSchema(schema, quoting_char='"').convert()
@@ -101,7 +101,7 @@ class TrinoConnection(Connection):
 
 def update_database_schema(cur, schema_file_name, catalog_names):
     connection = TrinoConnection(cur)
-    catalogs: list(Catalog) = []
+    catalogs: list[Catalog] = []
     for name in catalog_names:
         catalogs.append(Catalog(connection, name))
     exp = SchemaExporter(connection, schema_file_name, catalogs, None)

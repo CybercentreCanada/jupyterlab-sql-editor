@@ -5,6 +5,7 @@ import os
 import pathlib
 import time
 from abc import ABC, abstractmethod
+from typing import Any
 
 from IPython.display import clear_output
 from pyspark.sql.types import (
@@ -38,23 +39,23 @@ from pyspark.sql.types import (
 
 class Connection(ABC):
     @abstractmethod
-    def render_table(self, table: Table):
+    def render_table(self, table: Table) -> dict[str, Any]:
         pass
 
     @abstractmethod
-    def render_function(self, function: Function):
+    def render_function(self, function: Function) -> dict[str, Any]:
         pass
 
     @abstractmethod
-    def get_function_names(self):
+    def get_function_names(self) -> list:
         pass
 
     @abstractmethod
-    def get_table_names(self, catalog_name, database_name):
+    def get_table_names(self, catalog_name, database_name) -> list:
         pass
 
     @abstractmethod
-    def get_database_names(self, catalog_name):
+    def get_database_names(self, catalog_name) -> list:
         pass
 
 
@@ -72,7 +73,7 @@ class Catalog:
 
     def get_tables(self):
         self.populate_databases()
-        catalog_tables: list(Table) = []
+        catalog_tables: list[Table] = []
         for d in self.databases:
             catalog_tables = catalog_tables + d.get_tables()
         return catalog_tables
