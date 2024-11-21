@@ -9,6 +9,10 @@ try:
     import dbt.main
 except ImportError:
     pass
+# Handling Python 3.11 incompatibility with older dbt versions
+except ValueError:
+    pass
+
 
 import pandas as pd
 from IPython import get_ipython
