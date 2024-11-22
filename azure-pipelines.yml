@@ -18,12 +18,12 @@ stages:
         strategy:
           matrix:
             Python:
-              python.version: '3.10'
+              python.version: '3.11'
 
         steps:
           - task: NodeTool@0
             inputs:
-              versionSpec: '18.x'
+              versionSpec: '20.x'
 
           - task: UsePythonVersion@0
             inputs:
