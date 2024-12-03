@@ -7,7 +7,7 @@ from decimal import Decimal
 from html import escape
 from html import escape as html_escape
 from os import environ
-from typing import Any, Callable, List, Optional, Type, Union, cast
+from typing import Any, Callable, List, Optional, Union, cast
 
 import pandas as pd
 import pyspark.sql.types as pt
@@ -29,6 +29,7 @@ from pyspark.sql.types import (
     IntegralType,
     LongType,
     MapType,
+    Row,
     ShortType,
     StructType,
     TimestampNTZType,
@@ -140,7 +141,7 @@ def make_tag(tag_name, show_nonprinting, body="", **kwargs):
         return f"<{tag_name}>{body}</{tag_name}>"
 
 
-# PySpark 3.5.0 copy
+# PySpark 3.5.3 copy
 class UnsupportedOperationException(PySparkException):
     """
     Unsupported operation exception thrown from Spark with an error class.
@@ -163,7 +164,7 @@ def _get_local_timezone() -> str:
     return os.environ.get("TZ", "dateutil/:")
 
 
-def _to_corrected_pandas_type(dt: DataType) -> Optional[Type]:
+def _to_corrected_pandas_type(dt: DataType) -> Optional[Any]:
     """
     When converting Spark SQL records to Pandas `pandas.DataFrame`, the inferred data type
     may be wrong. This method gets the corrected data type for Pandas if that type may be
@@ -186,11 +187,11 @@ def _to_corrected_pandas_type(dt: DataType) -> Optional[Type]:
     elif type(dt) == BooleanType:
         return bool
     elif type(dt) == TimestampType:
-        return np.datetime64
+        return np.dtype("datetime64[ns]")
     elif type(dt) == TimestampNTZType:
-        return np.datetime64
+        return np.dtype("datetime64[ns]")
     elif type(dt) == DayTimeIntervalType:
-        return np.timedelta64
+        return np.dtype("timedelta64[ns]")
     else:
         return None
 
@@ -214,13 +215,20 @@ def _check_series_convert_timestamps_localize(
     pandas.Series
         `pandas.Series` where if it is a timestamp, has been converted to tz-naive
     """
+    from pyspark.sql.pandas.utils import require_minimum_pandas_version
+
+    require_minimum_pandas_version()
+
     import pandas as pd
-    from pandas.api.types import is_datetime64_dtype  # type: ignore[attr-defined]
+    from pandas.api.types import (  # type: ignore[attr-defined]
+        is_datetime64_dtype,
+        is_datetime64tz_dtype,
+    )
 
     from_tz = from_timezone or _get_local_timezone()
     to_tz = to_timezone or _get_local_timezone()
     # TODO: handle nested timestamps, such as ArrayType(TimestampType())?
-    if isinstance(s.dtype, pd.DatetimeTZDtype):
+    if is_datetime64tz_dtype(s.dtype):
         return s.dt.tz_convert(to_tz).dt.tz_localize(None)
     elif is_datetime64_dtype(s.dtype) and from_tz != to_tz:
         # `s.dt.tz_localize('tzlocal()')` doesn't work properly when including NaT.
@@ -319,6 +327,7 @@ def _create_converter_to_pandas(
     """
     import numpy as np
     import pandas as pd
+    from pandas.core.dtypes.common import is_datetime64tz_dtype
 
     pandas_type = _to_corrected_pandas_type(data_type)
 
@@ -348,7 +357,7 @@ def _create_converter_to_pandas(
             assert timezone is not None
 
             def correct_dtype(pser: pd.Series) -> pd.Series:
-                if not isinstance(pser.dtype, pd.DatetimeTZDtype):
+                if not is_datetime64tz_dtype(pser.dtype):
                     pser = pser.astype(pandas_type, copy=False, errors="ignore")
                 return _check_series_convert_timestamps_local_tz(pser, timezone=cast(str, timezone))
 
@@ -362,23 +371,21 @@ def _create_converter_to_pandas(
     def _converter(
         dt: DataType, _struct_in_pandas: Optional[str], _ndarray_as_list: bool
     ) -> Optional[Callable[[Any], Any]]:
+
         if isinstance(dt, ArrayType):
             _element_conv = _converter(dt.elementType, _struct_in_pandas, _ndarray_as_list)
 
             if _ndarray_as_list:
                 if _element_conv is None:
+                    _element_conv = lambda x: x  # noqa: E731
 
-                    def convert_array_ndarray_as_list(value: Any) -> Any:
+                def convert_array_ndarray_as_list(value: Any) -> Any:
+                    if value is None:
+                        return None
+                    else:
                         # In Arrow Python UDF, ArrayType is converted to `np.ndarray`
                         # whereas a list is expected.
-                        return list(value)
-
-                else:
-
-                    def convert_array_ndarray_as_list(value: Any) -> Any:
-                        # In Arrow Python UDF, ArrayType is converted to `np.ndarray`
-                        # whereas a list is expected.
-                        return [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
+                        return [_element_conv(v) for v in value]  # type: ignore[misc]
 
                 return convert_array_ndarray_as_list
             else:
@@ -386,47 +393,32 @@ def _create_converter_to_pandas(
                     return None
 
                 def convert_array_ndarray_as_ndarray(value: Any) -> Any:
-                    if isinstance(value, np.ndarray):
+                    if value is None:
+                        return None
+                    elif isinstance(value, np.ndarray):
                         # `pyarrow.Table.to_pandas` uses `np.ndarray`.
-                        return np.array(
-                            [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
-                        )
+                        return np.array([_element_conv(v) for v in value])  # type: ignore[misc]
                     else:
+                        assert isinstance(value, list)
                         # otherwise, `list` should be used.
-                        return [_element_conv(v) if v is not None else None for v in value]  # type: ignore[misc]
+                        return [_element_conv(v) for v in value]  # type: ignore[misc]
 
                 return convert_array_ndarray_as_ndarray
 
         elif isinstance(dt, MapType):
-            _key_conv = _converter(dt.keyType, _struct_in_pandas, _ndarray_as_list)
-            _value_conv = _converter(dt.valueType, _struct_in_pandas, _ndarray_as_list)
+            _key_conv = _converter(dt.keyType, _struct_in_pandas, _ndarray_as_list) or (lambda x: x)
+            _value_conv = _converter(dt.valueType, _struct_in_pandas, _ndarray_as_list) or (lambda x: x)
 
-            if _key_conv is None and _value_conv is None:
-
-                def convert_map(value: Any) -> Any:
+            def convert_map(value: Any) -> Any:
+                if value is None:
+                    return None
+                elif isinstance(value, list):
                     # `pyarrow.Table.to_pandas` uses `list` of key-value tuple.
+                    return {_key_conv(k): _value_conv(v) for k, v in value}
+                else:
+                    assert isinstance(value, dict)
                     # otherwise, `dict` should be used.
-                    return dict(value)
-
-            else:
-
-                def convert_map(value: Any) -> Any:
-                    if isinstance(value, list):
-                        # `pyarrow.Table.to_pandas` uses `list` of key-value tuple.
-                        return {
-                            (_key_conv(k) if _key_conv is not None and k is not None else k): (
-                                _value_conv(v) if _value_conv is not None and v is not None else v
-                            )
-                            for k, v in value
-                        }
-                    else:
-                        # otherwise, `dict` should be used.
-                        return {
-                            (_key_conv(k) if _key_conv is not None and k is not None else k): (
-                                _value_conv(v) if _value_conv is not None and v is not None else v
-                            )
-                            for k, v in value.items()
-                        }
+                    return {_key_conv(k): _value_conv(v) for k, v in value.items()}
 
             return convert_map
 
@@ -443,73 +435,39 @@ def _create_converter_to_pandas(
 
             dedup_field_names = _dedup_names(field_names)
 
-            field_convs = [_converter(f.dataType, _struct_in_pandas, _ndarray_as_list) for f in dt.fields]
+            field_convs = [
+                _converter(f.dataType, _struct_in_pandas, _ndarray_as_list) or (lambda x: x) for f in dt.fields
+            ]
 
             if _struct_in_pandas == "row":
-                if all(conv is None for conv in field_convs):
 
-                    def convert_struct_as_row(value: Any) -> Any:
-                        if isinstance(value, dict):
-                            # `pyarrow.Table.to_pandas` uses `dict`.
-                            _values = [value.get(name, None) for i, name in enumerate(dedup_field_names)]
-                            return _create_row(field_names, _values)
-                        else:
-                            # otherwise, `Row` should be used.
-                            return _create_row(field_names, value)
-
-                else:
-
-                    def convert_struct_as_row(value: Any) -> Any:
-                        if isinstance(value, dict):
-                            # `pyarrow.Table.to_pandas` uses `dict`.
-                            _values = [
-                                conv(v) if conv is not None and v is not None else v
-                                for conv, v in zip(
-                                    field_convs,
-                                    (value.get(name, None) for name in dedup_field_names),
-                                )
-                            ]
-                            return _create_row(field_names, _values)
-                        else:
-                            # otherwise, `Row` should be used.
-                            _values = [
-                                conv(v) if conv is not None and v is not None else v
-                                for conv, v in zip(field_convs, value)
-                            ]
-                            return _create_row(field_names, _values)
+                def convert_struct_as_row(value: Any) -> Any:
+                    if value is None:
+                        return None
+                    elif isinstance(value, dict):
+                        # `pyarrow.Table.to_pandas` uses `dict`.
+                        _values = [field_convs[i](value.get(name, None)) for i, name in enumerate(dedup_field_names)]
+                        return _create_row(field_names, _values)
+                    else:
+                        assert isinstance(value, Row)
+                        # otherwise, `Row` should be used.
+                        _values = [field_convs[i](value[i]) for i, name in enumerate(value)]
+                        return _create_row(field_names, _values)
 
                 return convert_struct_as_row
 
             elif _struct_in_pandas == "dict":
-                if all(conv is None for conv in field_convs):
 
-                    def convert_struct_as_dict(value: Any) -> Any:
-                        if isinstance(value, dict):
-                            # `pyarrow.Table.to_pandas` uses `dict`.
-                            return {name: value.get(name, None) for name in dedup_field_names}
-                        else:
-                            # otherwise, `Row` should be used.
-                            return dict(zip(dedup_field_names, value))
-
-                else:
-
-                    def convert_struct_as_dict(value: Any) -> Any:
-                        if isinstance(value, dict):
-                            # `pyarrow.Table.to_pandas` uses `dict`.
-                            return {
-                                name: conv(v) if conv is not None and v is not None else v
-                                for name, conv, v in zip(
-                                    dedup_field_names,
-                                    field_convs,
-                                    (value.get(name, None) for name in dedup_field_names),
-                                )
-                            }
-                        else:
-                            # otherwise, `Row` should be used.
-                            return {
-                                name: conv(v) if conv is not None and v is not None else v
-                                for name, conv, v in zip(dedup_field_names, field_convs, value)
-                            }
+                def convert_struct_as_dict(value: Any) -> Any:
+                    if value is None:
+                        return None
+                    elif isinstance(value, dict):
+                        # `pyarrow.Table.to_pandas` uses `dict`.
+                        return {name: field_convs[i](value.get(name, None)) for i, name in enumerate(dedup_field_names)}
+                    else:
+                        assert isinstance(value, Row)
+                        # otherwise, `Row` should be used.
+                        return {dedup_field_names[i]: field_convs[i](v) for i, v in enumerate(value)}
 
                 return convert_struct_as_dict
 
@@ -525,10 +483,13 @@ def _create_converter_to_pandas(
 
             def convert_timestamp(value: Any) -> Any:
                 try:
-                    if isinstance(value, datetime.datetime) and value.tzinfo is not None:
-                        ts = pd.Timestamp(value)
+                    if value is None:
+                        return None
                     else:
-                        ts = pd.Timestamp(value).tz_localize(local_tz)
+                        if isinstance(value, datetime.datetime) and value.tzinfo is not None:
+                            ts = pd.Timestamp(value)
+                        else:
+                            ts = pd.Timestamp(value).tz_localize(local_tz)
                 except OutOfBoundsDatetime:
                     return pd.to_datetime(value, errors="ignore")
                 return ts.tz_convert(timezone).tz_localize(None)
@@ -539,7 +500,10 @@ def _create_converter_to_pandas(
 
             def convert_timestamp_ntz(value: Any) -> Any:
                 try:
-                    return pd.Timestamp(value)
+                    if value is None:
+                        return None
+                    else:
+                        return pd.Timestamp(value)
                 except OutOfBoundsDatetime:
                     return pd.to_datetime(value, errors="ignore")
 
@@ -548,25 +512,16 @@ def _create_converter_to_pandas(
         elif isinstance(dt, UserDefinedType):
             udt: UserDefinedType = dt
 
-            conv = _converter(udt.sqlType(), _struct_in_pandas="row", _ndarray_as_list=True)
+            conv = _converter(udt.sqlType(), _struct_in_pandas="row", _ndarray_as_list=True) or (lambda x: x)
 
-            if conv is None:
-
-                def convert_udt(value: Any) -> Any:
-                    if hasattr(value, "__UDT__"):
-                        assert isinstance(value.__UDT__, type(udt))
-                        return value
-                    else:
-                        return udt.deserialize(value)
-
-            else:
-
-                def convert_udt(value: Any) -> Any:
-                    if hasattr(value, "__UDT__"):
-                        assert isinstance(value.__UDT__, type(udt))
-                        return value
-                    else:
-                        return udt.deserialize(conv(value))  # type: ignore[misc]
+            def convert_udt(value: Any) -> Any:
+                if value is None:
+                    return None
+                elif hasattr(value, "__UDT__"):
+                    assert isinstance(value.__UDT__, type(udt))
+                    return value
+                else:
+                    return udt.deserialize(conv(value))
 
             return convert_udt
 
@@ -575,9 +530,7 @@ def _create_converter_to_pandas(
 
     conv = _converter(data_type, struct_in_pandas, ndarray_as_list)
     if conv is not None:
-        return lambda pser: pser.apply(  # type: ignore[return-value]
-            lambda x: conv(x) if x is not None else None  # type: ignore[misc]
-        )
+        return lambda pser: pser.apply(conv)  # type: ignore[return-value]
     else:
         return lambda pser: pser
 
@@ -646,7 +599,7 @@ def to_pandas(df, jconf) -> pd.DataFrame:
         return pdf
 
 
-# End of PySpark 3.5.0 copy
+# End of PySpark 3.5.3 copy
 
 
 def render_grid(pdf, limit):
