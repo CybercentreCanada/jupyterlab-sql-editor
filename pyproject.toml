@@ -23,6 +23,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+  "jupyterlab-lsp>=5.0.0",
+  "jupyter-lsp>=2.2.0",
+  "python-lsp-server[all]",
   "cccs-ipyaggrid>=0.5.3",
   "ipydatagrid",
   "ipytree",
