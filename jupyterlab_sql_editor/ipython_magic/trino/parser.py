@@ -92,6 +92,7 @@ def t_NAME_PART(t):
 # A string containing ignored characters (spaces and tabs)
 t_ignore = ""
 
+
 # Error handling rule
 def t_error(t):
     print("Illegal character '%s'" % t.value[0])
@@ -106,6 +107,7 @@ trino_column_lexer = lex.lex()
 # parser for a simple trino column schema expression
 # of the form row(x 1 integer, y varchar(12), z array(varchar))
 # ------------------------------------------------------------
+
 
 # Yacc
 def p_array(p):
@@ -220,7 +222,10 @@ def p_type_name(p):
 
 # Error rule for syntax errors
 def p_error(p):
-    print("Syntax error in input!")
+    if p:
+        print(f"Syntax error at token '{p.type}', value '{p.value}', at position {p.lexpos}")
+    else:
+        print("Syntax error in input!")
 
 
 # Build the parser

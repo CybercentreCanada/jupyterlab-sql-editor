@@ -70,7 +70,7 @@ class SparkConnection(Connection):
         table_names = []
         try:
             if catalog_name and database_name:
-                rows = self.spark.sql(f"SHOW TABLES IN {database_name}.{catalog_name}").collect()
+                rows = self.spark.sql(f"SHOW TABLES IN {catalog_name}.{database_name}").collect()
             else:
                 rows = self.spark.sql("SHOW TABLES").collect()
             for r in rows:
@@ -80,7 +80,11 @@ class SparkConnection(Connection):
                     table_names.append(r["tableName"])
         except Exception:
             # Skip problematic database
-            pass
+            (
+                print(f"Exception listing tables for {catalog_name}.{database_name}")
+                if catalog_name and database_name
+                else print("Exception listing tables")
+            )
         return table_names
 
     def get_database_names(self, catalog_name):
