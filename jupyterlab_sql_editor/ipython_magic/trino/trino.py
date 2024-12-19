@@ -189,6 +189,7 @@ class Trino(Base):
         if output == "sql":
             return self.display_sql(sql)
 
+        sql_lim = 0
         sql_statement = sqlparse.format(sql, strip_comments=True)
         parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
         for statement in parsed:
@@ -203,15 +204,14 @@ class Trino(Base):
         if use_cache:
             print("Using cached results")
 
+        results = [[]]
+        columns = []
         if not (output == "skip" or output == "none") or args.dataframe:
-            results = [[]]
-            columns = []
-
             start = time()
             if not use_cache:
                 self.cur.execute(sql)
                 results = self.cur.fetchmany(limit + 1)
-                columns = list(map(lambda d: d[0], self.cur.description))
+                columns = list(map(lambda d: d[0], self.cur.description)) if self.cur.description else []
             else:
                 results = self.cached_results
             end = time()
@@ -222,9 +222,10 @@ class Trino(Base):
             return
 
         self.cached_results = results
-        if len(results) > limit and not (output == "skip" or output == "none"):
+        results_length = len(results) if results else 0
+        if results_length > limit and not (output == "skip" or output == "none"):
             print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
-            results = results[:limit]
+            results = results[:limit] if results else [[]]
 
         if not use_cache:
             pdf = pd.DataFrame.from_records(results, columns=columns)
