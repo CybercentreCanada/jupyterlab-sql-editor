@@ -1,7 +1,6 @@
 import logging
 
 from pyspark.sql.types import StringType, StructType
-from trino.exceptions import TrinoUserError
 
 from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
@@ -35,10 +34,8 @@ class TrinoConnection(Connection):
 
     def get_function_names(self):
         sql = "SHOW FUNCTIONS"
-        # print(sql)
         self.cur.execute(sql)
         rows = self.cur.fetchmany(MAX_RET)
-        # initialize a null list
         function_names = []
         for row in rows:
             name = row[0]
@@ -53,7 +50,6 @@ class TrinoConnection(Connection):
         path = f"{catalog_name}.{database_name}"
         try:
             sql = f"SHOW TABLES IN {path}"
-            # print(sql)
             self.cur.execute(sql)
             rows = self.cur.fetchmany(MAX_RET)
             table_names = []
@@ -61,13 +57,12 @@ class TrinoConnection(Connection):
                 table = row[0]
                 table_names.append(table)
             return table_names
-        except TrinoUserError:
+        except Exception:
             print(f"Failed to get tables for {path}")
             return []
 
     def get_database_names(self, catalog_name):
         sql = f"SHOW SCHEMAS IN {catalog_name}"
-        # print(sql)
         self.cur.execute(sql)
         rows = self.cur.fetchmany(MAX_RET)
         database_names = []
@@ -79,7 +74,6 @@ class TrinoConnection(Connection):
     def _get_columns(self, table_name):
         try:
             sql = f"SHOW COLUMNS IN {table_name}"
-            # print(sql)
             self.cur.execute(sql)
             rows = self.cur.fetchmany(MAX_RET)
             schema = StructType()
@@ -94,7 +88,7 @@ class TrinoConnection(Connection):
                     schema.add(name, StringType())
 
             return SparkTableSchema(schema, quoting_char='"').convert()
-        except TrinoUserError:
+        except Exception:
             print(f"Failed to get columns for {table_name}")
             return []
 
