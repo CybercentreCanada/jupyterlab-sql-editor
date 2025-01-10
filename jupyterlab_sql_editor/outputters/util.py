@@ -676,6 +676,14 @@ def rows_to_html(rows, columns, show_nonprinting, truncate):
     return html
 
 
+def check_js_integer_safety(data, warnings):
+    if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
+        return data
+    else:
+        warnings.append(f"int {data} was cast to string to avoid loss of precision.")
+        return str(data)
+
+
 def sanitize_results(data, warnings=[], safe_js_ints=False):
     result = dict()
 
@@ -690,18 +698,17 @@ def sanitize_results(data, warnings=[], safe_js_ints=False):
     # For Oracle "integers"
     elif isinstance(data, Decimal):
         if data == data.to_integral_value():
-            return int(data)
-        return data
+            data = int(data)
+        if safe_js_ints:
+            return check_js_integer_safety(data, warnings)
+        else:
+            return data
     elif isinstance(data, datetime64):
         return pd.Timestamp(data)
     elif isinstance(data, (bytearray, bytes)):
         return data.hex(" ").upper().split().__str__()
-    elif safe_js_ints and isinstance(data, (int, Decimal)):
-        if data <= JS_MAX_SAFE_INTEGER and data >= JS_MIN_SAFE_INTEGER:
-            return data
-        else:
-            warnings.append(f"int {data} was cast to string to avoid loss of precision.")
-            return str(data)
+    elif safe_js_ints and isinstance(data, (int)):
+        return check_js_integer_safety(data, warnings)
     elif isinstance(data, pt.Row):
         for key, value in data.asDict().items():
             result[key] = sanitize_results(value, warnings, safe_js_ints)
