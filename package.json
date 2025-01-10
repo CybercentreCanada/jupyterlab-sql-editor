@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab-sql-editor",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "description": "SQL editor support for formatting, syntax highlighting and code completion of SQL in cell magic, line magic, python string and file editor.",
     "keywords": [
         "jupyter",
