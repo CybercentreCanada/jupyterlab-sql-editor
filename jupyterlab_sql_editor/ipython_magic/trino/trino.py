@@ -1,3 +1,4 @@
+import logging
 import pathlib
 from time import time
 from typing import Optional
@@ -8,13 +9,18 @@ import trino
 from IPython import get_ipython
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
+from IPython.display import display
 from sqlparse.sql import IdentifierList, TokenList
 from sqlparse.tokens import Keyword
 from traitlets import Bool, Instance, Int, Unicode, Union
+from trino.sqlalchemy.datatype import parse_sqltype
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
+)
+from jupyterlab_sql_editor.ipython_magic.trino.trino_schema_widget import (
+    TrinoSchemaWidget,
 )
 from jupyterlab_sql_editor.outputters.outputters import _display_results
 from jupyterlab_sql_editor.outputters.util import _dedup_names, sanitize_results
@@ -54,6 +60,7 @@ class Trino(Base):
         self.cached_sql = None
         self.cached_results = None
         self.cached_pdf = None
+        self.cached_schema = None
 
     @needs_local_scope
     @line_cell_magic
@@ -211,12 +218,16 @@ class Trino(Base):
             if not use_cache:
                 self.cur.execute(sql)
                 results = self.cur.fetchmany(limit + 1)
-                columns = list(map(lambda d: d[0], self.cur.description)) if self.cur.description else []
+                description = self.cur.description
+                columns = list(map(lambda d: d[0], description)) if description else []
+                schema = self.get_schema_from_query_description(description)
             else:
                 results = self.cached_results
+                schema = self.cached_schema
             end = time()
 
             print(f"Execution time: {end - start:.2f} seconds")
+            display(TrinoSchemaWidget("results", schema))
         else:
             print("Display and execution of results skipped")
             return
@@ -243,6 +254,7 @@ class Trino(Base):
         # Cache results
         self.cached_sql = sql
         self.cached_pdf = pdf.copy() if pdf is not None else None
+        self.cached_schema = schema
 
         _display_results(
             pdf=pdf if pdf is not None else pd.DataFrame([]),
@@ -273,6 +285,33 @@ class Trino(Base):
                 if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
                     return int(token.value)
         return None
+
+    def get_schema_from_query_description(self, description):
+        """
+        Infer the schema of a query by inspecting the cursor's description.
+
+        :param description: Cursor description.
+        :return: A list of columns with metadata, or an empty list on failure.
+        """
+        try:
+            if not description:
+                raise ValueError("No description available; query may not return results.")
+
+            # Build schema from description
+            columns = []
+            for col in description:
+                columns.append(
+                    {
+                        "columnName": col.name,
+                        "type": parse_sqltype(col.type_code),
+                        "nullable": col.null_ok,
+                        "default": None,
+                    }
+                )
+            return columns
+        except Exception as exc:
+            logging.warning(f"Failed to get schema from query results: {exc}")
+            return []
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
         if refresh_arg == "all":

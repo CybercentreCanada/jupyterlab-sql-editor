@@ -35,6 +35,8 @@ from pyspark.sql.types import (
     TimestampType,
     UserDefinedType,
 )
+from sqlalchemy.sql import sqltypes
+from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIME, TIMESTAMP
 
 
 class Connection(ABC):
@@ -80,7 +82,7 @@ class Catalog:
 
 
 class Database:
-    def __init__(self, connection: Connection, catalog_name, database_name) -> None:
+    def __init__(self, connection: Connection, catalog_name: str, database_name: str) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
         self.database_name = database_name
@@ -310,6 +312,95 @@ class SparkTableSchema:
                     }
                 )
                 self.get_children(child, path, fields)
+
+    def convert(self):
+        fields = []
+        self.get_children(self.schema, "", fields)
+        return fields
+
+
+class TrinoTableSchema:
+    def __init__(self, schema, quoting_char="`") -> None:
+        self.schema = schema
+        self.quoting_char = quoting_char
+
+    _FIELD_TYPES = {
+        # === Boolean ===
+        sqltypes.BOOLEAN: "boolean",
+        # === Integer ===
+        sqltypes.SMALLINT: "smallint",
+        sqltypes.INTEGER: "integer",
+        sqltypes.BIGINT: "bigint",
+        # === Floating-point ===
+        sqltypes.REAL: "real",
+        DOUBLE: "double",
+        # === Fixed-precision ===
+        sqltypes.DECIMAL: "decimal",
+        # === String ===
+        sqltypes.VARCHAR: "varchar",
+        sqltypes.CHAR: "char",
+        sqltypes.VARBINARY: "varbinary",
+        JSON: "json",
+        # === Date and time ===
+        sqltypes.DATE: "date",
+        TIME: "time",
+        TIMESTAMP: "timestamp",
+        # === Structural ===
+        sqltypes.ARRAY: "array",
+        MAP: "map",
+        ROW: "row",
+        # === Others ===
+        # IPADDRESS: 'ipaddress',
+        # UUID: 'uuid',
+        # HYPERLOGLOG: 'hyperloglog',
+        # P4HYPERLOGLOG: 'p4hyperloglog',
+        # SETDIGEST: 'setdigest',
+        # QDIGEST: 'qdigest',
+        # TDIGEST: 'tdigest',
+    }
+
+    def get_type_name(self, field_type):
+        result = self._FIELD_TYPES.get(type(field_type))
+        return result
+
+    def get_path(self, path, name):
+        if " " in name or name[0].isdigit():
+            name = self.quoting_char + name + self.quoting_char
+        if len(path) > 0:
+            return f"{path}.{name}"
+        return name
+
+    def get_children(self, field, path, fields):
+        if isinstance(field, dict):
+            self.get_children(field["type"], self.get_path(path, field["columnName"]), fields)
+        elif isinstance(field, MAP):
+            self.get_children(field.value_type, self.get_path(path, "key"), fields)
+        elif isinstance(field, sqltypes.ARRAY):
+            self.get_children(field.item_type, path, fields)
+        elif isinstance(field, ROW):
+            for attr_name, attr_type in field.attr_types:
+                type_name = self.get_type_name(attr_type)
+                fields.append(
+                    {
+                        "columnName": self.get_path(path, attr_name),
+                        "description": type_name,
+                        "type": type_name,
+                        "metadata": {},
+                    }
+                )
+                self.get_children(attr_type, self.get_path(path, attr_name), fields)
+        elif isinstance(field, (list)):
+            for f in field:
+                type_name = self.get_type_name(f.get("type"))
+                fields.append(
+                    {
+                        "columnName": self.get_path(path, f.get("columnName")),
+                        "description": type_name,
+                        "type": type_name,
+                        "metadata": {},
+                    }
+                )
+                self.get_children(f, path, fields)
 
     def convert(self):
         fields = []

@@ -1,3 +1,4 @@
+## DEPRECATED
 # ------------------------------------------------------------
 # tokenizer for a simple trino column schema expression
 # of the form row(x 1 integer, y varchar(12), z array(varchar))
@@ -18,6 +19,7 @@ from pyspark.sql.types import (
     StringType,
     StructField,
     StructType,
+    TimestampNTZType,
     TimestampType,
 )
 
@@ -56,46 +58,47 @@ reserved = {
     "varbinary": "VARBINARY",
     "json": "JSON",
     "date": "DATE",
-    "time": "TIME",
     "timestamp": "TIMESTAMP",
     "with": "WITH",
+    "time": "TIME",
     "zone": "ZONE",
 }
 
-# List of token names.   This is always required
+# Token definitions
 tokens = [
     "LPAREN",
     "RPAREN",
-    "COMMA_SPACE",
+    "COMMA",
     "NAME_PART",
     "SPACE",
-    "NUMBER",
 ] + list(reserved.values())
 
-# Regular expression rules for simple tokens
+# Token regex for reserved keywords
 t_LPAREN = r"\("
 t_RPAREN = r"\)"
-t_COMMA_SPACE = r",\ "
-t_SPACE = r"\ "
+t_COMMA = r","
+t_WITH = r"with"
+t_TIME = r"time"
+t_ZONE = r"zone"
+
+# A string containing ignored characters (spaces and tabs)
+t_ignore = " \t"
 
 
+# Token regex for NAME_PART (non-reserved words)
 def t_NAME_PART(t):
-    r"[^\(\) ,]+"
-    if t.value.isnumeric():
-        t.type = "NUMBER"
-    else:
-        t.type = reserved.get(t.value, "NAME_PART")
-    t.value = str(t.value)
+    r"[^\s,()]+"  # Matches valid identifiers (letters, digits, underscores)
+    t.type = reserved.get(t.value.lower(), "NAME_PART")
     return t
 
 
-# A string containing ignored characters (spaces and tabs)
-t_ignore = ""
+def t_TIMESTAMP(t):
+    r"timestamp"
+    return t
 
 
-# Error handling rule
 def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+    print(f"Illegal character '{t.value[0]}' at position {t.lexpos}")
     t.lexer.skip(1)
 
 
@@ -116,7 +119,7 @@ def p_array(p):
 
 
 def p_map(p):
-    "type : MAP LPAREN type COMMA_SPACE type RPAREN"
+    "type : MAP LPAREN type COMMA type RPAREN"
     p[0] = MapType(p[3], p[5])
 
 
@@ -127,7 +130,7 @@ def p_row(p):
 
 def p_row_field_list(p):
     """
-    row_field_list : row_field_list COMMA_SPACE row_field
+    row_field_list : row_field_list COMMA row_field
                    | row_field
     """
     if len(p) == 4:
@@ -156,18 +159,11 @@ def p_row_field_parts(p):
                     | type
     """
     if len(p) == 3:
-        if p[2]["field_name"] == "" and p[1] == " ":
-            # we have a type only and we got the first space character, pass over it
-            p[0] = p[2]
-        else:
-            # prefix the field_part onto the field_name we are building
-            name = p[1] + p[2]["field_name"]
-            # row_field_parts is carrying the field_type
-            p[0] = {"field_name": name, "field_type": p[2]["field_type"]}
-
+        # Accumulate name parts and the field type
+        field_name = f"{p[1]} {p[2]['field_name']}".strip()
+        p[0] = {"field_name": field_name, "field_type": p[2]["field_type"]}
     elif len(p) == 2:
-        # start by recieving the type of the field
-        # name is unknown at this point
+        # Initialize field with type only
         p[0] = {"field_name": "", "field_type": p[1]}
 
 
@@ -178,16 +174,64 @@ def p_row_field_parts(p):
 def p_field_part(p):
     """
     field_part :  NAME_PART
+                | NAME_PART SPACE field_part
+                | NAME_PART LPAREN NAME_PART RPAREN
+                | NAME_PART LPAREN NAME_PART RPAREN SPACE field_part
                 | SPACE
                 | WITH
                 | ZONE
                 | ROW
                 | MAP
                 | type
-                | type_name
-
     """
-    p[0] = p[1]
+    if len(p) == 2:
+        p[0] = p[1]  # Simple case for NAME_PART
+    elif len(p) == 4:
+        p[0] = f"{p[1]} {p[3]}"  # Concatenated with SPACE
+    elif len(p) == 5:
+        p[0] = f"{p[1]} ({p[3]})"  # Concatenated with parentheses
+    elif len(p) == 7:
+        p[0] = f"{p[1]} ({p[3]}) {p[6]}"  # Parentheses and additional part
+
+
+def p_digits(t):
+    """digits : NAME_PART"""
+    if t[1].isdigit():
+        t[0] = int(t[1])  # Convert the numeric value to an integer
+    else:
+        raise SyntaxError(f"Expected numeric value, got: {t[1]}")
+
+
+def p_type_decimal(t):
+    """type : DECIMAL
+    | DECIMAL LPAREN digits RPAREN
+    | DECIMAL LPAREN digits COMMA digits RPAREN"""
+    if len(t) == 2:
+        # No precision/scale provided, default to 10, 0
+        t[0] = DecimalType(10, 0)
+    elif len(t) == 5:
+        # Precision only
+        t[0] = DecimalType(int(t[3]), 0)
+    else:
+        # Precision and scale
+        t[0] = DecimalType(int(t[3]), int(t[5]))
+
+
+def p_type_timestamp(t):
+    """type : TIMESTAMP
+    | TIMESTAMP LPAREN digits RPAREN
+    | TIMESTAMP LPAREN digits RPAREN WITH TIME ZONE
+    | TIMESTAMP WITH TIME ZONE"""
+    if len(t) == 2:  # "timestamp"
+        t[0] = TimestampNTZType()  # Non-Time-Zone-Aware Timestamp
+    elif len(t) == 4:  # "timestamp with time zone"
+        t[0] = TimestampType()  # Time-Zone-Aware Timestamp
+    elif len(t) == 5:  # "timestamp(precision)"
+        t[0] = TimestampNTZType()
+    elif len(t) == 8:  # "timestamp(precision) with time zone"
+        t[0] = TimestampType()
+    else:
+        raise SyntaxError(f"Invalid timestamp type definition: {t}")
 
 
 def p_type(p):
@@ -206,16 +250,13 @@ def p_type_name(p):
                 | BIGINT
                 | REAL
                 | DOUBLE
-                | DECIMAL
                 | VARCHAR
-                | VARCHAR LPAREN NUMBER RPAREN
+                | VARCHAR LPAREN digits RPAREN
                 | CHAR
                 | VARBINARY
                 | JSON
                 | DATE
                 | TIME
-                | TIMESTAMP
-                | TIMESTAMP LPAREN NUMBER RPAREN SPACE WITH SPACE TIME SPACE ZONE
     """
     p[0] = p[1]
 

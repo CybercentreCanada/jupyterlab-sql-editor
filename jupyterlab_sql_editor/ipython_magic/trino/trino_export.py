@@ -1,16 +1,15 @@
-import logging
+from textwrap import dedent
 
-from pyspark.sql.types import StringType, StructType
+from trino.sqlalchemy.datatype import parse_sqltype
 
 from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
     Connection,
     Function,
     SchemaExporter,
-    SparkTableSchema,
     Table,
+    TrinoTableSchema,
 )
-from jupyterlab_sql_editor.ipython_magic.trino.parser import trino_column_parser
 
 MAX_RET = 20000
 
@@ -20,8 +19,7 @@ class TrinoConnection(Connection):
         self.cur = cur
 
     def render_table(self, table: Table):
-        full_table_name = table.catalog_name + "." + table.database_name + "." + table.table_name
-        columns = self._get_columns(full_table_name)
+        columns = self._get_columns(table.catalog_name, table.database_name, table.table_name)
         return {
             "tableName": table.table_name,
             "columns": columns,
@@ -71,25 +69,34 @@ class TrinoConnection(Connection):
             database_names.append(database)
         return database_names
 
-    def _get_columns(self, table_name):
+    def _get_columns(self, catalog_name, schema_name, table_name):
         try:
-            sql = f"SHOW COLUMNS IN {table_name}"
-            self.cur.execute(sql)
-            rows = self.cur.fetchmany(MAX_RET)
-            schema = StructType()
-            for row in rows:
-                name = row[0]
-                row_schema = row[1]
-                try:
-                    column_type = trino_column_parser.parse(row_schema)
-                    schema.add(name, column_type)
-                except Exception:
-                    logging.warning(f"Failed to parse column with schema {row_schema}")
-                    schema.add(name, StringType())
-
-            return SparkTableSchema(schema, quoting_char='"').convert()
-        except Exception:
-            print(f"Failed to get columns for {table_name}")
+            query = dedent(
+                f"""
+                SELECT
+                    column_name,
+                    data_type,
+                    IS_NULLABLE,
+                    column_default
+                FROM {catalog_name}.information_schema.columns
+                WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
+                ORDER BY ordinal_position ASC
+            """
+            ).strip()
+            self.cur.execute(query)
+            res = self.cur.fetchall()
+            columns = []
+            for record in res:
+                column = dict(
+                    columnName=record[0],
+                    type=parse_sqltype(record[1]),
+                    nullable=record[2] == "YES",
+                    default=record[3],
+                )
+                columns.append(column)
+            return TrinoTableSchema(columns, quoting_char='"').convert()
+        except Exception as exc:
+            print(f"Failed to get columns for {table_name}: {exc}")
             return []
 
 
