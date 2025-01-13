@@ -1,3 +1,4 @@
+from pathlib import Path
 from textwrap import dedent
 
 from trino.sqlalchemy.datatype import parse_sqltype
@@ -100,7 +101,7 @@ class TrinoConnection(Connection):
             return []
 
 
-def update_database_schema(cur, schema_file_name, catalog_names):
+def update_database_schema(cur, schema_file_name: Path, catalog_names):
     connection = TrinoConnection(cur)
     catalogs: list[Catalog] = []
     for name in catalog_names:
