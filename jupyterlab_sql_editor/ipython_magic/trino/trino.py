@@ -314,9 +314,10 @@ class Trino(Base):
             return []
 
     def check_refresh(self, refresh_arg, output_file, catalog_array):
+        if refresh_arg == "none":
+            return False
         if refresh_arg == "all":
             update_database_schema(self.cur, output_file, catalog_array)
-            return True
-        if refresh_arg != "none":
-            print(f"Invalid refresh option given {refresh_arg}. Valid refresh options are [all|none]")
-        return False
+        else:
+            update_database_schema(self.cur, output_file, [refresh_arg])
+        return True

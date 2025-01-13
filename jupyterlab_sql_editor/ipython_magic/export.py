@@ -38,6 +38,8 @@ from pyspark.sql.types import (
 from sqlalchemy.sql import sqltypes
 from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIME, TIMESTAMP
 
+from .util import merge_schemas
+
 
 class Connection(ABC):
     @abstractmethod
@@ -219,13 +221,28 @@ class SchemaExporter:
         # Create folders if they don't exist
         pathlib.Path(self.schema_file_name).parent.mkdir(parents=True, exist_ok=True)
 
-        schema = {
+        # Load the existing schema if the file exists
+        existing_schema = {}
+        if pathlib.Path(self.schema_file_name).exists():
+            with open(self.schema_file_name, "r", encoding="utf8") as fin:
+                try:
+                    existing_schema = json.load(fin)
+                except json.JSONDecodeError:
+                    print(f"Could not decode JSON from {self.schema_file_name}. Proceeding with an empty schema.")
+                    existing_schema = {}
+
+        new_schema = {
             "tables": self.render_catalogs(),
             "functions": self.render_functions(),
         }
+
+        # Merge new_schema into existing_schema
+        merge_schemas(existing_schema, new_schema)
+
         # Save schema to disk. sql-language-server will pickup any changes to this file.
         with open(self.schema_file_name, "w", encoding="utf8") as fout:
-            json.dump(schema, fout, sort_keys=True, indent=2)
+            json.dump(existing_schema, fout, sort_keys=True, indent=2)
+
         print(f"Schema file updated: {self.schema_file_name}")
 
     def update_local_schema(self):
@@ -246,6 +263,7 @@ class SchemaExporter:
 
         with open(self.schema_file_name, "w", encoding="utf8") as fout:
             json.dump(updated_schema, fout, indent=2, sort_keys=True)
+
         print(f"Schema file updated: {self.schema_file_name}")
 
 
