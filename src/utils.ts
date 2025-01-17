@@ -19,7 +19,7 @@ export function lineMagicExtractor(
     language: language,
     pattern: `${BEGIN}%${language}${COMMANDS}([^\n]*)`,
     foreignCaptureGroups: [1],
-    isStandalone: false,
+    isStandalone: true,
     fileExtension: language
   });
 }
@@ -31,7 +31,7 @@ export function cellMagicExtractor(
     language: language,
     pattern: `^%%(${language})( .*?)?\n([^]*)`,
     foreignCaptureGroups: [3],
-    isStandalone: false,
+    isStandalone: true,
     fileExtension: language
   });
 }
@@ -45,7 +45,7 @@ export function markerExtractor(
     language: language,
     pattern: `${startMarker}.*?\n([\\S\\s]*)${endMarker}`,
     foreignCaptureGroups: [1],
-    isStandalone: false,
+    isStandalone: true,
     fileExtension: language
   });
 }
