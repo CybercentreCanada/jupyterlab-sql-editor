@@ -364,7 +364,7 @@ class SparkSql(Base):
             print("Error reloading dbt modules")
             return False
         logger = logging.getLogger("configured_std_out")
-        while logger.hasHandlers():
+        while logger.handlers:  # Only remove explicitly attached handlers
             logger.removeHandler(logger.handlers[0])
         return True
 
