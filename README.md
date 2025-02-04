@@ -12,7 +12,7 @@ SQL editor support for formatting, syntax highlighting and code completion of SQ
 To install the extension, execute:
 
 ```bash
-pip install jupyterlab_sql_editor
+pip install jupyterlab_sql_editor[all]
 ```
 
 ## Uninstall
@@ -37,7 +37,7 @@ The `jlpm` command is JupyterLab's pinned version of
 # Clone the repo to your local environment
 # Change directory to the jupyterlab_sql_editor directory
 # Install package in development mode
-pip install -e "."
+pip install -e .[all]
 # Link your development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
 # Rebuild extension Typescript source after making changes

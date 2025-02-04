@@ -10,7 +10,7 @@
 
 ## Requirements
 
-- JupyterLab >= 3.0
+- JupyterLab >= 4.0.0
 
 ## Install
 
@@ -170,7 +170,7 @@ Clone the repo to your local environment
 Run the following commands to install the initial project dependencies and install the extension into the JupyterLab environment.
 
 ```bash
-pip install -ve .
+pip install -ve .[all]
 ```
 
 The above command copies the frontend part of the extension into JupyterLab. We can run this pip install command again every time we make a change to copy the change into JupyterLab. Even better, we can use the develop command (shown below) to create a symbolic link from JupyterLab to our source directory. This means our changes are automatically available in JupyterLab!
@@ -217,7 +217,7 @@ See [RELEASE](RELEASE.md)
 For development you can install the sql-language-server from source.
 
 ```bash
-cd pacakges/server
+cd packages/server
 npm run prepublish
 ```
 
