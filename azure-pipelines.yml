@@ -42,7 +42,7 @@ stages:
 
           - script: |
               set -eux
-              python -m pip install -v .
+              python -m pip install -v .[all]
             displayName: 'Build the extension'
 
           - script: |

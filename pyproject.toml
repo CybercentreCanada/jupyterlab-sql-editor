@@ -31,16 +31,18 @@ dependencies = [
   "jupyterlab-lsp>=5.0.0",
   "jupyter-events>=0.6.1",
   "jupyter-lsp>=2.2.0",
-  "mkdocs",
   "python-lsp-server[all]",
   "pandas>=1.4.4",
   "ply",
-  "pyspark",
   "sqlparse",
-  "sqlalchemy",
-  "trino"
+  "sqlalchemy"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
+
+[project.optional-dependencies]
+trino = ["trino"]
+pyspark = ["pyspark"]
+all = ["trino", "pyspark"]
 
 [project.scripts]
 sparksql_language_server = "jupyterlab_sql_editor.ipython_magic.sparksql.main:main"
