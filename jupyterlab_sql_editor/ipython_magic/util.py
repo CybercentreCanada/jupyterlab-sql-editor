@@ -1,10 +1,13 @@
+import pathlib
+import shutil
+import subprocess
 from os import environ, listdir
 from os.path import isdir, join
 
 
 def find_nvm_lib_dirs():
     NVM_VERSIONS_SUBPATH = "/versions/node/"
-    nvm_dir = environ["NVM_DIR"]
+    nvm_dir = environ.get("NVM_DIR")
     dirs = []
     if nvm_dir:
         dirs = [
@@ -13,6 +16,14 @@ def find_nvm_lib_dirs():
             if isdir(join(nvm_dir + NVM_VERSIONS_SUBPATH, d))
         ]
     return dirs
+
+
+def get_global_npm_path():
+    try:
+        npm_path = subprocess.check_output([shutil.which("npm"), "root", "-g"], text=True).strip()
+        return [str(pathlib.Path(npm_path).parent)]
+    except Exception:
+        return []
 
 
 def merge_schemas(original, incoming):

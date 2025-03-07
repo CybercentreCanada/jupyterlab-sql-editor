@@ -2,14 +2,13 @@
   "files.trimTrailingWhitespace": true,
   "files.trimFinalNewlines": true,
   "files.insertFinalNewline": true,
-  "black-formatter.args": ["--line-length=120"],
-  "isort.args": ["--profile", "black"],
   "python.languageServer": "Pylance",
-  "ruff.lint.args": ["--line-length=120"],
-  "ruff.organizeImports": false,
+  "ruff.lineLength": 120,
+  "ruff.nativeServer": "on",
+  "ruff.organizeImports": true,
   "[python]": {
     "editor.tabSize": 4,
-    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit",
