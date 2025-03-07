@@ -1,26 +1,31 @@
 import json
 import logging
+import os
 import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from jupyter_lsp.types import LanguageServerManagerAPI
 
-from jupyterlab_sql_editor.ipython_magic.util import find_nvm_lib_dirs
+from jupyterlab_sql_editor.ipython_magic.util import find_nvm_lib_dirs, get_global_npm_path
+
+log_file = os.path.join(tempfile.gettempdir(), "trino-language-server-entrypoint.log")
 
 logging.basicConfig(
     format="%(asctime)s %(message)s",
-    filename="/tmp/trino-language-server-entrypoint.log",
+    filename=log_file,
     level=logging.INFO,
 )
 
 mgr = LanguageServerManagerAPI()
 
 # If jupyterlab-lsp has difficulty finding your sql-language-server
-# installation, specify additional node_modules paths
-mgr.node_roots = ["/usr/local/lib/"]
+# installation, specify additional node_modules paths through the
+# NVM_DIR environment variable.
 mgr.node_roots.extend(find_nvm_lib_dirs())
+mgr.node_roots.extend(get_global_npm_path())
 
 CONFIG = pathlib.Path(__file__).parent.parent
 NODE_MODULE = KEY = "sql-language-server"
@@ -33,10 +38,6 @@ try:
     logging.info(f"Node location: {NODE}")
 except Exception:
     NODE_LOCATION = NODE = ""
-    logging.error("Failed to find the node binary.")
-
-if PATH_TO_BIN_JS is None:
-    logging.error("Failed to find the sql-language-server binary.")
 
 
 def main():
@@ -49,8 +50,10 @@ def main():
 
 def load(app):
     logging.info("trino language server load function called.")
-    if not NODE or not PATH_TO_BIN_JS:
-        raise Exception("Node and/or sql-language-server binary not available.")
+    if not NODE:
+        raise Exception("Node not available.")
+    if not PATH_TO_BIN_JS:
+        raise Exception(f"sql-language-server binary not available for {mgr.node_roots}.")
     try:
         config_schema = json.loads((CONFIG / "{}.schema.json".format(KEY)).read_text(encoding="utf-8"))
     except Exception as e:
