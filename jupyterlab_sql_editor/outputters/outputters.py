@@ -11,6 +11,7 @@ from jupyterlab_sql_editor.outputters.util import (
     format_value,
     make_tag,
     recursive_escape,
+    remove_none_recursive,
     render_ag_grid,
     render_grid,
     render_text,
@@ -80,14 +81,18 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, json_nulls=F
             )
         )
 
-    # remove None elements for display
+    # remove None elements, empty lists and empty dicts for display
     json_str = pd.DataFrame.from_records(safe_array, columns=df.columns).to_json(
         orient="records", date_format=date_format
     )
     if not json_nulls:
-        data = [{k: v for k, v in item.items() if v is not None} for item in json.loads(json_str if json_str else "")]
+        data = [
+            cleaned
+            for item in json.loads(json_str if json_str else "[]")
+            if (cleaned := remove_none_recursive(item)) is not None
+        ]
     else:
-        data = json.loads(json_str if json_str else "")
+        data = json.loads(json_str if json_str else "[]")
 
     display(JSON(data=data, expanded=expanded))
 
