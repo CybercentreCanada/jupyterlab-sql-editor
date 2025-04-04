@@ -5,3 +5,4 @@ node_modules
 !/package.json
 jupyterlab_sql_editor
 jupyterlab_sql_editor/trino/parsetab.py
+env/
