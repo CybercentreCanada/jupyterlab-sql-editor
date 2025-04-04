@@ -4,7 +4,7 @@ trigger:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'cybertron-build-pool'
 
 variables:
   tag: '$(Build.BuildId)'
@@ -83,8 +83,29 @@ stages:
 
           - script: |
               pip install twine
-              python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
+              python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: 'Publish artifact to analytical-platform feed'
+
+      - job: PublishArtifactToBoHFeed
+        displayName: Publish artifact to BoH feed
+        dependsOn: BuildPythonArtifact
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'specific'
+              downloadPath: '$(Pipeline.Workspace)'
+            displayName: 'Download build artifact'
+
+          - task: TwineAuthenticate@1
+            inputs:
+              pythonUploadServiceConnection: pypi-bagofholding
+            displayName: 'Twine Authenticate'
+
+          - script: |
+              pip install twine
+              python -m twine upload --skip-existing -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
+            displayName: 'Publish artifact to BoH feed'
 
       - job: PublishArtifactToPypi
         displayName: Publish artifact to PyPI
