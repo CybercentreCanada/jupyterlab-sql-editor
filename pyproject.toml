@@ -92,6 +92,12 @@ npm = ["jlpm"]
 source_dir = "src"
 build_dir = "jupyterlab_sql_editor/labextension"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "env/",
+    "env/*"
+]
+
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"
 
