@@ -371,7 +371,6 @@ def _create_converter_to_pandas(
     def _converter(
         dt: DataType, _struct_in_pandas: Optional[str], _ndarray_as_list: bool
     ) -> Optional[Callable[[Any], Any]]:
-
         if isinstance(dt, ArrayType):
             _element_conv = _converter(dt.elementType, _struct_in_pandas, _ndarray_as_list)
 
@@ -737,3 +736,16 @@ def dataframe_conditional_conversion(col):
     if pd.api.types.is_datetime64_any_dtype(col):
         return col.values.astype("datetime64[ns]")
     return col.values.astype(object)
+
+
+def remove_none_recursive(obj):
+    if obj is None:
+        return None
+    elif isinstance(obj, dict):
+        cleaned_dict = {k: v for k, v in ((k, remove_none_recursive(v)) for k, v in obj.items()) if v is not None}
+        return cleaned_dict if cleaned_dict else None
+    elif isinstance(obj, list):
+        cleaned_list = [v for v in (remove_none_recursive(v) for v in obj) if v is not None]
+        return cleaned_list if cleaned_list else None
+    else:
+        return obj
