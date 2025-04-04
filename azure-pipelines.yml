@@ -3,8 +3,7 @@ trigger:
     include:
       - main
 
-pool:
-  vmImage: 'ubuntu-latest'
+pool: 'cybertron-build-pool'
 
 variables:
   tag: '$(Build.BuildId)'
@@ -25,23 +24,22 @@ stages:
             inputs:
               versionSpec: '20.x'
 
-          - task: UsePythonVersion@0
-            inputs:
-              versionSpec: '$(python.version)'
-            displayName: 'Use Python $(python.version)'
-
           - script: |
+              virtualenv -p python$(python.version) env
+              source env/bin/activate
               python -m pip install -U "jupyterlab>=4.0.0,<5"
             displayName: 'Install dependencies'
 
           - script: |
               set -eux
+              source env/bin/activate
               jlpm
               jlpm run lint:check
             displayName: 'Lint the extension'
 
           - script: |
               set -eux
+              source env/bin/activate
               python -m pip install -v .[all]
             displayName: 'Build the extension'
 
@@ -49,6 +47,7 @@ stages:
               set -eux
 
               echo '.$(tag)' >> version.txt
+              source env/bin/activate
               pip install build
               python -m build
             displayName: 'Package the extension'
@@ -82,9 +81,34 @@ stages:
             displayName: 'Twine Authenticate'
 
           - script: |
+              virtualenv -p python$(python.version) env
+              source env/bin/activate
               pip install twine
-              python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/*
+              python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: 'Publish artifact to analytical-platform feed'
+
+      - job: PublishArtifactToBoHFeed
+        displayName: Publish artifact to BoH feed
+        dependsOn: BuildPythonArtifact
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: 'current'
+              downloadType: 'specific'
+              downloadPath: '$(Pipeline.Workspace)'
+            displayName: 'Download build artifact'
+
+          - task: TwineAuthenticate@1
+            inputs:
+              pythonUploadServiceConnection: pypi-bagofholding
+            displayName: 'Twine Authenticate'
+
+          - script: |
+              virtualenv -p python$(python.version) env
+              source env/bin/activate
+              pip install twine
+              python -m twine upload --skip-existing -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
+            displayName: 'Publish artifact to BoH feed'
 
       - job: PublishArtifactToPypi
         displayName: Publish artifact to PyPI
@@ -103,6 +127,8 @@ stages:
             displayName: 'Twine Authenticate'
 
           - script: |
+              virtualenv -p python$(python.version) env
+              source env/bin/activate
               pip install twine
               python -m twine upload --skip-existing -r "cccs-pypi" --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: 'Publish artifact to PyPI'

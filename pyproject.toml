@@ -60,7 +60,7 @@ fields = ["description", "authors", "urls"]
 
 [tool.hatch.build.targets.sdist]
 artifacts = ["jupyterlab_sql_editor/labextension"]
-exclude = [".github", "binder"]
+exclude = [".github", "binder", "env"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_sql_editor/labextension" = "share/jupyter/labextensions/jupyterlab-sql-editor"
