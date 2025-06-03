@@ -179,6 +179,7 @@ class Trino(Base):
             port=self.port,
             auth=self.auth,
             user=self.user,
+            source="ipython-magic",
             catalog=catalog,
             schema=schema,
             http_scheme=self.httpScheme,
