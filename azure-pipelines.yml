@@ -54,6 +54,7 @@ stages:
 
           - task: CopyFiles@2
             inputs:
+              contents: 'dist/**'
               targetFolder: $(Build.ArtifactStagingDirectory)
             displayName: 'Stage build artifact to publish'
 
