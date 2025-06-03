@@ -105,6 +105,7 @@ class Trino(Base):
                     Use this option to run statement which can't be wrapped in a SELECT/LIMIT statement. \
                     For example EXPLAIN, SHOW TABLE, SHOW CATALOGS.",
     )
+    @argument("--host", metavar="host", default=None, type=str)
     @argument("-c", "--catalog", metavar="catalogname", default=None, type=str, help="Trino catalog to use")
     @argument("-m", "--schema", metavar="schemaname", default=None, type=str, help="Trino schema to use")
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
@@ -174,7 +175,7 @@ class Trino(Base):
             return
 
         self.conn = trino.dbapi.connect(
-            host=self.host,
+            host=args.host if args.host else self.host,
             port=self.port,
             auth=self.auth,
             user=self.user,
@@ -202,7 +203,7 @@ class Trino(Base):
         for statement in parsed:
             sql_lim = self._extract_limit_from_query(statement)
         if not args.raw and not sql_lim and parsed[0].get_type() == "SELECT":
-            sql = f"{sql} \nLIMIT {limit+1}"
+            sql = f"{sql} \nLIMIT {limit + 1}"
 
         # TODO: Rework caching feature
         # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
