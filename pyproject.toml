@@ -35,7 +35,8 @@ dependencies = [
   "pandas>=1.4.4",
   "ply",
   "sqlparse",
-  "sqlalchemy"
+  "sqlalchemy",
+  "sqlglot[rs]"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
