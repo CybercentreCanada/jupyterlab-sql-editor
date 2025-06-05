@@ -135,7 +135,7 @@ class Trino(Base):
         if args.transpile:
             return Pretty(
                 sqlglot.transpile(
-                    self.get_sql_statement(cell, args.sql, args.jinja), read="spark", write=args.transpile, pretty=True
+                    self.get_sql_statement(cell, args.sql, args.jinja), read="trino", write=args.transpile, pretty=True
                 )[0]
             )
 
