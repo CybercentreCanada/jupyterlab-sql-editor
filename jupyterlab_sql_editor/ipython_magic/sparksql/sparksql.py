@@ -15,6 +15,7 @@ except ValueError:
 
 
 import pandas as pd
+import sqlglot
 from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
@@ -23,6 +24,7 @@ from IPython.core.magic import (
     needs_local_scope,
 )
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
+from IPython.display import Pretty
 from pyspark.errors.exceptions.captured import (
     AnalysisException,
     IllegalArgumentException,
@@ -71,6 +73,7 @@ class SparkSql(Base):
     @line_cell_magic
     @magic_arguments()
     @argument("sql", nargs="*", type=str, help="SQL statement to execute")
+    @argument("--transpile", metavar="transpile", type=str, help="Transpile query to target dialect")
     @argument(
         "-l",
         "--limit",
@@ -142,6 +145,14 @@ class SparkSql(Base):
             if ip:
                 ip.run_line_magic("pinfo", "sparksql")
             return
+
+        if args.transpile:
+            sql = (
+                self.get_dbt_sql_statement(cell, args.sql)
+                if args.dbt
+                else self.get_sql_statement(cell, args.sql, args.jinja)
+            )
+            return Pretty(sqlglot.transpile(sql or "", read="spark", write=args.transpile, pretty=True)[0])
 
         output_file = (
             pathlib.Path(self.outputFile).expanduser()

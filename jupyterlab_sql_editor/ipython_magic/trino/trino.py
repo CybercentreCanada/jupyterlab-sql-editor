@@ -4,12 +4,13 @@ from time import time
 from typing import Optional
 
 import pandas as pd
+import sqlglot
 import sqlparse
 import trino
 from IPython import get_ipython
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
-from IPython.display import display
+from IPython.display import Pretty, display
 from sqlparse.sql import IdentifierList, TokenList
 from sqlparse.tokens import Keyword
 from traitlets import Bool, Instance, Int, Unicode, Union
@@ -66,6 +67,7 @@ class Trino(Base):
     @line_cell_magic
     @magic_arguments()
     @argument("sql", nargs="*", type=str, help="SQL statement to execute")
+    @argument("--transpile", metavar="transpile", type=str, help="Transpile query to target dialect")
     @argument(
         "-l",
         "--limit",
@@ -129,6 +131,13 @@ class Trino(Base):
             if ip:
                 ip.run_line_magic("pinfo", "trino")
             return
+
+        if args.transpile:
+            return Pretty(
+                sqlglot.transpile(
+                    self.get_sql_statement(cell, args.sql, args.jinja), read="spark", write=args.transpile, pretty=True
+                )[0]
+            )
 
         output_file = (
             pathlib.Path(self.outputFile).expanduser()
