@@ -13,10 +13,8 @@ except ImportError:
 except ValueError:
     pass
 
-
 import pandas as pd
 import sqlglot
-from IPython import get_ipython
 from IPython.core.magic import (
     line_cell_magic,
     line_magic,
@@ -63,11 +61,6 @@ class SparkSql(Base):
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
         self.spark = None
-        self.cached_sql = None
-        self.cached_limit = None
-        self.cached_df = None
-        self.cached_results = None
-        self.cached_pdf = None
 
     @needs_local_scope
     @line_cell_magic
@@ -138,13 +131,12 @@ class SparkSql(Base):
         "Magic that works both as %sparksql and as %%sparksql"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.sparksql, line)
+        limit, truncate, output = self.parse_common_args(args, self.limit)
+        streaming_mode = args.streaming_mode.lower()
 
         # Equivalent to %sparksql? or %%sparksql?
         if args.help:
-            ip = get_ipython()
-            if ip:
-                ip.run_line_magic("pinfo", "sparksql")
-            return
+            return self.show_help("sparksql")
 
         if args.transpile:
             sql = (
@@ -154,41 +146,14 @@ class SparkSql(Base):
             )
             return Pretty(sqlglot.transpile(sql or "", read="spark", write=args.transpile, pretty=True)[0])
 
-        output_file = (
-            pathlib.Path(self.outputFile).expanduser()
-            if self.outputFile
-            else pathlib.Path("~/.local/sparkdb.schema.json").expanduser()
-        )
-        output = args.output.lower()
-
-        streaming_mode = args.streaming_mode.lower()
-
-        truncate = 256
-        if args.truncate:
-            truncate = args.truncate
-
-        limit = args.limit
-        if limit is None or limit <= 0:
-            limit = self.limit
-
-        if (
-            args.input
-            and not isinstance(self.shell.user_ns.get(args.input), (pd.DataFrame, DataFrame))
-            and cell is None
-        ):
-            print("Input does not exist or is not a pandas or Spark dataframe.")
-            return
-
-        if args.input and cell is not None:
-            print("Ignoring --input, cell body found.")
-
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
-        if args.input and isinstance(self.shell.user_ns.get(args.input), pd.DataFrame) and cell is None:
+        if args.input and isinstance(self.get_shell().user_ns.get(args.input), pd.DataFrame) and cell is None:
             _display_results(
-                pdf=self.shell.user_ns.get(args.input),
+                pdf=self.get_shell().user_ns.get(args.input) or pd.DataFrame([]),
+                result_id="",
                 output=output,
                 show_nonprinting=args.show_nonprinting,
                 truncate=truncate,
@@ -198,30 +163,32 @@ class SparkSql(Base):
 
         self.spark = self.get_instantiated_spark_session()
         if self.spark is None:
-            print("Active spark session is not found")
+            print("Active spark session not found.")
             return
 
         if args.database:
             self.spark.sql(f"USE {args.database}")
 
-        catalog_array = self.get_catalog_array()
-        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
+        if self.check_refresh(args.refresh.lower()):
             return
 
         # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement
+        use_cache = False
+        sql = ""
         if args.input and cell is None:
-            use_cache = False
-            sql = None
-            df = self.shell.user_ns.get(args.input)
+            df = self.resolve_input_dataframe(args.input, cell, (pd.DataFrame, DataFrame))
         else:
-            if args.dbt:
-                sql = self.get_dbt_sql_statement(cell, args.sql)
-            else:
-                sql = self.get_sql_statement(cell, args.sql, args.jinja)
+            sql = (
+                self.get_dbt_sql_statement(cell, args.sql)
+                if args.dbt
+                else self.get_sql_statement(cell, args.sql, args.jinja)
+            )
 
             if not sql:
+                print("No valid SQL statement provided.")
                 return
-            elif output == "sql":
+
+            if output == "sql":
                 return self.display_sql(sql)
 
             # TODO: Rework caching feature
@@ -243,7 +210,7 @@ class SparkSql(Base):
 
             # try-except here as well because it can also raise PYSPARK_ERROR_TYPES
             try:
-                df = self.spark.sql(sql) if not use_cache else self.cached_df
+                df = self.spark.sql(sql)
             except PYSPARK_ERROR_TYPES as exc:
                 if args.lean_exceptions:
                     self.print_pyspark_error(exc)
@@ -260,24 +227,19 @@ class SparkSql(Base):
 
         if args.dataframe:
             print(f"Captured dataframe to local variable `{args.dataframe}`")
-            self.shell.user_ns.update({args.dataframe: df})
+            self.get_shell().user_ns.update({args.dataframe: df})
 
         if output == "schema":
             df.printSchema()
+            return
 
         if not (output == "skip" or output == "schema" or output == "none"):
             try:
                 start = time()
-                results = (
-                    self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
-                    if not use_cache
-                    else self.cached_results
-                )
+                results = self.spark.createDataFrame(df.take(limit + 1), schema=df.schema)
                 end = time()
-                print(f"Execution time: {end - start:.2f} seconds")
-                pdf = to_pandas(results, self.spark._jconf) if not use_cache else self.cached_pdf
-                if len(pdf) > limit:
-                    print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+                pdf = to_pandas(results, self.spark._jconf)
+                self.print_execution_stats(end, start, len(pdf), limit)
             except PYSPARK_ERROR_TYPES as exc:
                 if args.lean_exceptions:
                     self.print_pyspark_error(exc)
@@ -285,21 +247,16 @@ class SparkSql(Base):
                 else:
                     raise exc
         else:
-            results = None
-            pdf = None
+            results, pdf = None, None
             print("Display and execution of results skipped")
 
-        # Cache results
-        self.cached_sql = sql
-        self.cached_limit = limit
-        self.cached_df = df
-        self.cached_results = results
-        self.cached_pdf = pdf.copy() if pdf is not None else None
+        result_id = self.sql_hash(sql, limit) if sql else ""
 
         display_df(
             original_df=df,
             df=results,
-            pdf=pdf,
+            pdf=pdf if pdf is not None else pd.DataFrame([]),
+            result_id=result_id,
             limit=limit,
             output=output,
             truncate=truncate,
@@ -310,7 +267,14 @@ class SparkSql(Base):
             args=args,
         )
 
-    def check_refresh(self, refresh_arg, output_file, catalog_array):
+    def check_refresh(self, refresh_arg) -> bool:
+        output_file = (
+            pathlib.Path(self.outputFile).expanduser()
+            if self.outputFile
+            else pathlib.Path("~/.local/sparkdb.schema.json").expanduser()
+        )
+        catalog_array = self.get_catalog_array()
+
         if refresh_arg == "none":
             return False
         if refresh_arg == "all":
@@ -322,13 +286,13 @@ class SparkSql(Base):
         return True
 
     @staticmethod
-    def print_pyspark_error(exc):
+    def print_pyspark_error(exc) -> None:
         if isinstance(exc, AnalysisException):
             print(f"AnalysisException: {exc.desc.splitlines()[0]}")
         elif isinstance(exc, ParseException):
             print(f"ParseException: {exc.desc}")
         elif isinstance(exc, StreamingQueryException):
-            print(f"StreamingQueryException: {exc.cause.getMessage() if exc.cause else exc.desc}")
+            print(f"StreamingQueryException: {exc.cause.desc if exc.cause else exc.desc}")
         elif isinstance(exc, QueryExecutionException):
             print(f"QueryExecutionException: {exc.desc}")
         elif isinstance(exc, IllegalArgumentException):
@@ -346,7 +310,7 @@ class SparkSql(Base):
             print("No sql statement to execute")
             return None
 
-        stage_file_path = self.dbt_project_dir + "/analyses/__sparksql__stage_file__.sql"
+        stage_file_path = f"{self.dbt_project_dir}/analyses/__sparksql__stage_file__.sql"
         with open(stage_file_path, "w", encoding="utf8") as stage_file:
             stage_file.write(sql)
 
@@ -358,8 +322,8 @@ class SparkSql(Base):
         ] + self.dbt_args
         results, succeeded = self.invoke_dbt(dbt_compile_args)
         os.remove(stage_file_path)
-        if succeeded:
-            compiled_file_path = self.dbt_project_dir + "/" + results.results[0].node.compiled_path
+        if succeeded and results:
+            compiled_file_path = f"{self.dbt_project_dir}/{results.results[0].node.compiled_path}"
             with open(compiled_file_path, "r", encoding="utf8") as compiled_file:
                 compiled_sql = compiled_file.read()
             return compiled_sql
@@ -382,7 +346,7 @@ class SparkSql(Base):
     def invoke_dbt(self, args):
         if self.import_dbt():
             return dbt.main.handle_and_check(args)
-        return None
+        return None, False
 
     def get_dbt_project_dir(self, args):
         if self.import_dbt():
@@ -392,7 +356,7 @@ class SparkSql(Base):
 
     @line_magic
     def dbt(self, line=None):
-        self.dbt_args = line.split()
+        self.dbt_args = line.split() if line else []
         self.dbt_project_dir = self.get_dbt_project_dir(["debug"] + self.dbt_args)
         if not self.dbt_project_dir:
             print("dbt project directory not specified")
@@ -405,4 +369,4 @@ class SparkSql(Base):
         if spark_session is not None:
             self.spark = spark_session
             print("Captured SparkSession to local variable `spark`")
-            self.shell.user_ns.update({"spark": spark_session})
+            self.get_shell().user_ns.update({"spark": spark_session})
