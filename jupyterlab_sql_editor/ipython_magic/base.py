@@ -1,54 +1,19 @@
+import hashlib
 import os
 import time
+from typing import Any
 
-import IPython
+from IPython.core.getipython import get_ipython
+from IPython.core.interactiveshell import InteractiveShell
 from IPython.core.magic import Magics, magics_class
+from IPython.display import Code
 from jinja2 import StrictUndefined, Template
-from pygments import highlight
-from pygments.formatters.html import HtmlFormatter
 from traitlets import Bool, Int, Unicode
+
+from jupyterlab_sql_editor.ipython_magic.messages import HOW_TO_ESCAPE_MSG, VARIABLE_NOT_FOUND_MSG
 
 DEFAULT_SCHEMA_TTL = -1
 DEFAULT_CATALOGS = ""
-
-
-VARIABLE_NOT_FOUND_MSG = """
-A Jinja template variable named {{{var_name}}} was located in your SQL statement.
-
-However Jinja was unable to substitute it's value because the variable "{var_name}" was not found in your ipython kernel.
-
-Option 1: If you intended to use a template variable make sure to assign a value to "{var_name}"
-"""
-
-HOW_TO_ESCAPE_MSG = """
-Option 2: If you intended to include "{{" in your statement then you'll need to escape this special Jinja variable delimiter.
-
-To have Jinja ignore parts it would otherwise handle as variables or blocks. For example, if, with the default syntax,
-you want to use {{ as a raw string in a template and not start a variable, you have to use a trick.
-
-The easiest way to output a literal variable delimiter "{{" is by using a variable expression:
-
-{{ '{{' }}
-
-For bigger sections, it makes sense to mark a block raw. For example, to include example Jinja syntax in a template,
-you can use this snippet:
-
-%%trino --limit 3
-{% raw %}
-/*
-This is a comment which happens to contain a jinja template
-variable {{x}} that we want to keep as is.
-*/
-{% endraw %}
-
-SELECT
-    *
-FROM
-    {{ table_name }}
-
-"""
-
-RAISING_ERROR_MSG = "Raising an error to prevent statement from being executed incorrectly."
 
 
 class ExplainUndefined(StrictUndefined):
@@ -57,8 +22,7 @@ class ExplainUndefined(StrictUndefined):
     def __str__(self):
         print(VARIABLE_NOT_FOUND_MSG.format(var_name=self._undefined_name))
         print(HOW_TO_ESCAPE_MSG)
-        print(RAISING_ERROR_MSG)
-        super().__str__(self)
+        super().__str__()
 
 
 @magics_class
@@ -81,18 +45,41 @@ class Base(Magics):
         super().__init__(shell, **kwargs)
         self.user_ns = {}
 
-    @staticmethod
-    def bind_variables(query, user_ns):
-        template = Template(query, undefined=ExplainUndefined)
-        return template.render(user_ns)
+    def get_shell(self) -> InteractiveShell:
+        if self.shell:
+            return self.shell
+        raise AttributeError("Shell not found")
 
-    def get_catalog_array(self):
+    def show_help(self, magic_name: str) -> None:
+        ip = get_ipython()
+        if ip:
+            ip.run_line_magic("pinfo", magic_name)
+
+    def resolve_input_dataframe(self, input_name: str, cell: str | None, valid_types: tuple) -> Any:
+        if input_name and cell is None:
+            obj = self.get_shell().user_ns.get(input_name)
+            if not isinstance(obj, valid_types):
+                actual_type = type(obj).__name__ if obj is not None else "None"
+                raise TypeError(f"Expected one of {valid_types} for variable '{input_name}', but got {actual_type}.")
+            return obj
+        if input_name and cell is not None:
+            print("Ignoring --input, cell body found.")
+        return None
+
+    def parse_common_args(self, args, default_limit: int, default_truncate: int = 256) -> tuple[int, int, str]:
+        """Return (limit, truncate, output) with defaults applied."""
+        truncate = args.truncate or default_truncate
+        limit = args.limit if args.limit and args.limit > 0 else default_limit
+        output = args.output.lower()
+        return limit, truncate, output
+
+    def get_catalog_array(self) -> list:
         catalog_array = []
         if "," in self.catalogs:
             catalog_array = self.catalogs.split(",")
         return catalog_array
 
-    def get_sql_statement(self, cell, sql_argument, use_jinja):
+    def get_sql_statement(self, cell, sql_argument, use_jinja) -> str:
         sql = cell
         if cell is None:
             sql = " ".join(sql_argument)
@@ -102,15 +89,35 @@ class Base(Magics):
             sql = self.bind_variables(sql, self.user_ns)
         return sql
 
-    def set_user_ns(self, local_ns):
+    def set_user_ns(self, local_ns) -> None:
         if local_ns is None:
             local_ns = {}
 
-        self.user_ns = self.shell.user_ns.copy()
+        self.user_ns = self.get_shell().user_ns.copy()
         self.user_ns.update(local_ns)
 
     @staticmethod
-    def should_update_schema(schema_file_name, refresh_threshold):
+    def print_execution_stats(end_time, start_time, results_length, limit) -> None:
+        print(f"Execution time: {end_time - start_time:.2f} seconds")
+        if results_length > limit:
+            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
+
+    @staticmethod
+    def display_sql(sql):
+        return Code(data=sql, language="mysql")
+
+    @staticmethod
+    def sql_hash(sql: str, limit: int) -> str:
+        key = f"{sql.strip()}::{limit}"
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def bind_variables(query, user_ns):
+        template = Template(query, undefined=ExplainUndefined)
+        return template.render(user_ns)
+
+    @staticmethod
+    def should_update_schema(schema_file_name, refresh_threshold) -> bool:
         file_exists = os.path.isfile(schema_file_name)
         ttl_expired = False
         if file_exists:
@@ -121,16 +128,3 @@ class Base(Magics):
                 ttl_expired = True
 
         return (not file_exists) or ttl_expired
-
-    def display_sql(self, sql):
-        def _jupyterlab_repr_html_(self):
-            fmt = HtmlFormatter()
-            style = "<style>{}\n{}</style>".format(
-                fmt.get_style_defs(".output_html"), fmt.get_style_defs(".jp-RenderedHTML")
-            )
-            return style + highlight(self.data, self._get_lexer(), fmt)
-
-        # Replace _repr_html_ with our own version that adds the 'jp-RenderedHTML' class
-        # in addition to 'output_html'.
-        IPython.display.Code._repr_html_ = _jupyterlab_repr_html_
-        return IPython.display.Code(data=sql, language="mysql")

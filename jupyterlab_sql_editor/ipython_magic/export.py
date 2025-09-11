@@ -145,7 +145,7 @@ class SchemaExporter:
         connection: Connection,
         schema_file_name,
         catalogs: list[Catalog],
-        local_catalog: Catalog,
+        local_catalog: Catalog | None = None,
         display_progress: bool = True,
     ) -> None:
         self.connection = connection
@@ -247,24 +247,27 @@ class SchemaExporter:
 
     def update_local_schema(self):
         print("Updating local tables")
-        updated_tables = self.render_catalog(self.local_catalog)
-        current_schema = {}
-        with open(self.schema_file_name, "r", encoding="utf8") as file:
-            current_schema = json.load(file)
+        if self.local_catalog:
+            updated_tables = self.render_catalog(self.local_catalog)
+            current_schema = {}
+            with open(self.schema_file_name, "r", encoding="utf8") as file:
+                current_schema = json.load(file)
 
-        for table in current_schema["tables"]:
-            if table["catalog"]:
-                updated_tables.append(table)
+            for table in current_schema["tables"]:
+                if table["catalog"]:
+                    updated_tables.append(table)
 
-        updated_schema = {
-            "tables": updated_tables,
-            "functions": current_schema["functions"],
-        }
+            updated_schema = {
+                "tables": updated_tables,
+                "functions": current_schema["functions"],
+            }
 
-        with open(self.schema_file_name, "w", encoding="utf8") as fout:
-            json.dump(updated_schema, fout, indent=2, sort_keys=True)
+            with open(self.schema_file_name, "w", encoding="utf8") as fout:
+                json.dump(updated_schema, fout, indent=2, sort_keys=True)
 
-        print(f"Schema file updated: {self.schema_file_name}")
+            print(f"Schema file updated: {self.schema_file_name}")
+        else:
+            print("No local catalog configured")
 
 
 class SparkTableSchema:

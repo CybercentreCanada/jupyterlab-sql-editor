@@ -30,7 +30,14 @@ JS_MAX_SAFE_INTEGER = 9007199254740991
 JS_MIN_SAFE_INTEGER = -9007199254740991
 
 
-def _display_results(pdf: pd.DataFrame, output: str, show_nonprinting: bool, truncate: int, args=None) -> None:
+def _display_results(
+    pdf: pd.DataFrame = pd.DataFrame([]),
+    output: str = "grid",
+    result_id: str = "",
+    show_nonprinting: bool = False,
+    truncate: int = 256,
+    args=None,
+) -> None:
     if output == "grid":
         grid(pdf, show_nonprinting, truncate)
     elif output == "aggrid":
@@ -43,6 +50,7 @@ def _display_results(pdf: pd.DataFrame, output: str, show_nonprinting: bool, tru
         html(pdf, show_nonprinting, truncate)
     elif output == "text":
         text(pdf, truncate)
+    display(HTML(f'<div class="jlse-output" data-result-id="{result_id}" style="display:none;"></div>'))
 
 
 def aggrid(df: pd.DataFrame, show_nonprinting=False, truncate=256) -> None:

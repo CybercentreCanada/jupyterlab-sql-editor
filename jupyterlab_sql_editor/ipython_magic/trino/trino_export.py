@@ -101,10 +101,11 @@ class TrinoConnection(Connection):
             return []
 
 
-def update_database_schema(cur, schema_file_name: Path, catalog_names):
+def update_database_schema(conn, schema_file_name: Path, catalog_names):
+    cur = conn.cursor()
     connection = TrinoConnection(cur)
     catalogs: list[Catalog] = []
     for name in catalog_names:
         catalogs.append(Catalog(connection, name))
-    exp = SchemaExporter(connection, schema_file_name, catalogs, None)
+    exp = SchemaExporter(connection, schema_file_name, catalogs)
     exp.update_schema()

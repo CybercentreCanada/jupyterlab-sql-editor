@@ -1,8 +1,10 @@
 import inspect
 import os
+from argparse import Namespace
 
-from IPython import get_ipython
-from IPython.display import HTML, TextDisplayObject, display
+import pandas as pd
+from IPython.display import HTML, display
+from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.session import SparkSession
 
 import jupyterlab_sql_editor.ipython_magic.sparksql.spark_streaming_query as streaming
@@ -18,73 +20,78 @@ def retrieve_name(var):
     holding the provided dataframe instance.
     """
     top_name = None
-    back_frame = inspect.currentframe().f_back
+    back_frame = None
+
+    current_frame = inspect.currentframe()
+    if current_frame:
+        back_frame = current_frame.f_back
+
     while back_frame:
         callers_local_vars = back_frame.f_locals.items()
         for var_name, var_val in callers_local_vars:
             if var_val is var:
-                # print(f"found value named: {var_name}")
                 if var_name[0] != "_":
                     top_name = var_name
         back_frame = back_frame.f_back
     return top_name
 
 
-class PlainText(TextDisplayObject):
-    def __repr__(self):
-        return self.data
-
-
 def display_link():
     """
     Display a link in notebook so a user can open the spark UI's details.
     """
-    link = SparkSession._instantiatedSession._sc.uiWebUrl
-    appName = SparkSession._instantiatedSession._sc.appName
-    applicationId = SparkSession._instantiatedSession._sc.applicationId
-    reverse_proxy = os.environ.get("SPARK_UI_URL")
-    if reverse_proxy:
-        link = f"{reverse_proxy}/proxy/{applicationId}"
-    display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {appName}</a>"""))
-
-
-def pyspark_dataframe_custom_formatter(df, self, cycle, limit=20):
-    display_df(df, df, limit)
-    return ""
+    instantiated_session = SparkSession._instantiatedSession
+    if instantiated_session:
+        link = instantiated_session._sc.uiWebUrl
+        appName = instantiated_session._sc.appName
+        applicationId = instantiated_session._sc.applicationId
+        reverse_proxy = os.environ.get("SPARK_UI_URL")
+        if reverse_proxy:
+            link = f"{reverse_proxy}/proxy/{applicationId}"
+        display(HTML(f"""<a class="external" href="{link}" target="_blank" >Open Spark UI ⭐ {appName}</a>"""))
 
 
 def display_df(
-    original_df,
-    df,
-    pdf,
-    limit=20,
-    output="grid",
-    truncate=256,
-    show_nonprinting=False,
-    query_name=None,
-    sql=None,
-    streaming_mode="update",
-    args=None,
+    original_df: DataFrame,
+    df: DataFrame | None,
+    pdf: pd.DataFrame = pd.DataFrame([]),
+    result_id: str = "",
+    limit: int = 20,
+    output: str = "grid",
+    truncate: int = 256,
+    show_nonprinting: bool = False,
+    query_name: str = "",
+    sql: str = "",
+    streaming_mode: str = "update",
+    args: Namespace = Namespace(),
 ):
     query = None
     start_streaming_query = df is not None and df.isStreaming and output not in ["skip", "schema", "none"]
     if start_streaming_query:
-        streaming_query_name = "default_streaming_query_name"
-        if query_name:
-            streaming_query_name = query_name
+        streaming_query_name = query_name or "default_streaming_query_name"
         ctx = streaming.get_streaming_ctx(streaming_query_name, df=original_df, sql=sql, mode=streaming_mode)
         query = ctx.query
         ctx.display_streaming_query()
-        display_batch_df(ctx.query_microbatch(), limit, output, truncate, show_nonprinting, args)
+        display_batch_df(ctx.query_microbatch(), pdf, result_id, limit, output, truncate, show_nonprinting, args)
     else:
-        display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args)
+        if df is not None:
+            display_batch_df(df, pdf, result_id, limit, output, truncate, show_nonprinting, args)
         if query_name:
             print(f"Created temporary view `{query_name}`")
             original_df.createOrReplaceTempView(query_name)
     return query
 
 
-def display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args):
+def display_batch_df(
+    df: DataFrame,
+    pdf: pd.DataFrame,
+    result_id: str,
+    limit: int,
+    output: str,
+    truncate: int,
+    show_nonprinting: bool,
+    args: Namespace,
+):
     """
     Execute the query unerlying the dataframe and displays ipython widgets for the schema and the result.
     """
@@ -97,17 +104,12 @@ def display_batch_df(df, pdf, limit, output, truncate, show_nonprinting, args):
 
         try:
             _display_results(
-                pdf[:limit],
+                pdf=pdf.head(limit),
                 output=output,
+                result_id=result_id,
                 truncate=truncate,
                 show_nonprinting=show_nonprinting,
                 args=args,
             )
         except Exception:
             raise
-
-
-def register_display():
-    ip = get_ipython()
-    plain_formatter = ip.display_formatter.formatters["text/plain"]
-    plain_formatter.for_type_by_name("pyspark.sql.dataframe", "DataFrame", pyspark_dataframe_custom_formatter)

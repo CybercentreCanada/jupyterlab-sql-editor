@@ -7,7 +7,6 @@ import pandas as pd
 import sqlglot
 import sqlparse
 import trino
-from IPython import get_ipython
 from IPython.core.magic import line_cell_magic, magics_class, needs_local_scope
 from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from IPython.display import Pretty, display
@@ -55,13 +54,10 @@ class Trino(Base):
     )
     conn = None
     cur = None
+    _conn_params = None
 
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
-        self.cached_sql = None
-        self.cached_results = None
-        self.cached_pdf = None
-        self.cached_schema = None
 
     @needs_local_scope
     @line_cell_magic
@@ -124,13 +120,13 @@ class Trino(Base):
         "Magic that works both as %trino and as %%trino"
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
+        limit, truncate, output = self.parse_common_args(args, self.limit)
+        catalog = args.catalog or self.catalog
+        schema = args.schema or self.schema
 
         # Equivalent to %trino? or %%trino?
         if args.help:
-            ip = get_ipython()
-            if ip:
-                ip.run_line_magic("pinfo", "trino")
-            return
+            return self.show_help("trino")
 
         if args.transpile:
             return Pretty(
@@ -139,43 +135,18 @@ class Trino(Base):
                 )[0]
             )
 
-        output_file = (
-            pathlib.Path(self.outputFile).expanduser()
-            if self.outputFile
-            else pathlib.Path("~/.local/trinodb.schema.json").expanduser()
-        )
-
-        truncate = 256
-        if args.truncate:
-            truncate = args.truncate
-
-        catalog = args.catalog
-        if not catalog:
-            catalog = self.catalog
-
-        schema = args.schema
-        if not schema:
-            schema = self.schema
-
-        limit = args.limit
-        if limit is None or limit <= 0:
-            limit = self.limit
-
-        if args.input and not isinstance(self.shell.user_ns.get(args.input), pd.DataFrame) and cell is None:
-            print("Input does not exist or is not a pandas dataframe.")
-            return
-
-        if args.input and cell is not None:
-            print("Ignoring --input, cell body found.")
-
-        output = args.output.lower()
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
+        sql = self.set_query_limit(self.get_sql_statement(cell, args.sql, args.jinja), args.raw, limit)
+        result_id = self.sql_hash(sql, limit) if sql else ""
+
         if args.input and cell is None:
+            pdf = self.resolve_input_dataframe(args.input, cell, (pd.DataFrame,))
             _display_results(
-                pdf=self.shell.user_ns.get(args.input),
+                pdf=pdf,
+                result_id=result_id,
                 output=output,
                 show_nonprinting=args.show_nonprinting,
                 truncate=truncate,
@@ -183,37 +154,11 @@ class Trino(Base):
             )
             return
 
-        self.conn = trino.dbapi.connect(
-            host=args.host if args.host else self.host,
-            port=self.port,
-            auth=self.auth,
-            user=self.user,
-            source="ipython-magic",
-            catalog=catalog,
-            schema=schema,
-            http_scheme=self.httpScheme,
-            verify=self.verify,
-        )
-        self.cur = self.conn.cursor()
-
-        catalog_array = self.get_catalog_array()
-        if self.check_refresh(args.refresh.lower(), output_file, catalog_array):
-            return
-
-        sql = self.get_sql_statement(cell, args.sql, args.jinja)
-        if not sql:
+        if self.check_refresh(catalog, schema, args.host if args.host else self.host, args.refresh.lower()):
             return
 
         if output == "sql":
             return self.display_sql(sql)
-
-        sql_lim = 0
-        sql_statement = sqlparse.format(sql, strip_comments=True)
-        parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
-        for statement in parsed:
-            sql_lim = self._extract_limit_from_query(statement)
-        if not args.raw and not sql_lim and parsed[0].get_type() == "SELECT":
-            sql = f"{sql} \nLIMIT {limit + 1}"
 
         # TODO: Rework caching feature
         # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
@@ -222,54 +167,37 @@ class Trino(Base):
         if use_cache:
             print("Using cached results")
 
-        results = [[]]
-        columns = []
+        results, columns = [], []
         if not (output == "skip" or output == "none") or args.dataframe:
             start = time()
             if not use_cache:
+                self.conn = self.get_connection(catalog, schema, args.host if args.host else self.host)
+                self.cur = self.conn.cursor()
                 self.cur.execute(sql)
                 results = self.cur.fetchmany(limit + 1)
                 description = self.cur.description
                 columns = list(map(lambda d: d[0], description)) if description else []
                 schema = self.get_schema_from_query_description(description)
             else:
-                results = self.cached_results
-                schema = self.cached_schema
+                pass
             end = time()
 
-            print(f"Execution time: {end - start:.2f} seconds")
+            self.print_execution_stats(end, start, len(results) if results else 0, limit)
             display(TrinoSchemaWidget("results", schema))
+            results = results[:limit] if results else []
+            pdf = self.get_pandas_dataframe(results, columns)
+
+            if args.dataframe:
+                print(f"Saved results to pandas dataframe named `{args.dataframe}`")
+                self.get_shell().user_ns.update({args.dataframe: pdf})
         else:
             print("Display and execution of results skipped")
             return
 
-        self.cached_results = results
-        results_length = len(results) if results else 0
-        if results_length > limit and not (output == "skip" or output == "none"):
-            print(f"Only showing top {limit} {'row' if limit == 1 else 'rows'}")
-            results = results[:limit] if results else [[]]
-
-        if not use_cache:
-            pdf = pd.DataFrame.from_records(results, columns=columns)
-            for c in pdf.columns:
-                pdf[c] = pdf[c].apply(lambda v: sanitize_results(v))
-            # dedup top-level column names
-            pdf.columns = _dedup_names(pdf.columns.values.tolist())
-        else:
-            pdf = self.cached_pdf
-
-        if args.dataframe:
-            print(f"Saved results to pandas dataframe named `{args.dataframe}`")
-            self.shell.user_ns.update({args.dataframe: pdf})
-
-        # Cache results
-        self.cached_sql = sql
-        self.cached_pdf = pdf.copy() if pdf is not None else None
-        self.cached_schema = schema
-
         _display_results(
             pdf=pdf if pdf is not None else pd.DataFrame([]),
             output=output,
+            result_id=result_id,
             show_nonprinting=args.show_nonprinting,
             truncate=truncate,
             args=args,
@@ -284,20 +212,68 @@ class Trino(Base):
         :param statement: SQL statement
         :return: Limit extracted from query, None if no limit present in statement
         """
-        idx, _ = statement.token_next_by(m=(Keyword, "LIMIT"))
-        if idx is not None:
-            _, token = statement.token_next(idx=idx)
-            if token:
-                if isinstance(token, IdentifierList):
-                    # In case of "LIMIT <offset>, <limit>", find comma and extract
-                    # first succeeding non-whitespace token
-                    idx, _ = token.token_next_by(m=(sqlparse.tokens.Punctuation, ","))
-                    _, token = token.token_next(idx=idx)
-                if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
-                    return int(token.value)
+        next_token = statement.token_next_by(m=(Keyword, "LIMIT"))
+        if not next_token or next_token[0] is None:
+            return None
+        idx, _ = next_token
+        result = statement.token_next(idx=idx)
+        if not result or result[0] is None:
+            return None
+        _, token = result
+        if token:
+            if isinstance(token, IdentifierList):
+                # In case of "LIMIT <offset>, <limit>", find comma and extract
+                # first succeeding non-whitespace token
+                comma_result = token.token_next_by(m=(sqlparse.tokens.Punctuation, ","))
+                if comma_result and comma_result[0] is not None:
+                    next_after_comma = token.token_next(idx=comma_result[0])
+                    if next_after_comma and next_after_comma[0] is not None:
+                        _, token = next_after_comma
+            if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
+                return int(token.value)
         return None
 
-    def get_schema_from_query_description(self, description):
+    def get_connection(self, catalog: str, schema: str, host: str):
+        host = host or self.host
+        catalog = catalog or self.catalog
+        schema = schema or self.schema
+
+        new_params = {
+            "host": host,
+            "port": self.port,
+            "auth": self.auth,
+            "user": self.user,
+            "catalog": catalog,
+            "schema": schema,
+            "http_scheme": self.httpScheme,
+            "verify": self.verify,
+        }
+
+        if self.conn is None or self._conn_params != new_params:
+            self.conn = trino.dbapi.connect(**new_params)
+            self._conn_params = new_params.copy()
+
+        return self.conn
+
+    def set_query_limit(self, sql: str, raw_query: bool, limit: int) -> str:
+        sql_lim = 0
+        sql_statement = sqlparse.format(sql, strip_comments=True)
+        parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
+        for statement in parsed:
+            sql_lim = self._extract_limit_from_query(statement)
+        if not raw_query and not sql_lim and parsed[0].get_type() == "SELECT":
+            return f"{sql} \nLIMIT {limit + 1}"
+        return sql
+
+    def get_pandas_dataframe(self, results, columns) -> pd.DataFrame:
+        pdf = pd.DataFrame.from_records(results, columns=columns)
+        for c in pdf.columns:
+            pdf[c] = pdf[c].apply(lambda v: sanitize_results(v))
+        # dedup top-level column names
+        pdf.columns = _dedup_names(pdf.columns.values.tolist())
+        return pdf
+
+    def get_schema_from_query_description(self, description) -> list:
         """
         Infer the schema of a query by inspecting the cursor's description.
 
@@ -324,11 +300,20 @@ class Trino(Base):
             logging.warning(f"Failed to get schema from query results: {exc}")
             return []
 
-    def check_refresh(self, refresh_arg, output_file, catalog_array):
+    def check_refresh(self, catalog, schema, host, refresh_arg) -> bool:
+        output_file = (
+            pathlib.Path(self.outputFile).expanduser()
+            if self.outputFile
+            else pathlib.Path("~/.local/trinodb.schema.json").expanduser()
+        )
+        catalog_array = self.get_catalog_array()
+
         if refresh_arg == "none":
             return False
+
+        self.conn = self.get_connection(catalog, schema, host)
         if refresh_arg == "all":
-            update_database_schema(self.cur, output_file, catalog_array)
+            update_database_schema(self.conn, output_file, catalog_array)
         else:
-            update_database_schema(self.cur, output_file, [refresh_arg])
+            update_database_schema(self.conn, output_file, [refresh_arg])
         return True
