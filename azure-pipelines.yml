@@ -85,7 +85,7 @@ stages:
               virtualenv -p python$(python.version) env
               source env/bin/activate
               pip install twine
-              python -m twine upload --skip-existing -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
+              python -m twine upload -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: 'Publish artifact to analytical-platform feed'
 
       - job: PublishArtifactToBoHFeed
@@ -108,7 +108,7 @@ stages:
               virtualenv -p python$(python.version) env
               source env/bin/activate
               pip install twine
-              python -m twine upload --skip-existing -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
+              python -m twine upload -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: 'Publish artifact to BoH feed'
 
       - job: PublishArtifactToPypi
