@@ -85,7 +85,16 @@ stages:
               virtualenv -p python$(python.version) env
               source env/bin/activate
               pip install twine
-              python -m twine upload -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
+
+              set -o pipefail
+              if ! python -m twine upload -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose 2>&1 | tee twine.log; then
+                if grep -q "409" twine.log; then
+                  echo "Package already exists (409 Conflict) — skipping"
+                  exit 0
+                else
+                  exit 1
+                fi
+              fi
             displayName: 'Publish artifact to analytical-platform feed'
 
       - job: PublishArtifactToBoHFeed
