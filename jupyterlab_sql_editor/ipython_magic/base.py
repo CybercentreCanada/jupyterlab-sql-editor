@@ -1,6 +1,8 @@
 import hashlib
 import os
+import pathlib
 import time
+from abc import abstractmethod
 from typing import Any
 
 from IPython.core.getipython import get_ipython
@@ -45,6 +47,53 @@ class Base(Magics):
         super().__init__(shell, **kwargs)
         self.user_ns = {}
 
+    @property
+    @abstractmethod
+    def default_schema_file(self) -> str:
+        """Return the default schema file name."""
+        pass
+
+    @abstractmethod
+    def session(self, catalog: str | None = None, schema: str | None = None, host: str | None = None) -> Any:
+        """Return the connection/session object (Trino Connection or SparkSession)."""
+        pass
+
+    @abstractmethod
+    def update_schema(self, target, output_file, catalog_array):
+        """Perform the schema update using the provided target/session."""
+        pass
+
+    @abstractmethod
+    def update_local_schema(self, target, output_file, catalog_array):
+        """Optional: for Spark-specific local update."""
+        pass
+
+    @abstractmethod
+    def resolve_sql(self, cell: str | None, sql_args: list[str], dbt: bool, jinja: bool) -> str:
+        """Return the resolved SQL statement, raise ValueError if none."""
+        pass
+
+    def check_refresh(self, refresh_arg, catalog=None, schema=None, host=None) -> bool:
+        """Returns True if a refresh was performed."""
+        output_file = pathlib.Path(
+            getattr(self, "outputFile", None) or f"~/.local/{self.default_schema_file}"
+        ).expanduser()
+        catalog_array = self.get_catalog_array()
+
+        if refresh_arg == "none":
+            return False
+
+        target = self.session(catalog=catalog, schema=schema, host=host)
+
+        if refresh_arg == "all":
+            self.update_schema(target, output_file, catalog_array)
+        elif refresh_arg == "local":
+            self.update_local_schema(target, output_file, catalog_array)
+        else:
+            self.update_schema(target, output_file, [refresh_arg])
+
+        return True
+
     def get_shell(self) -> InteractiveShell:
         if self.shell:
             return self.shell
@@ -73,7 +122,7 @@ class Base(Magics):
         output = args.output.lower()
         return limit, truncate, output
 
-    def get_catalog_array(self) -> list:
+    def get_catalog_array(self) -> list[str]:
         catalog_array = []
         if "," in self.catalogs:
             catalog_array = self.catalogs.split(",")
@@ -83,10 +132,8 @@ class Base(Magics):
         sql = cell
         if cell is None:
             sql = " ".join(sql_argument)
-        if not sql:
-            print("No sql statement to execute")
-        elif use_jinja:
-            sql = self.bind_variables(sql, self.user_ns)
+        if sql and use_jinja:
+            return self.bind_variables(sql, self.user_ns)
         return sql
 
     def set_user_ns(self, local_ns) -> None:

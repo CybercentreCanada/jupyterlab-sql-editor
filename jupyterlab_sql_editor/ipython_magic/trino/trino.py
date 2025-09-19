@@ -1,5 +1,5 @@
 import logging
-import pathlib
+from pathlib import Path
 from time import time
 from typing import Optional
 
@@ -13,6 +13,7 @@ from IPython.display import Pretty, display
 from sqlparse.sql import IdentifierList, TokenList
 from sqlparse.tokens import Keyword
 from traitlets import Bool, Instance, Int, Unicode, Union
+from trino.dbapi import Connection
 from trino.sqlalchemy.datatype import parse_sqltype
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
@@ -123,10 +124,13 @@ class Trino(Base):
         limit, truncate, output = self.parse_common_args(args, self.limit)
         catalog = args.catalog or self.catalog
         schema = args.schema or self.schema
+        use_cache = False
 
         # Equivalent to %trino? or %%trino?
         if args.help:
             return self.show_help("trino")
+
+        sql = self.resolve_sql(cell, args.sql, False, args.jinja)
 
         if args.transpile:
             return Pretty(
@@ -154,7 +158,7 @@ class Trino(Base):
             )
             return
 
-        if self.check_refresh(catalog, schema, args.host if args.host else self.host, args.refresh.lower()):
+        if self.check_refresh(args.refresh.lower(), catalog, schema, args.host if args.host else self.host):
             return
 
         if output == "sql":
@@ -163,27 +167,17 @@ class Trino(Base):
         # TODO: Rework caching feature
         # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
         # use_cache = True if not args.nocache and sql == self.cached_sql and parsed[0].get_type() == "SELECT" else False
-        use_cache = False
         if use_cache:
             print("Using cached results")
 
         results, columns = [], []
         if not (output == "skip" or output == "none") or args.dataframe:
-            start = time()
             if not use_cache:
-                self.conn = self.get_connection(catalog, schema, args.host if args.host else self.host)
-                self.cur = self.conn.cursor()
-                self.cur.execute(sql)
-                results = self.cur.fetchmany(limit + 1)
-                description = self.cur.description
-                columns = list(map(lambda d: d[0], description)) if description else []
-                schema = self.get_schema_from_query_description(description)
-            else:
-                pass
-            end = time()
+                results, columns, results_schema = self.execute_query(
+                    catalog, schema, args.host if args.host else self.host, sql, limit
+                )
 
-            self.print_execution_stats(end, start, len(results) if results else 0, limit)
-            display(TrinoSchemaWidget("results", schema))
+            display(TrinoSchemaWidget("results", results_schema))
             results = results[:limit] if results else []
             pdf = self.get_pandas_dataframe(results, columns)
 
@@ -203,37 +197,11 @@ class Trino(Base):
             args=args,
         )
 
-    @staticmethod
-    # https://github.com/apache/superset/blob/178607093fa826947d9130386705a2e3ed3d9a88/superset/sql_parse.py#L79-L97
-    def _extract_limit_from_query(statement: TokenList) -> Optional[int]:
-        """
-        Extract limit clause from SQL statement.
+    @property
+    def default_schema_file(self):
+        return "trinodb.schema.json"
 
-        :param statement: SQL statement
-        :return: Limit extracted from query, None if no limit present in statement
-        """
-        next_token = statement.token_next_by(m=(Keyword, "LIMIT"))
-        if not next_token or next_token[0] is None:
-            return None
-        idx, _ = next_token
-        result = statement.token_next(idx=idx)
-        if not result or result[0] is None:
-            return None
-        _, token = result
-        if token:
-            if isinstance(token, IdentifierList):
-                # In case of "LIMIT <offset>, <limit>", find comma and extract
-                # first succeeding non-whitespace token
-                comma_result = token.token_next_by(m=(sqlparse.tokens.Punctuation, ","))
-                if comma_result and comma_result[0] is not None:
-                    next_after_comma = token.token_next(idx=comma_result[0])
-                    if next_after_comma and next_after_comma[0] is not None:
-                        _, token = next_after_comma
-            if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
-                return int(token.value)
-        return None
-
-    def get_connection(self, catalog: str, schema: str, host: str):
+    def session(self, catalog=None, schema=None, host=None):
         host = host or self.host
         catalog = catalog or self.catalog
         schema = schema or self.schema
@@ -254,6 +222,23 @@ class Trino(Base):
             self._conn_params = new_params.copy()
 
         return self.conn
+
+    def update_schema(self, target: Connection, output_file: Path, catalog_array: list[str]):
+        update_database_schema(target, output_file, catalog_array)
+
+    def update_local_schema(self, target, output_file, catalog_array):
+        # Not used for Trino
+        pass
+
+    def resolve_sql(self, cell: str | None, sql_args: list[str], dbt: bool, jinja: bool) -> str:
+        if dbt:
+            raise NotImplementedError("DBT support is not available in Trino magic.")
+        sql = self.get_sql_statement(cell, sql_args, jinja)
+
+        if not sql or not sql.strip():
+            raise ValueError("No valid SQL statement provided.")
+
+        return sql
 
     def set_query_limit(self, sql: str, raw_query: bool, limit: int) -> str:
         sql_lim = 0
@@ -300,20 +285,50 @@ class Trino(Base):
             logging.warning(f"Failed to get schema from query results: {exc}")
             return []
 
-    def check_refresh(self, catalog, schema, host, refresh_arg) -> bool:
-        output_file = (
-            pathlib.Path(self.outputFile).expanduser()
-            if self.outputFile
-            else pathlib.Path("~/.local/trinodb.schema.json").expanduser()
-        )
-        catalog_array = self.get_catalog_array()
+    def execute_query(self, catalog: str, schema: str, host: str, sql: str, limit: int):
+        self.conn = self.session(catalog, schema, host)
 
-        if refresh_arg == "none":
-            return False
+        with self.conn.cursor() as cur:
+            try:
+                start = time()
+                cur.execute(sql)
+                results = cur.fetchmany(limit + 1)
+                end = time()
+                description = cur.description
+                columns = [d[0] for d in description] if description else []
+                results_schema = self.get_schema_from_query_description(description)
+            finally:
+                cur.cancel()
 
-        self.conn = self.get_connection(catalog, schema, host)
-        if refresh_arg == "all":
-            update_database_schema(self.conn, output_file, catalog_array)
-        else:
-            update_database_schema(self.conn, output_file, [refresh_arg])
-        return True
+        self.print_execution_stats(end, start, len(results) if results else 0, limit)
+        return results, columns, results_schema
+
+    @staticmethod
+    # https://github.com/apache/superset/blob/178607093fa826947d9130386705a2e3ed3d9a88/superset/sql_parse.py#L79-L97
+    def _extract_limit_from_query(statement: TokenList) -> Optional[int]:
+        """
+        Extract limit clause from SQL statement.
+
+        :param statement: SQL statement
+        :return: Limit extracted from query, None if no limit present in statement
+        """
+        next_token = statement.token_next_by(m=(Keyword, "LIMIT"))
+        if not next_token or next_token[0] is None:
+            return None
+        idx, _ = next_token
+        result = statement.token_next(idx=idx)
+        if not result or result[0] is None:
+            return None
+        _, token = result
+        if token:
+            if isinstance(token, IdentifierList):
+                # In case of "LIMIT <offset>, <limit>", find comma and extract
+                # first succeeding non-whitespace token
+                comma_result = token.token_next_by(m=(sqlparse.tokens.Punctuation, ","))
+                if comma_result and comma_result[0] is not None:
+                    next_after_comma = token.token_next(idx=comma_result[0])
+                    if next_after_comma and next_after_comma[0] is not None:
+                        _, token = next_after_comma
+            if token and token.ttype == sqlparse.tokens.Literal.Number.Integer:
+                return int(token.value)
+        return None

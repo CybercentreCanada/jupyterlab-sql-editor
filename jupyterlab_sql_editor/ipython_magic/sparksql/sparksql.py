@@ -1,7 +1,7 @@
 import logging
 import os
-import pathlib
 from importlib import reload
+from pathlib import Path
 from time import time
 
 try:
@@ -35,10 +35,7 @@ from pyspark.sql.dataframe import DataFrame
 from traitlets import List, Unicode
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
-from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import (
-    update_database_schema,
-    update_local_database,
-)
+from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 from jupyterlab_sql_editor.ipython_magic.sparksql.sparkdf import display_df
 from jupyterlab_sql_editor.outputters.outputters import _display_results
 from jupyterlab_sql_editor.outputters.util import to_pandas
@@ -133,18 +130,21 @@ class SparkSql(Base):
         args = parse_argstring(self.sparksql, line)
         limit, truncate, output = self.parse_common_args(args, self.limit)
         streaming_mode = args.streaming_mode.lower()
+        use_cache = False
 
         # Equivalent to %sparksql? or %%sparksql?
         if args.help:
             return self.show_help("sparksql")
 
         if args.transpile:
-            sql = (
-                self.get_dbt_sql_statement(cell, args.sql)
-                if args.dbt
-                else self.get_sql_statement(cell, args.sql, args.jinja)
+            return Pretty(
+                sqlglot.transpile(
+                    sql=self.resolve_sql(cell, args.sql, args.dbt, args.jinja),
+                    read="spark",
+                    write=args.transpile,
+                    pretty=True,
+                )[0]
             )
-            return Pretty(sqlglot.transpile(sql or "", read="spark", write=args.transpile, pretty=True)[0])
 
         if output not in VALID_OUTPUTS:
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
@@ -161,10 +161,7 @@ class SparkSql(Base):
             )
             return
 
-        self.spark = self.get_instantiated_spark_session()
-        if self.spark is None:
-            print("Active spark session not found.")
-            return
+        self.spark = self.session()
 
         if args.database:
             self.spark.sql(f"USE {args.database}")
@@ -173,20 +170,11 @@ class SparkSql(Base):
             return
 
         # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement
-        use_cache = False
         sql = ""
         if args.input and cell is None:
             df = self.resolve_input_dataframe(args.input, cell, (pd.DataFrame, DataFrame))
         else:
-            sql = (
-                self.get_dbt_sql_statement(cell, args.sql)
-                if args.dbt
-                else self.get_sql_statement(cell, args.sql, args.jinja)
-            )
-
-            if not sql:
-                print("No valid SQL statement provided.")
-                return
+            sql = self.resolve_sql(cell, args.sql, dbt=args.dbt, jinja=args.jinja)
 
             if output == "sql":
                 return self.display_sql(sql)
@@ -267,23 +255,36 @@ class SparkSql(Base):
             args=args,
         )
 
-    def check_refresh(self, refresh_arg) -> bool:
-        output_file = (
-            pathlib.Path(self.outputFile).expanduser()
-            if self.outputFile
-            else pathlib.Path("~/.local/sparkdb.schema.json").expanduser()
-        )
-        catalog_array = self.get_catalog_array()
+    @property
+    def default_schema_file(self):
+        return "sparkdb.schema.json"
 
-        if refresh_arg == "none":
-            return False
-        if refresh_arg == "all":
-            update_database_schema(self.spark, output_file, catalog_array)
-        elif refresh_arg == "local":
-            update_local_database(self.spark, output_file, catalog_array)
+    def session(self, catalog=None, schema=None, host=None) -> SparkSession:
+        """
+        Returns the active SparkSession if it exists.
+        Raises RuntimeError if no SparkSession has been instantiated.
+        """
+        session = SparkSession._instantiatedSession
+        if session is None:
+            raise RuntimeError("No active SparkSession found. Please start a Spark session first.")
+        return session
+
+    def update_schema(self, target: SparkSession, output_file: Path, catalog_array):
+        update_database_schema(target, output_file, catalog_array)
+
+    def update_local_schema(self, target: SparkSession, output_file: Path, catalog_array):
+        update_local_database(target, output_file, catalog_array)
+
+    def resolve_sql(self, cell: str | None, sql_args: list[str], dbt: bool, jinja: bool) -> str:
+        if dbt:
+            sql = self.get_dbt_sql_statement(cell, sql_args)
         else:
-            update_database_schema(self.spark, output_file, [refresh_arg])
-        return True
+            sql = self.get_sql_statement(cell, sql_args, jinja)
+
+        if not sql or not sql.strip():
+            raise ValueError("No valid SQL statement provided.")
+
+        return sql
 
     @staticmethod
     def print_pyspark_error(exc) -> None:
@@ -297,10 +298,6 @@ class SparkSql(Base):
             print(f"QueryExecutionException: {exc.desc}")
         elif isinstance(exc, IllegalArgumentException):
             print(f"IllegalArgumentException: {exc.desc}")
-
-    @staticmethod
-    def get_instantiated_spark_session():
-        return SparkSession._instantiatedSession
 
     def get_dbt_sql_statement(self, cell, sql_argument):
         sql = cell
@@ -365,7 +362,7 @@ class SparkSql(Base):
         self.invoke_dbt(["debug"] + self.dbt_args)
 
         # Exporting SparkSession to variable spark if created
-        spark_session = self.get_instantiated_spark_session()
+        spark_session = self.session()
         if spark_session is not None:
             self.spark = spark_session
             print("Captured SparkSession to local variable `spark`")
