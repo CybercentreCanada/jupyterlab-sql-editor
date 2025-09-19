@@ -1,11 +1,12 @@
 from pathlib import Path
 from textwrap import dedent
 
+from trino.dbapi import Connection
 from trino.sqlalchemy.datatype import parse_sqltype
 
 from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
-    Connection,
+    ExportConnection,
     Function,
     SchemaExporter,
     Table,
@@ -15,7 +16,7 @@ from jupyterlab_sql_editor.ipython_magic.export import (
 MAX_RET = 20000
 
 
-class TrinoConnection(Connection):
+class TrinoExportConnection(ExportConnection):
     def __init__(self, cur) -> None:
         self.cur = cur
 
@@ -31,7 +32,7 @@ class TrinoConnection(Connection):
     def render_function(self, function: Function):
         return {"name": function.function_name, "description": ""}
 
-    def get_function_names(self):
+    def get_function_names(self) -> list[str]:
         sql = "SHOW FUNCTIONS"
         self.cur.execute(sql)
         rows = self.cur.fetchmany(MAX_RET)
@@ -42,7 +43,7 @@ class TrinoConnection(Connection):
                 function_names.append(name)
         return function_names
 
-    def get_table_names(self, catalog_name, database_name):
+    def get_table_names(self, catalog_name: str, database_name: str) -> list[str]:
         # prevent retrieving tables from information_schema
         if database_name == "information_schema":
             return []
@@ -60,7 +61,7 @@ class TrinoConnection(Connection):
             print(f"Failed to get tables for {path}")
             return []
 
-    def get_database_names(self, catalog_name):
+    def get_database_names(self, catalog_name: str) -> list[str]:
         sql = f"SHOW SCHEMAS IN {catalog_name}"
         self.cur.execute(sql)
         rows = self.cur.fetchmany(MAX_RET)
@@ -70,7 +71,7 @@ class TrinoConnection(Connection):
             database_names.append(database)
         return database_names
 
-    def _get_columns(self, catalog_name, schema_name, table_name):
+    def _get_columns(self, catalog_name: str, schema_name: str, table_name: str):
         try:
             query = dedent(
                 f"""
@@ -101,9 +102,9 @@ class TrinoConnection(Connection):
             return []
 
 
-def update_database_schema(conn, schema_file_name: Path, catalog_names):
+def update_database_schema(conn: Connection, schema_file_name: Path, catalog_names: list[str]):
     cur = conn.cursor()
-    connection = TrinoConnection(cur)
+    connection = TrinoExportConnection(cur)
     catalogs: list[Catalog] = []
     for name in catalog_names:
         catalogs.append(Catalog(connection, name))

@@ -5,6 +5,7 @@ import os
 import pathlib
 import time
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any
 
 from IPython.display import clear_output
@@ -41,7 +42,7 @@ from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIME, TIMESTAMP
 from .util import merge_schemas
 
 
-class Connection(ABC):
+class ExportConnection(ABC):
     @abstractmethod
     def render_table(self, table: Table) -> dict[str, Any]:
         pass
@@ -64,7 +65,7 @@ class Connection(ABC):
 
 
 class Catalog:
-    def __init__(self, connection: Connection, catalog_name) -> None:
+    def __init__(self, connection: ExportConnection, catalog_name: str) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
         self.databases: list[Database] = []
@@ -84,7 +85,7 @@ class Catalog:
 
 
 class Database:
-    def __init__(self, connection: Connection, catalog_name: str, database_name: str) -> None:
+    def __init__(self, connection: ExportConnection, catalog_name: str, database_name: str) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
         self.database_name = database_name
@@ -105,7 +106,7 @@ class Database:
 
 
 class Table:
-    def __init__(self, connection: Connection, catalog_name, database_name, table_name) -> None:
+    def __init__(self, connection: ExportConnection, catalog_name: str, database_name: str, table_name: str) -> None:
         self.connection = connection
         self.catalog_name = catalog_name
         self.database_name = database_name
@@ -116,7 +117,7 @@ class Table:
 
 
 class FunctionList:
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: ExportConnection) -> None:
         self.connection = connection
         self.functions: list[Function] = []
 
@@ -131,7 +132,7 @@ class FunctionList:
 
 
 class Function:
-    def __init__(self, connection: Connection, function_name) -> None:
+    def __init__(self, connection: ExportConnection, function_name: str) -> None:
         self.connection = connection
         self.function_name = function_name
 
@@ -142,8 +143,8 @@ class Function:
 class SchemaExporter:
     def __init__(
         self,
-        connection: Connection,
-        schema_file_name,
+        connection: ExportConnection,
+        schema_file_name: Path,
         catalogs: list[Catalog],
         local_catalog: Catalog | None = None,
         display_progress: bool = True,
@@ -203,7 +204,7 @@ class SchemaExporter:
             rendered_tables = rendered_tables + self.render_catalog(catalog)
         return rendered_tables
 
-    def should_update_schema(self, refresh_threshold):
+    def should_update_schema(self, refresh_threshold) -> bool:
         file_exists = os.path.isfile(self.schema_file_name)
         ttl_expired = False
         if file_exists:
@@ -215,7 +216,7 @@ class SchemaExporter:
 
         return (not file_exists) or ttl_expired
 
-    def update_schema(self):
+    def update_schema(self) -> None:
         print(f"Generating schema file: {self.schema_file_name}")
 
         # Create folders if they don't exist
@@ -245,7 +246,7 @@ class SchemaExporter:
 
         print(f"Schema file updated: {self.schema_file_name}")
 
-    def update_local_schema(self):
+    def update_local_schema(self) -> None:
         print("Updating local tables")
         if self.local_catalog:
             updated_tables = self.render_catalog(self.local_catalog)

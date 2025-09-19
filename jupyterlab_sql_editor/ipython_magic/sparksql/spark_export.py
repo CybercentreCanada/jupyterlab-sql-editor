@@ -1,8 +1,10 @@
 from pathlib import Path
 
+from pyspark.sql import SparkSession
+
 from jupyterlab_sql_editor.ipython_magic.export import (
     Catalog,
-    Connection,
+    ExportConnection,
     Function,
     SchemaExporter,
     SparkTableSchema,
@@ -10,7 +12,7 @@ from jupyterlab_sql_editor.ipython_magic.export import (
 )
 
 
-class SparkConnection(Connection):
+class SparkExportConnection(ExportConnection):
     def __init__(self, spark) -> None:
         self.spark = spark
 
@@ -98,23 +100,23 @@ class SparkConnection(Connection):
         return database_names
 
 
-def update_database_schema(spark, schema_file_name, catalog_names):
-    connection = SparkConnection(spark)
+def update_database_schema(spark: SparkSession, schema_file_name: Path, catalog_array: list[str]):
+    connection = SparkExportConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
     catalogs: list[Catalog] = []
-    for name in catalog_names:
-        catalogs.append(Catalog(connection, name))
+    for catalog in catalog_array:
+        catalogs.append(Catalog(connection, catalog))
     catalogs.append(local_catalog)
     exp = SchemaExporter(connection, schema_file_name, catalogs, local_catalog)
     exp.update_schema()
 
 
-def update_local_database(spark, schema_file_name: Path, catalog_array):
+def update_local_database(spark: SparkSession, schema_file_name: Path, catalog_array: list[str]):
     # If file doesn't exist, just do a --refresh all instead
     if not schema_file_name.exists():
         update_database_schema(spark, schema_file_name, catalog_array)
         return
-    connection = SparkConnection(spark)
+    connection = SparkExportConnection(spark)
     local_catalog = Catalog(connection, "spark_catalog")
-    exp = SchemaExporter(connection, schema_file_name, None, local_catalog, display_progress=False)
+    exp = SchemaExporter(connection, schema_file_name, [], local_catalog, display_progress=False)
     exp.update_local_schema()
