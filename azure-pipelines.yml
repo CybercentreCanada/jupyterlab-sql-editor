@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - main
+      - cccs-main
 
 pool: 'cybertron-build-pool'
 
@@ -64,61 +65,6 @@ stages:
               artifactName: 'dist'
               publishLocation: 'Container'
             displayName: 'Publish build artifacts'
-
-      - job: PublishArtifactToAPAFeed
-        displayName: Publish artifact to APA feed
-        dependsOn: BuildPythonArtifact
-        steps:
-          - task: DownloadBuildArtifacts@0
-            inputs:
-              buildType: 'current'
-              downloadType: 'specific'
-              downloadPath: '$(Pipeline.Workspace)'
-            displayName: 'Download build artifact'
-
-          - task: TwineAuthenticate@1
-            inputs:
-              artifactFeed: Analytical Platform/analytical-platform
-            displayName: 'Twine Authenticate'
-
-          - script: |
-              virtualenv -p python$(python.version) env
-              source env/bin/activate
-              pip install twine
-
-              set -o pipefail
-              if ! python -m twine upload -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose 2>&1 | tee twine.log; then
-                if grep -q "409" twine.log; then
-                  echo "Package already exists (409 Conflict) — skipping"
-                  exit 0
-                else
-                  exit 1
-                fi
-              fi
-            displayName: 'Publish artifact to analytical-platform feed'
-
-      - job: PublishArtifactToBoHFeed
-        displayName: Publish artifact to BoH feed
-        dependsOn: BuildPythonArtifact
-        steps:
-          - task: DownloadBuildArtifacts@0
-            inputs:
-              buildType: 'current'
-              downloadType: 'specific'
-              downloadPath: '$(Pipeline.Workspace)'
-            displayName: 'Download build artifact'
-
-          - task: TwineAuthenticate@1
-            inputs:
-              pythonUploadServiceConnection: pypi-bagofholding
-            displayName: 'Twine Authenticate'
-
-          - script: |
-              virtualenv -p python$(python.version) env
-              source env/bin/activate
-              pip install twine
-              python -m twine upload -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
-            displayName: 'Publish artifact to BoH feed'
 
       - job: PublishArtifactToPypi
         displayName: Publish artifact to PyPI
