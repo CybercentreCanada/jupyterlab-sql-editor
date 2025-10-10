@@ -683,37 +683,37 @@ def check_js_integer_safety(data, warnings):
         return str(data)
 
 
-def sanitize_results(data, warnings=[], safe_js_ints=False):
+def sanitize_results(data, warnings=[], display=True, safe_js_ints=False):
     result = dict()
 
     if isinstance(data, dict):
         for key, value in data.items():
-            result[key] = sanitize_results(value, warnings, safe_js_ints)
+            result[key] = sanitize_results(data=value, warnings=warnings, safe_js_ints=safe_js_ints)
     elif isinstance(data, (list, ndarray)):
         json_array = []
-        for v in data:
-            json_array.append(sanitize_results(v, warnings, safe_js_ints))
+        for value in data:
+            json_array.append(sanitize_results(data=value, warnings=warnings, safe_js_ints=safe_js_ints))
         return json_array
     # For Oracle "integers"
     elif isinstance(data, Decimal):
         if data == data.to_integral_value():
             data = int(data)
         if safe_js_ints:
-            return check_js_integer_safety(data, warnings)
+            return check_js_integer_safety(data=data, warnings=warnings)
         else:
             return data
     elif isinstance(data, datetime64):
         return pd.Timestamp(data)
-    elif isinstance(data, (bytearray, bytes)):
+    elif display and isinstance(data, (bytearray, bytes)):
         return data.hex(" ").upper().split().__str__()
     elif safe_js_ints and isinstance(data, (int)):
         return check_js_integer_safety(data, warnings)
     elif isinstance(data, pt.Row):
         for key, value in data.asDict().items():
-            result[key] = sanitize_results(value, warnings, safe_js_ints)
+            result[key] = sanitize_results(data=value, warnings=warnings, safe_js_ints=safe_js_ints)
     elif isinstance(data, NamedRowTuple):
         for key, value in zip(data._names, data):
-            result[key] = sanitize_results(value, warnings, safe_js_ints)
+            result[key] = sanitize_results(data=value, warnings=warnings, safe_js_ints=safe_js_ints)
     else:
         return data
     return result

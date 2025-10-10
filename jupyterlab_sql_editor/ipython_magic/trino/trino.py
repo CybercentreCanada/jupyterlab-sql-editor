@@ -1,4 +1,5 @@
 import logging
+import secrets
 from pathlib import Path
 from time import time
 from typing import Optional
@@ -17,6 +18,7 @@ from trino.dbapi import Connection
 from trino.sqlalchemy.datatype import parse_sqltype
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
+from jupyterlab_sql_editor.ipython_magic.result_cache import ResultCache
 from jupyterlab_sql_editor.ipython_magic.trino.trino_export import (
     update_database_schema,
 )
@@ -59,6 +61,7 @@ class Trino(Base):
 
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
+        self.cached_results = ResultCache()
 
     @needs_local_scope
     @line_cell_magic
@@ -130,12 +133,10 @@ class Trino(Base):
         if args.help:
             return self.show_help("trino")
 
-        sql = self.resolve_sql(cell, args.sql, False, args.jinja)
-
         if args.transpile:
             return Pretty(
                 sqlglot.transpile(
-                    self.get_sql_statement(cell, args.sql, args.jinja), read="trino", write=args.transpile, pretty=True
+                    self.resolve_sql(cell, args.sql, False, args.jinja), read="trino", write=args.transpile, pretty=True
                 )[0]
             )
 
@@ -143,14 +144,10 @@ class Trino(Base):
             print(f"Invalid output option {args.output}. The valid options are {VALID_OUTPUTS}.")
             return
 
-        sql = self.set_query_limit(self.get_sql_statement(cell, args.sql, args.jinja), args.raw, limit)
-        result_id = self.sql_hash(sql, limit) if sql else ""
-
         if args.input and cell is None:
-            pdf = self.resolve_input_dataframe(args.input, cell, (pd.DataFrame,))
             _display_results(
-                pdf=pdf,
-                result_id=result_id,
+                pdf=self.resolve_input_dataframe(args.input, cell, (pd.DataFrame,)),
+                result_id=secrets.token_hex(32),
                 output=output,
                 show_nonprinting=args.show_nonprinting,
                 truncate=truncate,
@@ -161,16 +158,13 @@ class Trino(Base):
         if self.check_refresh(args.refresh.lower(), catalog, schema, args.host if args.host else self.host):
             return
 
+        sql = self.set_query_limit(self.get_sql_statement(cell, args.sql, args.jinja), args.raw, limit)
+        result_id = self.sql_hash(sql, limit)
+
         if output == "sql":
             return self.display_sql(sql)
 
-        # TODO: Rework caching feature
-        # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
-        # use_cache = True if not args.nocache and sql == self.cached_sql and parsed[0].get_type() == "SELECT" else False
-        if use_cache:
-            print("Using cached results")
-
-        results, columns = [], []
+        results, columns, results_schema = [], [], []
         if not (output == "skip" or output == "none") or args.dataframe:
             if not use_cache:
                 results, columns, results_schema = self.execute_query(
@@ -182,11 +176,17 @@ class Trino(Base):
             pdf = self.get_pandas_dataframe(results, columns)
 
             if args.dataframe:
+                pdf_copy = pdf.copy()
+                for c in pdf_copy.columns:
+                    pdf_copy[c] = pdf_copy[c].apply(lambda v: sanitize_results(data=v, display=False))
+                self.get_shell().user_ns.update({args.dataframe: pdf_copy})
                 print(f"Saved results to pandas dataframe named `{args.dataframe}`")
-                self.get_shell().user_ns.update({args.dataframe: pdf})
         else:
             print("Display and execution of results skipped")
             return
+
+        if not use_cache:
+            self.cached_results.put(result_id=result_id, results=results, sql=sql, schema=schema)
 
         _display_results(
             pdf=pdf if pdf is not None else pd.DataFrame([]),
@@ -252,8 +252,6 @@ class Trino(Base):
 
     def get_pandas_dataframe(self, results, columns) -> pd.DataFrame:
         pdf = pd.DataFrame.from_records(results, columns=columns)
-        for c in pdf.columns:
-            pdf[c] = pdf[c].apply(lambda v: sanitize_results(v))
         # dedup top-level column names
         pdf.columns = _dedup_names(pdf.columns.values.tolist())
         return pdf

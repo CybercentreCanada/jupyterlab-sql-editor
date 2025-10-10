@@ -77,7 +77,7 @@ def jjson(df: pd.DataFrame, show_nonprinting=False, expanded=False, json_nulls=F
 
     # sanitize results for display
     for row in df.to_dict(orient="records"):
-        safe_array.append(sanitize_results(row, warnings, safe_js_ints=True))
+        safe_array.append(sanitize_results(data=row, warnings=warnings, safe_js_ints=True))
     if show_nonprinting:
         recursive_escape(safe_array)
     if warnings:
