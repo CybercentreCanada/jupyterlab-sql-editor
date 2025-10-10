@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 from importlib import reload
 from pathlib import Path
 from time import time
@@ -35,6 +36,7 @@ from pyspark.sql.dataframe import DataFrame
 from traitlets import List, Unicode
 
 from jupyterlab_sql_editor.ipython_magic.base import Base
+from jupyterlab_sql_editor.ipython_magic.result_cache import ResultCache
 from jupyterlab_sql_editor.ipython_magic.sparksql.spark_export import update_database_schema, update_local_database
 from jupyterlab_sql_editor.ipython_magic.sparksql.sparkdf import display_df
 from jupyterlab_sql_editor.outputters.outputters import _display_results
@@ -58,6 +60,7 @@ class SparkSql(Base):
     def __init__(self, shell=None, **kwargs):
         super().__init__(shell, **kwargs)
         self.spark = None
+        self.cached_results = ResultCache()
 
     @needs_local_scope
     @line_cell_magic
@@ -153,7 +156,7 @@ class SparkSql(Base):
         if args.input and isinstance(self.get_shell().user_ns.get(args.input), pd.DataFrame) and cell is None:
             _display_results(
                 pdf=self.get_shell().user_ns.get(args.input) or pd.DataFrame([]),
-                result_id="",
+                result_id=secrets.token_hex(32),
                 output=output,
                 show_nonprinting=args.show_nonprinting,
                 truncate=truncate,
@@ -170,31 +173,16 @@ class SparkSql(Base):
             return
 
         # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement
-        sql = ""
         if args.input and cell is None:
+            sql = ""
+            result_id = secrets.token_hex(32)
             df = self.resolve_input_dataframe(args.input, cell, (pd.DataFrame, DataFrame))
         else:
             sql = self.resolve_sql(cell, args.sql, dbt=args.dbt, jinja=args.jinja)
+            result_id = self.sql_hash(sql, limit)
 
             if output == "sql":
                 return self.display_sql(sql)
-
-            # TODO: Rework caching feature
-            # sql_statement = sqlparse.format(sql, strip_comments=True)
-            # parsed = sqlparse.parse(sql_statement.strip(" \t\n;"))
-
-            # Use previously cached results if sql statement hasn't changed and is a SELECT type statement
-            # use_cache = (
-            #     True
-            #     if not args.nocache
-            #     and sql == self.cached_sql
-            #     and limit == self.cached_limit
-            #     and parsed[0].get_type() == "SELECT"
-            #     else False
-            # )
-            use_cache = False
-            if use_cache:
-                print("Using cached results")
 
             # try-except here as well because it can also raise PYSPARK_ERROR_TYPES
             try:
@@ -238,7 +226,8 @@ class SparkSql(Base):
             results, pdf = None, None
             print("Display and execution of results skipped")
 
-        result_id = self.sql_hash(sql, limit) if sql else ""
+        if not use_cache:
+            self.cached_results.put(result_id=result_id, results=pdf)
 
         display_df(
             original_df=df,
