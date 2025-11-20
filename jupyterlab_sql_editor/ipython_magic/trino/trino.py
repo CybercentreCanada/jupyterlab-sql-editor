@@ -48,6 +48,7 @@ class Trino(Base):
     )
     catalog = Unicode("", config=True, help="Trino catalog to use")
     schema = Unicode("", config=True, help="Trino schema to use")
+    source = Unicode("ipython-magic", config=True, help="Trino source to use")
     httpScheme = Unicode("https", config=True, help="Trino server scheme https/http")
     verify = Union(
         [Bool(), Unicode()],
@@ -110,6 +111,7 @@ class Trino(Base):
     @argument("--host", metavar="host", default=None, type=str)
     @argument("-c", "--catalog", metavar="catalogname", default=None, type=str, help="Trino catalog to use")
     @argument("-m", "--schema", metavar="schemaname", default=None, type=str, help="Trino schema to use")
+    @argument("--source", metavar="host", default=None, type=str, help="Trino source to use")
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     @argument("--expand", action="store_true", help="Expand json results")
@@ -125,8 +127,10 @@ class Trino(Base):
         self.set_user_ns(local_ns)
         args = parse_argstring(self.trino, line)
         limit, truncate, output = self.parse_common_args(args, self.limit)
+        host = args.host or self.host
         catalog = args.catalog or self.catalog
         schema = args.schema or self.schema
+        source = args.source or self.source
         use_cache = False
 
         # Equivalent to %trino? or %%trino?
@@ -155,7 +159,7 @@ class Trino(Base):
             )
             return
 
-        if self.check_refresh(args.refresh.lower(), catalog, schema, args.host if args.host else self.host):
+        if self.check_refresh(args.refresh.lower(), catalog, schema, host):
             return
 
         sql = self.set_query_limit(self.get_sql_statement(cell, args.sql, args.jinja), args.raw, limit)
@@ -167,9 +171,7 @@ class Trino(Base):
         results, columns, results_schema = [], [], []
         if not (output == "skip" or output == "none") or args.dataframe:
             if not use_cache:
-                results, columns, results_schema = self.execute_query(
-                    catalog, schema, args.host if args.host else self.host, sql, limit
-                )
+                results, columns, results_schema = self.execute_query(catalog, schema, host, sql, limit, source)
 
             display(TrinoSchemaWidget("results", results_schema))
             results = results[:limit] if results else []
@@ -201,11 +203,7 @@ class Trino(Base):
     def default_schema_file(self):
         return "trinodb.schema.json"
 
-    def session(self, catalog=None, schema=None, host=None):
-        host = host or self.host
-        catalog = catalog or self.catalog
-        schema = schema or self.schema
-
+    def session(self, catalog=None, schema=None, host=None, source=None):
         new_params = {
             "host": host,
             "port": self.port,
@@ -213,6 +211,7 @@ class Trino(Base):
             "user": self.user,
             "catalog": catalog,
             "schema": schema,
+            "source": source,
             "http_scheme": self.httpScheme,
             "verify": self.verify,
         }
@@ -283,8 +282,8 @@ class Trino(Base):
             logging.warning(f"Failed to get schema from query results: {exc}")
             return []
 
-    def execute_query(self, catalog: str, schema: str, host: str, sql: str, limit: int):
-        self.conn = self.session(catalog, schema, host)
+    def execute_query(self, catalog: str, schema: str, host: str, sql: str, limit: int, source: str):
+        self.conn = self.session(catalog, schema, host, source)
 
         with self.conn.cursor() as cur:
             try:
