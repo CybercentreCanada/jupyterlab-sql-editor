@@ -169,7 +169,7 @@ class SparkSql(Base):
         if args.database:
             self.spark.sql(f"USE {args.database}")
 
-        if self.check_refresh(args.refresh.lower()):
+        if self.check_refresh(refresh_arg=args.refresh.lower(), cache_ttl=self.cacheTTL):
             return
 
         # If --input exists and is a Spark dataframe, take it as it is otherwise create dataframe from sql statement

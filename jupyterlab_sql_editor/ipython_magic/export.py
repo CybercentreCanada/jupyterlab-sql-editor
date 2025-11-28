@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-import os
 import pathlib
-import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
@@ -203,18 +201,6 @@ class SchemaExporter:
         for catalog in self.catalogs:
             rendered_tables = rendered_tables + self.render_catalog(catalog)
         return rendered_tables
-
-    def should_update_schema(self, refresh_threshold) -> bool:
-        file_exists = os.path.isfile(self.schema_file_name)
-        ttl_expired = False
-        if file_exists:
-            file_time = os.path.getmtime(self.schema_file_name)
-            current_time = time.time()
-            if current_time - file_time > refresh_threshold:
-                print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {self.schema_file_name}")
-                ttl_expired = True
-
-        return (not file_exists) or ttl_expired
 
     def update_schema(self) -> None:
         print(f"Generating schema file: {self.schema_file_name}")
