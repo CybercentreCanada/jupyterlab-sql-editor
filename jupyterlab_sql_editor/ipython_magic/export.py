@@ -328,8 +328,6 @@ class SparkTableSchema:
                 fields.append(
                     {
                         "columnName": self.get_path(path, name),
-                        "metadata": child.metadata,
-                        "type": self.get_type_name(child.dataType),
                         "description": self.get_type_name(child.dataType),
                     }
                 )
@@ -342,7 +340,7 @@ class SparkTableSchema:
 
 
 class TrinoTableSchema:
-    def __init__(self, schema, quoting_char="`") -> None:
+    def __init__(self, schema, quoting_char='"') -> None:
         self.schema = schema
         self.quoting_char = quoting_char
 
@@ -372,6 +370,7 @@ class TrinoTableSchema:
         MAP: "map",
         ROW: "row",
         # === Others ===
+        sqltypes.NullType: "unknown",
         # IPADDRESS: 'ipaddress',
         # UUID: 'uuid',
         # HYPERLOGLOG: 'hyperloglog',
@@ -406,8 +405,6 @@ class TrinoTableSchema:
                     {
                         "columnName": self.get_path(path, attr_name),
                         "description": type_name,
-                        "type": type_name,
-                        "metadata": {},
                     }
                 )
                 self.get_children(attr_type, self.get_path(path, attr_name), fields)
@@ -418,8 +415,6 @@ class TrinoTableSchema:
                     {
                         "columnName": self.get_path(path, f.get("columnName")),
                         "description": type_name,
-                        "type": type_name,
-                        "metadata": {},
                     }
                 )
                 self.get_children(f, path, fields)
