@@ -39,6 +39,10 @@ stages:
             displayName: 'Lint the extension'
 
           - script: |
+              rm -rf dist/*
+            displayName: 'Clean old dist artifacts'
+
+          - script: |
               set -eux
               source env/bin/activate
               python -m pip install -v .[all]
