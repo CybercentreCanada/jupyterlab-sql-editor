@@ -63,6 +63,9 @@ fields = ["description", "authors", "urls"]
 artifacts = ["jupyterlab_sql_editor/labextension"]
 exclude = [".github", "binder", "env"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["jupyterlab_sql_editor"]
+
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab_sql_editor/labextension" = "share/jupyter/labextensions/jupyterlab-sql-editor"
 "install.json" = "share/jupyter/labextensions/jupyterlab-sql-editor/install.json"
