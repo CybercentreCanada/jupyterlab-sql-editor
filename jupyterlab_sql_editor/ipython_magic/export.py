@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-import os
 import pathlib
-import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
@@ -204,18 +202,6 @@ class SchemaExporter:
             rendered_tables = rendered_tables + self.render_catalog(catalog)
         return rendered_tables
 
-    def should_update_schema(self, refresh_threshold) -> bool:
-        file_exists = os.path.isfile(self.schema_file_name)
-        ttl_expired = False
-        if file_exists:
-            file_time = os.path.getmtime(self.schema_file_name)
-            current_time = time.time()
-            if current_time - file_time > refresh_threshold:
-                print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {self.schema_file_name}")
-                ttl_expired = True
-
-        return (not file_exists) or ttl_expired
-
     def update_schema(self) -> None:
         print(f"Generating schema file: {self.schema_file_name}")
 
@@ -328,8 +314,6 @@ class SparkTableSchema:
                 fields.append(
                     {
                         "columnName": self.get_path(path, name),
-                        "metadata": child.metadata,
-                        "type": self.get_type_name(child.dataType),
                         "description": self.get_type_name(child.dataType),
                     }
                 )
@@ -342,7 +326,7 @@ class SparkTableSchema:
 
 
 class TrinoTableSchema:
-    def __init__(self, schema, quoting_char="`") -> None:
+    def __init__(self, schema, quoting_char='"') -> None:
         self.schema = schema
         self.quoting_char = quoting_char
 
@@ -372,6 +356,7 @@ class TrinoTableSchema:
         MAP: "map",
         ROW: "row",
         # === Others ===
+        sqltypes.NullType: "unknown",
         # IPADDRESS: 'ipaddress',
         # UUID: 'uuid',
         # HYPERLOGLOG: 'hyperloglog',
@@ -406,8 +391,6 @@ class TrinoTableSchema:
                     {
                         "columnName": self.get_path(path, attr_name),
                         "description": type_name,
-                        "type": type_name,
-                        "metadata": {},
                     }
                 )
                 self.get_children(attr_type, self.get_path(path, attr_name), fields)
@@ -418,8 +401,6 @@ class TrinoTableSchema:
                     {
                         "columnName": self.get_path(path, f.get("columnName")),
                         "description": type_name,
-                        "type": type_name,
-                        "metadata": {},
                     }
                 )
                 self.get_children(f, path, fields)

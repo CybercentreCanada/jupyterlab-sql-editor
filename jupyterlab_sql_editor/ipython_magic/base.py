@@ -54,7 +54,9 @@ class Base(Magics):
         pass
 
     @abstractmethod
-    def session(self, catalog: str | None = None, schema: str | None = None, host: str | None = None) -> Any:
+    def session(
+        self, catalog: str | None = None, schema: str | None = None, host: str | None = None, source: str | None = None
+    ) -> Any:
         """Return the connection/session object (Trino Connection or SparkSession)."""
         pass
 
@@ -73,26 +75,29 @@ class Base(Magics):
         """Return the resolved SQL statement, raise ValueError if none."""
         pass
 
-    def check_refresh(self, refresh_arg, catalog=None, schema=None, host=None) -> bool:
+    def check_refresh(self, refresh_arg, catalog=None, schema=None, host=None, cache_ttl=-1) -> bool:
         """Returns True if a refresh was performed."""
         output_file = pathlib.Path(
             getattr(self, "outputFile", None) or f"~/.local/{self.default_schema_file}"
         ).expanduser()
-        catalog_array = self.get_catalog_array()
 
         if refresh_arg == "none":
             return False
 
-        target = self.session(catalog=catalog, schema=schema, host=host)
+        if self.should_update_schema(output_file, cache_ttl):
+            catalog_array = self.get_catalog_array()
 
-        if refresh_arg == "all":
-            self.update_schema(target, output_file, catalog_array)
-        elif refresh_arg == "local":
-            self.update_local_schema(target, output_file, catalog_array)
-        else:
-            self.update_schema(target, output_file, [refresh_arg])
+            target = self.session(catalog=catalog, schema=schema, host=host)
 
-        return True
+            if refresh_arg == "all":
+                self.update_schema(target, output_file, catalog_array)
+            elif refresh_arg == "local":
+                self.update_local_schema(target, output_file, catalog_array)
+            else:
+                self.update_schema(target, output_file, [refresh_arg])
+
+            return True
+        return False
 
     def get_shell(self) -> InteractiveShell:
         if self.shell:
@@ -164,14 +169,24 @@ class Base(Magics):
         return template.render(user_ns)
 
     @staticmethod
-    def should_update_schema(schema_file_name, refresh_threshold) -> bool:
-        file_exists = os.path.isfile(schema_file_name)
-        ttl_expired = False
-        if file_exists:
-            file_time = os.path.getmtime(schema_file_name)
-            current_time = time.time()
-            if current_time - file_time > (refresh_threshold * 60):
-                print(f"TTL {refresh_threshold} minutes expired, re-generating schema file: {schema_file_name}")
-                ttl_expired = True
+    def should_update_schema(schema_file_name, refresh_threshold_seconds) -> bool:
+        if not os.path.isfile(schema_file_name):
+            print(f"Schema file does not exist, will generate {schema_file_name}")
+            return True
 
-        return (not file_exists) or ttl_expired
+        file_time = os.path.getmtime(schema_file_name)
+        age_seconds = time.time() - file_time
+
+        if age_seconds > refresh_threshold_seconds:
+            print(
+                f"Schema cache TTL of {refresh_threshold_seconds} seconds expired "
+                f"(file age: {age_seconds:.0f}s), re-generating schema file {schema_file_name}"
+            )
+            return True
+
+        print(
+            f"Schema file within TTL ({age_seconds:.0f}s < {refresh_threshold_seconds}s), "
+            f"skipping regeneration of {schema_file_name}"
+        )
+
+        return False

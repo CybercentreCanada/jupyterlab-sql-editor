@@ -159,7 +159,7 @@ class Trino(Base):
             )
             return
 
-        if self.check_refresh(args.refresh.lower(), catalog, schema, host):
+        if self.check_refresh(args.refresh.lower(), catalog, schema, host, self.cacheTTL):
             return
 
         sql = self.set_query_limit(self.get_sql_statement(cell, args.sql, args.jinja), args.raw, limit)
@@ -295,7 +295,8 @@ class Trino(Base):
                 columns = [d[0] for d in description] if description else []
                 results_schema = self.get_schema_from_query_description(description)
             finally:
-                cur.cancel()
+                if cur:
+                    cur.cancel()
 
         self.print_execution_stats(end, start, len(results) if results else 0, limit)
         return results, columns, results_schema

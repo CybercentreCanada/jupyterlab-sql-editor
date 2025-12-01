@@ -76,30 +76,23 @@ class TrinoExportConnection(ExportConnection):
             query = dedent(
                 f"""
                 SELECT
-                    column_name,
-                    data_type,
-                    IS_NULLABLE,
-                    column_default
-                FROM {catalog_name}.information_schema.columns
-                WHERE table_schema = '{schema_name}' AND table_name = '{table_name}'
-                ORDER BY ordinal_position ASC
+                    *
+                FROM {catalog_name}.{schema_name}.{table_name}
+                WHERE 1 = 0
             """
             ).strip()
             self.cur.execute(query)
-            res = self.cur.fetchall()
+            description = self.cur.description or []
             columns = []
-            for record in res:
-                column = dict(
-                    columnName=record[0],
-                    type=parse_sqltype(record[1]),
-                    nullable=record[2] == "YES",
-                    default=record[3],
-                )
-                columns.append(column)
+            for col in description:
+                columns.append({"columnName": col.name, "type": parse_sqltype(col.type_code)})
             return TrinoTableSchema(columns, quoting_char='"').convert()
         except Exception as exc:
             print(f"Failed to get columns for {table_name}: {exc}")
             return []
+        finally:
+            if self.cur:
+                self.cur.cancel()
 
 
 def update_database_schema(conn: Connection, schema_file_name: Path, catalog_names: list[str]):
