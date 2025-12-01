@@ -75,8 +75,8 @@ stages:
         dependsOn: BuildPythonArtifact
         steps:
           - script: |
-              rm -rf $(Pipeline.Workspace)/*
-            displayName: 'Cleaning workspace before download'
+              rm -rf $(Pipeline.Workspace)/dist/*
+            displayName: 'Clean dist directory before download'
 
           - task: DownloadBuildArtifacts@0
             inputs:
@@ -111,8 +111,8 @@ stages:
         dependsOn: BuildPythonArtifact
         steps:
           - script: |
-              rm -rf $(Pipeline.Workspace)/*
-            displayName: 'Cleaning workspace before download'
+              rm -rf $(Pipeline.Workspace)/dist/*
+            displayName: 'Clean dist directory before download'
 
           - task: DownloadBuildArtifacts@0
             inputs:
