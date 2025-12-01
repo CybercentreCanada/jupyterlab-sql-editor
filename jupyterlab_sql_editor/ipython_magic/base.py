@@ -54,7 +54,9 @@ class Base(Magics):
         pass
 
     @abstractmethod
-    def session(self, catalog: str | None = None, schema: str | None = None, host: str | None = None) -> Any:
+    def session(
+        self, catalog: str | None = None, schema: str | None = None, host: str | None = None, source: str | None = None
+    ) -> Any:
         """Return the connection/session object (Trino Connection or SparkSession)."""
         pass
 
@@ -79,11 +81,11 @@ class Base(Magics):
             getattr(self, "outputFile", None) or f"~/.local/{self.default_schema_file}"
         ).expanduser()
 
+        if refresh_arg == "none":
+            return False
+
         if self.should_update_schema(output_file, cache_ttl):
             catalog_array = self.get_catalog_array()
-
-            if refresh_arg == "none":
-                return False
 
             target = self.session(catalog=catalog, schema=schema, host=host)
 

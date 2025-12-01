@@ -248,7 +248,7 @@ class SparkSql(Base):
     def default_schema_file(self):
         return "sparkdb.schema.json"
 
-    def session(self, catalog=None, schema=None, host=None) -> SparkSession:
+    def session(self, catalog=None, schema=None, host=None, source=None) -> SparkSession:
         """
         Returns the active SparkSession if it exists.
         Raises RuntimeError if no SparkSession has been instantiated.
