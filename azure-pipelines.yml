@@ -74,6 +74,10 @@ stages:
         displayName: Publish artifact to PyPI
         dependsOn: BuildPythonArtifact
         steps:
+          - script: |
+              rm -rf $(Pipeline.Workspace)/dist/*
+            displayName: 'Clean dist directory before download'
+
           - task: DownloadBuildArtifacts@0
             inputs:
               buildType: 'current'
