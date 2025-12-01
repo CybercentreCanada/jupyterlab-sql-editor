@@ -96,6 +96,7 @@ class TrinoExportConnection(ExportConnection):
 
 
 def update_database_schema(conn: Connection, schema_file_name: Path, catalog_names: list[str]):
+    conn._client_session._source = "JupyterLab schema cache refresh"
     cur = conn.cursor()
     connection = TrinoExportConnection(cur)
     catalogs: list[Catalog] = []
