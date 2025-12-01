@@ -74,6 +74,10 @@ stages:
         displayName: Publish artifact to APA feed
         dependsOn: BuildPythonArtifact
         steps:
+          - script: |
+              rm -rf $(Pipeline.Workspace)/*
+            displayName: 'Cleaning workspace before download'
+
           - task: DownloadBuildArtifacts@0
             inputs:
               buildType: 'current'
@@ -106,6 +110,10 @@ stages:
         displayName: Publish artifact to BoH feed
         dependsOn: BuildPythonArtifact
         steps:
+          - script: |
+              rm -rf $(Pipeline.Workspace)/*
+            displayName: 'Cleaning workspace before download'
+
           - task: DownloadBuildArtifacts@0
             inputs:
               buildType: 'current'
