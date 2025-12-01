@@ -90,6 +90,9 @@ class TrinoExportConnection(ExportConnection):
         except Exception as exc:
             print(f"Failed to get columns for {table_name}: {exc}")
             return []
+        finally:
+            if self.cur:
+                self.cur.cancel()
 
 
 def update_database_schema(conn: Connection, schema_file_name: Path, catalog_names: list[str]):

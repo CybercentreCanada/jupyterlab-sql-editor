@@ -295,7 +295,8 @@ class Trino(Base):
                 columns = [d[0] for d in description] if description else []
                 results_schema = self.get_schema_from_query_description(description)
             finally:
-                cur.cancel()
+                if cur:
+                    cur.cancel()
 
         self.print_execution_stats(end, start, len(results) if results else 0, limit)
         return results, columns, results_schema
