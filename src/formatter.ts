@@ -1,24 +1,31 @@
-import { Cell, CodeCell } from '@jupyterlab/cells';
-import { INotebookTracker, Notebook } from '@jupyterlab/notebook';
-import { IEditorTracker } from '@jupyterlab/fileeditor';
-import { showErrorMessage } from '@jupyterlab/apputils';
-import { format } from 'sql-formatter';
 import { RegExpForeignCodeExtractor } from '@jupyter-lsp/jupyterlab-lsp';
-import { Constants } from './constants';
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import { showErrorMessage } from '@jupyterlab/apputils';
+import { Cell, CodeCell } from '@jupyterlab/cells';
+import { IEditorTracker } from '@jupyterlab/fileeditor';
+import { INotebookTracker, Notebook } from '@jupyterlab/notebook';
+import { format, KeywordCase, SqlLanguage } from 'sql-formatter';
+import { Constants } from './constants';
 import { cellMagicExtractor, markerExtractor } from './utils';
-import { KeywordCase } from 'sql-formatter';
+
+type DialectedExtractor = {
+  dialect: 'sparksql' | 'trino';
+  extractor: RegExpForeignCodeExtractor;
+};
 
 export class SqlFormatter {
+  private dialect: SqlLanguage;
   private formatTabWidth: number;
   private formatUseTabs: boolean;
   private formatKeywordCase: KeywordCase;
 
   constructor(
+    dialect: SqlLanguage,
     formatTabWidth: number,
     formatUseTabs: boolean,
     formatKeywordCase: KeywordCase
   ) {
+    this.dialect = dialect;
     this.formatTabWidth = formatTabWidth;
     this.formatUseTabs = formatUseTabs;
     this.formatKeywordCase = formatKeywordCase;
@@ -26,7 +33,7 @@ export class SqlFormatter {
 
   format(text: string | null): string {
     const formatted = format(text || '', {
-      language: 'spark', // Defaults to "sql" (see the above list of supported dialects)
+      language: this.dialect, // Defaults to "sql" (see the above list of supported dialects)
       tabWidth: this.formatTabWidth, // Defaults to two spaces. Ignored if useTabs is true
       useTabs: this.formatUseTabs, // Defaults to false
       keywordCase: this.formatKeywordCase, // Defaults to false (not safe to use when SQL dialect has case-sensitive identifiers)
@@ -36,22 +43,34 @@ export class SqlFormatter {
   }
 }
 
+type FormatterRegistry = Map<string, SqlFormatter>;
+
 class JupyterlabNotebookCodeFormatter {
   private notebookTracker: INotebookTracker;
   private working: boolean;
-  private extractors: RegExpForeignCodeExtractor[];
-  private sqlFormatter: SqlFormatter;
-  constructor(notebookTracker: INotebookTracker, sqlFormatter: SqlFormatter) {
+  private extractors: DialectedExtractor[];
+  private formatters: FormatterRegistry;
+
+  constructor(
+    notebookTracker: INotebookTracker,
+    formatters: FormatterRegistry
+  ) {
     this.working = false;
     this.notebookTracker = notebookTracker;
     this.extractors = [];
-    this.extractors.push(cellMagicExtractor('sparksql'));
-    this.extractors.push(cellMagicExtractor('trino'));
-    this.sqlFormatter = sqlFormatter;
+    this.extractors.push({
+      dialect: 'sparksql',
+      extractor: cellMagicExtractor('sparksql')
+    });
+    this.extractors.push({
+      dialect: 'trino',
+      extractor: cellMagicExtractor('trino')
+    });
+    this.formatters = formatters;
   }
 
-  setFormatter(sqlFormatter: SqlFormatter) {
-    this.sqlFormatter = sqlFormatter;
+  setFormatters(formatters: FormatterRegistry) {
+    this.formatters = formatters;
   }
 
   pushExtractors(
@@ -60,12 +79,18 @@ class JupyterlabNotebookCodeFormatter {
     trinoStartMarker: string,
     trinoEndMarker: string
   ) {
-    this.extractors.push(
-      markerExtractor(sparksqlStartMarker, sparksqlEndMarker, 'sparksql')
-    );
-    this.extractors.push(
-      markerExtractor(trinoStartMarker, trinoEndMarker, 'trino')
-    );
+    this.extractors.push({
+      dialect: 'sparksql',
+      extractor: markerExtractor(
+        sparksqlStartMarker,
+        sparksqlEndMarker,
+        'sparksql'
+      )
+    });
+    this.extractors.push({
+      dialect: 'trino',
+      extractor: markerExtractor(trinoStartMarker, trinoEndMarker, 'trino')
+    });
   }
 
   public async formatAction() {
@@ -95,9 +120,9 @@ class JupyterlabNotebookCodeFormatter {
   private tryReplacing(
     cell: CodeCell,
     cellText: string,
-    extractor: RegExpForeignCodeExtractor
+    wrapped: DialectedExtractor
   ) {
-    const extracted = extractor.extractForeignCode(cellText);
+    const extracted = wrapped.extractor.extractForeignCode(cellText);
     const cellEditor = cell.editor;
     if (
       cellEditor &&
@@ -106,8 +131,13 @@ class JupyterlabNotebookCodeFormatter {
       extracted[0].foreignCode &&
       extracted[0].range
     ) {
-      const sqlText = extracted[0].foreignCode;
-      const formattedSql = this.sqlFormatter.format(sqlText) + '\n';
+      const formatter = this.formatters.get(wrapped.dialect);
+      if (!formatter) {
+        return;
+      }
+
+      const formattedSql = formatter.format(extracted[0].foreignCode) + '\n';
+
       cell.model.sharedModel.updateSource(
         cellEditor?.getOffsetAt(extracted[0].range.start) || 0,
         cellEditor?.getOffsetAt(extracted[0].range.end) || 0,
@@ -153,8 +183,8 @@ class JupyterlabNotebookCodeFormatter {
       );
       let numSqlCells = 0;
       currentTexts.forEach(cellText => {
-        const found = this.extractors.find(extractor =>
-          extractor.hasForeignCode(cellText)
+        const found = this.extractors.find(wrapped =>
+          wrapped.extractor.hasForeignCode(cellText)
         );
         if (found) {
           numSqlCells++;
@@ -210,26 +240,30 @@ export class JupyterLabCodeFormatter {
     app: JupyterFrontEnd,
     tracker: INotebookTracker,
     editorTracker: IEditorTracker,
-    sqlFormatter: SqlFormatter
+    formatters: FormatterRegistry,
+    defaultSqlFormatter: SqlFormatter
   ) {
     this.app = app;
     this.tracker = tracker;
     this.editorTracker = editorTracker;
     this.notebookCodeFormatter = new JupyterlabNotebookCodeFormatter(
       this.tracker,
-      sqlFormatter
+      formatters
     );
     this.fileEditorCodeFormatter = new JupyterlabFileEditorCodeFormatter(
       this.editorTracker,
-      sqlFormatter
+      defaultSqlFormatter
     );
     this.setupCommands();
     this.setupContextMenu();
   }
 
-  setFormatter(sqlFormatter: SqlFormatter): void {
-    this.notebookCodeFormatter.setFormatter(sqlFormatter);
-    this.fileEditorCodeFormatter.setFormatter(sqlFormatter);
+  setFormatters(
+    formatters: FormatterRegistry,
+    defaultSqlFormatter: SqlFormatter
+  ): void {
+    this.notebookCodeFormatter.setFormatters(formatters);
+    this.fileEditorCodeFormatter.setFormatter(defaultSqlFormatter);
   }
 
   pushExtractors(
