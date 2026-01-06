@@ -111,7 +111,7 @@ Merci à tous les contributeurs des projets suivants:
 
 - [krassowski/jupyterlab-lsp](https://github.com/jupyter-lsp/jupyterlab-lsp)
 - [joe-re/sql-language-server](https://github.com/joe-re/sql-language-server)
-- [zeroturnaround/sql-formatter](https://github.com/zeroturnaround/sql-formatter)
+- [sql-formatter-org/sql-formatter](https://github.com/sql-formatter-org/sql-formatter)
 - [cryeo/sparksql-magic](https://github.com/cryeo/sparksql-magic)
 - [trino-python-client](https://github.com/trinodb/trino-python-client)
 - [bloomberg/ipydatagrid](https://github.com/bloomberg/ipydatagrid)
