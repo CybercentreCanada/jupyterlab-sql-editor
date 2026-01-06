@@ -111,7 +111,7 @@ class Trino(Base):
     @argument("--host", metavar="host", default=None, type=str)
     @argument("-c", "--catalog", metavar="catalogname", default=None, type=str, help="Trino catalog to use")
     @argument("-m", "--schema", metavar="schemaname", default=None, type=str, help="Trino schema to use")
-    @argument("--source", metavar="host", default=None, type=str, help="Trino source to use")
+    @argument("--source", metavar="source", default=None, type=str, help="Trino source to use")
     @argument("-j", "--jinja", action="store_true", help="Enable Jinja templating support")
     @argument("-t", "--truncate", metavar="max_cell_length", type=int, help="Truncate output")
     @argument("--expand", action="store_true", help="Expand json results")
