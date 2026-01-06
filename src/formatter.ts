@@ -51,12 +51,21 @@ class JupyterlabNotebookCodeFormatter {
   private extractors: DialectedExtractor[];
   private formatters: FormatterRegistry;
 
-  constructor(notebookTracker: INotebookTracker, formatters: FormatterRegistry) {
+  constructor(
+    notebookTracker: INotebookTracker,
+    formatters: FormatterRegistry
+  ) {
     this.working = false;
     this.notebookTracker = notebookTracker;
     this.extractors = [];
-    this.extractors.push({ dialect: 'sparksql', extractor: cellMagicExtractor('sparksql') });
-    this.extractors.push({ dialect: 'trino', extractor: cellMagicExtractor('trino') });
+    this.extractors.push({
+      dialect: 'sparksql',
+      extractor: cellMagicExtractor('sparksql')
+    });
+    this.extractors.push({
+      dialect: 'trino',
+      extractor: cellMagicExtractor('trino')
+    });
     this.formatters = formatters;
   }
 
@@ -72,7 +81,11 @@ class JupyterlabNotebookCodeFormatter {
   ) {
     this.extractors.push({
       dialect: 'sparksql',
-      extractor: markerExtractor(sparksqlStartMarker, sparksqlEndMarker, 'sparksql')
+      extractor: markerExtractor(
+        sparksqlStartMarker,
+        sparksqlEndMarker,
+        'sparksql'
+      )
     });
     this.extractors.push({
       dialect: 'trino',
@@ -245,7 +258,10 @@ export class JupyterLabCodeFormatter {
     this.setupContextMenu();
   }
 
-  setFormatters(formatters: FormatterRegistry, defaultSqlFormatter: SqlFormatter): void {
+  setFormatters(
+    formatters: FormatterRegistry,
+    defaultSqlFormatter: SqlFormatter
+  ): void {
     this.notebookCodeFormatter.setFormatters(formatters);
     this.fileEditorCodeFormatter.setFormatter(defaultSqlFormatter);
   }

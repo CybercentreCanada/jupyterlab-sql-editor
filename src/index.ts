@@ -62,13 +62,28 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const formatters = new Map<string, SqlFormatter>();
       formatters.set(
         'sparksql',
-        new SqlFormatter('spark', formatTabwidth, formatUseTabs, formatKeywordCase)
+        new SqlFormatter(
+          'spark',
+          formatTabwidth,
+          formatUseTabs,
+          formatKeywordCase
+        )
       );
       formatters.set(
         'trino',
-        new SqlFormatter('trino', formatTabwidth, formatUseTabs, formatKeywordCase)
+        new SqlFormatter(
+          'trino',
+          formatTabwidth,
+          formatUseTabs,
+          formatKeywordCase
+        )
       );
-      const defaultSqlFormatter = new SqlFormatter('sql', formatTabwidth, formatUseTabs, formatKeywordCase);
+      const defaultSqlFormatter = new SqlFormatter(
+        'sql',
+        formatTabwidth,
+        formatUseTabs,
+        formatKeywordCase
+      );
       lspExtractorsMgr.register(
         markerExtractor(sparksqlStartMarker, sparksqlEndMarker, 'sparksql'),
         'python'
@@ -129,13 +144,28 @@ const plugin: JupyterFrontEndPlugin<void> = {
         const formatters = new Map<string, SqlFormatter>();
         formatters.set(
           'sparksql',
-          new SqlFormatter('spark', formatTabWidth, formatUseTabs, formatKeywordCase)
+          new SqlFormatter(
+            'spark',
+            formatTabWidth,
+            formatUseTabs,
+            formatKeywordCase
+          )
         );
         formatters.set(
           'trino',
-          new SqlFormatter('trino', formatTabWidth, formatUseTabs, formatKeywordCase)
+          new SqlFormatter(
+            'trino',
+            formatTabWidth,
+            formatUseTabs,
+            formatKeywordCase
+          )
         );
-        const defaultSqlFormatter = new SqlFormatter('sql', formatTabWidth, formatUseTabs, formatKeywordCase);
+        const defaultSqlFormatter = new SqlFormatter(
+          'sql',
+          formatTabWidth,
+          formatUseTabs,
+          formatKeywordCase
+        );
         const sqlCodeFormatter = new SqlCodeFormatter(
           app,
           notebookTracker,
