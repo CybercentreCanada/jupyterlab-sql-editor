@@ -2,21 +2,21 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { ILSPCodeExtractorsManager } from '@jupyterlab/lsp';
 import { IEditorLanguageRegistry } from '@jupyterlab/codemirror';
-import { INotebookTracker } from '@jupyterlab/notebook';
 import { IEditorTracker } from '@jupyterlab/fileeditor';
+import { ILSPCodeExtractorsManager } from '@jupyterlab/lsp';
+import { INotebookTracker } from '@jupyterlab/notebook';
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { KeywordCase } from 'sql-formatter';
 import {
   JupyterLabCodeFormatter as SqlCodeFormatter,
   SqlFormatter
 } from './formatter';
 import {
   cellMagicExtractor,
-  markerExtractor,
-  lineMagicExtractor
+  lineMagicExtractor,
+  markerExtractor
 } from './utils';
-import { KeywordCase } from 'sql-formatter';
 
 const JUPYTERLAB_SQL_EDITOR_PLUGIN = 'jupyterlab-sql-editor:plugin';
 
@@ -59,7 +59,27 @@ const plugin: JupyterFrontEndPlugin<void> = {
       const trinoStartMarker = settings.get('trinoStartMarker')
         .composite as string;
       const trinoEndMarker = settings.get('trinoEndMarker').composite as string;
-      const sqlFormatter = new SqlFormatter(
+      const formatters = new Map<string, SqlFormatter>();
+      formatters.set(
+        'sparksql',
+        new SqlFormatter(
+          'spark',
+          formatTabwidth,
+          formatUseTabs,
+          formatKeywordCase
+        )
+      );
+      formatters.set(
+        'trino',
+        new SqlFormatter(
+          'trino',
+          formatTabwidth,
+          formatUseTabs,
+          formatKeywordCase
+        )
+      );
+      const defaultSqlFormatter = new SqlFormatter(
+        'sql',
         formatTabwidth,
         formatUseTabs,
         formatKeywordCase
@@ -72,7 +92,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         markerExtractor(trinoStartMarker, trinoEndMarker, 'trino'),
         'python'
       );
-      sqlCodeFormatter.setFormatter(sqlFormatter);
+      sqlCodeFormatter.setFormatters(formatters, defaultSqlFormatter);
       sqlCodeFormatter.pushExtractors(
         sparksqlStartMarker,
         sparksqlEndMarker,
@@ -118,15 +138,44 @@ const plugin: JupyterFrontEndPlugin<void> = {
         lspExtractorsMgr.register(cellMagicExtractor('trino'), 'python');
         console.log('jupyterlab-sql-editor: LSP extractors registered');
 
-        const settingsPromise = settings.load(JUPYTERLAB_SQL_EDITOR_PLUGIN);
+        const formatTabWidth = 4;
+        const formatUseTabs = false;
+        const formatKeywordCase: KeywordCase = 'upper';
+        const formatters = new Map<string, SqlFormatter>();
+        formatters.set(
+          'sparksql',
+          new SqlFormatter(
+            'spark',
+            formatTabWidth,
+            formatUseTabs,
+            formatKeywordCase
+          )
+        );
+        formatters.set(
+          'trino',
+          new SqlFormatter(
+            'trino',
+            formatTabWidth,
+            formatUseTabs,
+            formatKeywordCase
+          )
+        );
+        const defaultSqlFormatter = new SqlFormatter(
+          'sql',
+          formatTabWidth,
+          formatUseTabs,
+          formatKeywordCase
+        );
         const sqlCodeFormatter = new SqlCodeFormatter(
           app,
           notebookTracker,
           editorTracker,
-          new SqlFormatter(4, false, 'upper')
+          formatters,
+          defaultSqlFormatter
         );
         console.log('jupyterlab-sql-editor: sqlCodeFormatter initialized');
 
+        const settingsPromise = settings.load(JUPYTERLAB_SQL_EDITOR_PLUGIN);
         settingsPromise
           .then(settingValues => {
             updateSettings(settingValues, sqlCodeFormatter);
