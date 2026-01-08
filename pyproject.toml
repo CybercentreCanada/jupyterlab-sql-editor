@@ -84,7 +84,6 @@ ensured-targets = [
     "jupyterlab_sql_editor/labextension/static/style.js",
     "jupyterlab_sql_editor/labextension/package.json",
 ]
-skip-if-exists = ["jupyterlab_sql_editor/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
