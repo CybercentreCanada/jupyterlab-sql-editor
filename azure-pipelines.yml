@@ -45,6 +45,7 @@ stages:
           - script: |
               set -eux
               source env/bin/activate
+              jlpm clean:labextension
               python -m pip install -v .[all]
             displayName: 'Build the extension'
 
