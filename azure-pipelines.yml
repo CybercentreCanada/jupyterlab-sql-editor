@@ -21,9 +21,9 @@ stages:
               python.version: '3.11'
 
         steps:
-          - task: NodeTool@0
+          - task: UseNode@1
             inputs:
-              versionSpec: '20.x'
+              version: '20.x'
 
           - script: |
               virtualenv -p python$(python.version) env
