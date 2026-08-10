@@ -31,9 +31,10 @@ dependencies = [
   "jupyterlab-lsp>=5.0.0",
   "jupyter-events>=0.6.1",
   "jupyter-lsp>=2.2.0",
-  "python-lsp-server[all]",
+  "packaging>=21.3",
   "pandas>=1.4.4",
   "ply",
+  "python-lsp-server[all]",
   "sqlparse",
   "sqlalchemy",
   "sqlglot[rs]"
