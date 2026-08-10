@@ -2,17 +2,23 @@ import logging
 import os
 import secrets
 from importlib import reload
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from time import time
+from typing import Optional
 
+from packaging.version import Version
+
+# Support legacy (dbt.main) and newer (dbt.cli.main) dbt entry points
 try:
     import dbt.events
     import dbt.main
-except ImportError:
+except (ImportError, ValueError):
     pass
-# Handling Python 3.11 incompatibility with older dbt versions
-except ValueError:
-    pass
+try:
+    from dbt.cli.main import dbtRunner  # type: ignore
+except Exception:
+    dbtRunner = None
 
 import pandas as pd
 import sqlglot
@@ -61,6 +67,8 @@ class SparkSql(Base):
         super().__init__(shell, **kwargs)
         self.spark = None
         self.cached_results = ResultCache()
+        self._dbt_version: Optional[str] = None
+        self.dbt_runner = None
 
     @needs_local_scope
     @line_cell_magic
@@ -288,6 +296,20 @@ class SparkSql(Base):
         elif isinstance(exc, IllegalArgumentException):
             print(f"IllegalArgumentException: {exc.desc}")
 
+    def get_dbt_version(self) -> Version:
+        if self._dbt_version:
+            return Version(self._dbt_version)
+        v = None
+        if pkg_version is not None:
+            for name in ("dbt-core", "dbt"):
+                try:
+                    v = pkg_version(name)
+                    break
+                except Exception:
+                    continue
+        self._dbt_version = v
+        return Version(v)  # type: ignore
+
     def get_dbt_sql_statement(self, cell, sql_argument):
         sql = cell
         if cell is None:
@@ -296,31 +318,96 @@ class SparkSql(Base):
             print("No sql statement to execute")
             return None
 
-        stage_file_path = f"{self.dbt_project_dir}/analyses/__sparksql__stage_file__.sql"
-        with open(stage_file_path, "w", encoding="utf8") as stage_file:
+        analyses_dir = os.path.join(f"{self.dbt_project_dir}", "analyses")
+        os.makedirs(analyses_dir, exist_ok=True)
+        stage_file_path = os.path.join(analyses_dir, "__sparksql__stage_file__.sql")
+        with open(file=stage_file_path, mode="w", encoding="utf8") as stage_file:
             stage_file.write(sql)
 
-        dbt_compile_args = [
-            "--no-write-json",
-            "compile",
-            "--model",
-            "__sparksql__stage_file__",
-        ] + self.dbt_args
-        results, succeeded = self.invoke_dbt(dbt_compile_args)
-        os.remove(stage_file_path)
+        # Build arguments based on installed dbt version
+        ver = self.get_dbt_version()
+        results, succeeded = None, False
+        if ver and ver >= Version("1.4.0"):
+            # dbtRunner
+            dbt_compile_args = [
+                "compile",
+                "--no-write-json",
+                "--select",
+                "__sparksql__stage_file__",
+            ] + self.dbt_args
+            results, succeeded = self.invoke_dbt(args=dbt_compile_args)
+        else:
+            # legacy
+            dbt_compile_args = [
+                "--no-write-json",
+                "compile",
+                "--models",
+                "__sparksql__stage_file__",
+            ] + self.dbt_args
+            results, succeeded = self.invoke_dbt(args=dbt_compile_args)
+        try:
+            os.remove(stage_file_path)
+        except Exception:
+            pass
         if succeeded and results:
-            compiled_file_path = f"{self.dbt_project_dir}/{results.results[0].node.compiled_path}"
-            with open(compiled_file_path, "r", encoding="utf8") as compiled_file:
-                compiled_sql = compiled_file.read()
-            return compiled_sql
+            # Prefer extracting compiled SQL directly from the RunExecutionResult when available
+            compiled_sql = None
+            try:
+                run_exec_result = getattr(results, "result", None) or results
+                run_results = getattr(run_exec_result, "results", None)
+                if run_results:
+                    for run_result in run_results:
+                        node = getattr(run_result, "node", None)
+                        if not node:
+                            continue
+                        # dbt >= 1.4: CompiledResource has compiled_code
+                        compiled_code = getattr(node, "compiled_code", None)
+                        if compiled_code:
+                            compiled_sql = compiled_code
+                            break
+                        # Legacy: compiled_path may be present
+                        compiled_path = getattr(node, "compiled_path", None)
+                        if compiled_path:
+                            if not os.path.isabs(compiled_path):
+                                compiled_path = os.path.join(f"{self.dbt_project_dir}", compiled_path)
+                            try:
+                                with open(file=compiled_path, mode="r", encoding="utf8") as compiled_file:
+                                    compiled_sql = compiled_file.read()
+                                break
+                            except Exception:
+                                pass
+            except Exception:
+                compiled_sql = None
+            # Fallback: search for the compiled stage file under target/compiled
+            if not compiled_sql:
+                target_dir = os.path.join(f"{self.dbt_project_dir}", "target", "compiled")
+                for root, _dirs, files in os.walk(target_dir):
+                    for f in files:
+                        if f == "__sparksql__stage_file__.sql":
+                            try:
+                                with open(file=os.path.join(root, f), mode="r", encoding="utf8") as compiled_file:
+                                    compiled_sql = compiled_file.read()
+                                break
+                            except Exception:
+                                pass
+                    if compiled_sql:
+                        break
+            if compiled_sql:
+                return compiled_sql
         return ""
 
     @staticmethod
-    def import_dbt():
+    def import_dbt() -> bool:
         # reset dbt logging to prevent duplicate log entries.
         try:
-            reload(dbt.main)
-            reload(dbt.events)
+            try:
+                reload(module=dbt.events)  # type: ignore
+            except Exception:
+                pass
+            try:
+                reload(module=dbt.main)  # type: ignore
+            except Exception:
+                pass
         except Exception:
             print("Error reloading dbt modules")
             return False
@@ -330,15 +417,52 @@ class SparkSql(Base):
         return True
 
     def invoke_dbt(self, args):
-        if self.import_dbt():
-            return dbt.main.handle_and_check(args)
-        return None, False
+        if not self.import_dbt():
+            return None, False
+        ver = self.get_dbt_version()
+        # dbtRunner
+        if dbtRunner is not None and ver and ver >= Version("1.4.0"):
+            try:
+                if self.dbt_runner is None:
+                    self.dbt_runner = dbtRunner()
+                result = self.dbt_runner.invoke(args)
+                return result, getattr(result, "success", False)
+            except SystemExit:
+                return None, False
+            except Exception as exc:  # fall back to legacy on error
+                print(f"dbtRunner invocation failed, falling back to legacy API: {exc}")
+        # legacy
+        try:
+            return dbt.main.handle_and_check(args)  # type: ignore
+        except SystemExit:
+            return None, False
+        except Exception:
+            return None, False
 
     def get_dbt_project_dir(self, args):
-        if self.import_dbt():
-            parsed = dbt.main.parse_args(args)
-            return parsed.project_dir
-        return None
+        if not self.import_dbt():
+            return None
+
+        def _get_flag_value(argv, flag):
+            for i, tok in enumerate(argv):
+                if tok == flag and i + 1 < len(argv):
+                    return argv[i + 1]
+                if tok.startswith(flag + "="):
+                    return tok.split("=", 1)[1]
+            return None
+
+        project_dir = _get_flag_value(argv=args, flag="--project-dir") or _get_flag_value(
+            argv=args, flag="--project_dir"
+        )
+        if project_dir:
+            return project_dir
+        # Try legacy parser as fallback
+        try:
+            parsed = dbt.main.parse_args(args)  # type: ignore
+            return getattr(parsed, "project_dir", None)
+        except Exception:
+            # Default to current working dir
+            return os.getcwd()
 
     @line_magic
     def dbt(self, line=None):
@@ -347,7 +471,11 @@ class SparkSql(Base):
         if not self.dbt_project_dir:
             print("dbt project directory not specified")
             return
-        os.chdir(self.dbt_project_dir)
+        try:
+            os.chdir(path=self.dbt_project_dir)
+        except Exception as exc:
+            print(f"Failed to change directory to dbt project dir '{self.dbt_project_dir}': {exc}")
+        # Run a debug to validate configuration
         self.invoke_dbt(["debug"] + self.dbt_args)
 
         # Exporting SparkSession to variable spark if created
