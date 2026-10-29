@@ -4,10 +4,11 @@ trigger:
       - main
       - cccs-main
 
-pool: 'cybertron-build-pool'
+pool: "cybertron-build-pool"
 
 variables:
-  tag: '$(Build.BuildId)'
+  tag: "$(Build.BuildId)"
+  python.version: "3.14"
 
 stages:
   - stage: Build_and_Publish_Python_Artifact
@@ -15,39 +16,35 @@ stages:
     jobs:
       - job: BuildPythonArtifact
         displayName: Build and package python artifacts.
-        strategy:
-          matrix:
-            Python:
-              python.version: '3.11'
 
         steps:
           - task: UseNode@1
             inputs:
-              version: '20.x'
+              version: "22.x"
 
           - script: |
               virtualenv -p python$(python.version) env
               source env/bin/activate
               python -m pip install -U "jupyterlab>=4.0.0,<5"
-            displayName: 'Install dependencies'
+            displayName: "Install dependencies"
 
           - script: |
               set -eux
               source env/bin/activate
               jlpm
               jlpm run lint:check
-            displayName: 'Lint the extension'
+            displayName: "Lint the extension"
 
           - script: |
               rm -rf dist/*
-            displayName: 'Clean old dist artifacts'
+            displayName: "Clean old dist artifacts"
 
           - script: |
               set -eux
               source env/bin/activate
               jlpm clean:labextension
               python -m pip install -v .[all]
-            displayName: 'Build the extension'
+            displayName: "Build the extension"
 
           - script: |
               set -eux
@@ -56,20 +53,20 @@ stages:
               source env/bin/activate
               pip install build
               python -m build
-            displayName: 'Package the extension'
+            displayName: "Package the extension"
 
           - task: CopyFiles@2
             inputs:
-              contents: 'dist/**'
-              targetFolder: $(Build.ArtifactStagingDirectory)
-            displayName: 'Stage build artifact to publish'
+              Contents: "dist/**"
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+            displayName: "Stage build artifact to publish"
 
           - task: PublishBuildArtifacts@1
             inputs:
-              pathtoPublish: '$(Build.ArtifactStagingDirectory)/dist'
-              artifactName: 'dist'
-              publishLocation: 'Container'
-            displayName: 'Publish build artifacts'
+              PathtoPublish: "$(Build.ArtifactStagingDirectory)/dist"
+              ArtifactName: "dist"
+              publishLocation: "Container"
+            displayName: "Publish build artifacts"
 
       - job: PublishArtifactToPypi
         displayName: Publish artifact to PyPI
@@ -77,23 +74,25 @@ stages:
         steps:
           - script: |
               rm -rf $(Pipeline.Workspace)/dist/*
-            displayName: 'Clean dist directory before download'
+            displayName: "Clean dist directory before download"
 
           - task: DownloadBuildArtifacts@0
             inputs:
-              buildType: 'current'
-              downloadType: 'specific'
-              downloadPath: '$(Pipeline.Workspace)'
-            displayName: 'Download build artifact'
+              buildType: "current"
+              downloadType: "specific"
+              downloadPath: "$(Pipeline.Workspace)"
+            displayName: "Download build artifact"
 
           - task: TwineAuthenticate@1
             inputs:
               pythonUploadServiceConnection: cccs-pypi
-            displayName: 'Twine Authenticate'
+            displayName: "Twine Authenticate"
 
           - script: |
+              set -eu
               virtualenv -p python$(python.version) env
               source env/bin/activate
-              pip install twine
+              python -m pip install --upgrade "twine>=7.0.0" "packaging>=26.0"
+              python -m twine check $(Pipeline.Workspace)/dist/*
               python -m twine upload --skip-existing -r "cccs-pypi" --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
-            displayName: 'Publish artifact to PyPI'
+            displayName: "Publish artifact to PyPI"
