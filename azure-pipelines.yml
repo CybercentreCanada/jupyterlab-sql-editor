@@ -8,7 +8,7 @@ pool: "cybertron-build-pool"
 
 variables:
   tag: "$(Build.BuildId)"
-  python.version: "3.14"
+  python.version: "3.12"
 
 stages:
   - stage: Build_and_Publish_Python_Artifact
