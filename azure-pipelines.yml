@@ -92,7 +92,8 @@ stages:
               set -eu
               virtualenv -p python$(python.version) env
               source env/bin/activate
-              pip install twine
+              python -m pip install --upgrade "twine>=7.0.0" "packaging>=26.0"
+              python -m twine check $(Pipeline.Workspace)/dist/*
 
               set -o pipefail
               if ! python -m twine upload -r analytical-platform --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose 2>&1 | tee twine.log; then
@@ -126,8 +127,10 @@ stages:
             displayName: "Twine Authenticate"
 
           - script: |
+              set -eu
               virtualenv -p python$(python.version) env
               source env/bin/activate
-              pip install twine
+              python -m pip install --upgrade "twine>=7.0.0" "packaging>=26.0"
+              python -m twine check $(Pipeline.Workspace)/dist/*
               python -m twine upload -r pypi-bagofholding --config-file $(PYPIRC_PATH) $(Pipeline.Workspace)/dist/* --verbose
             displayName: "Publish artifact to BoH feed"
